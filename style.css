@@ -7,6 +7,21 @@ body {
   padding: 14px;    /* 端にベタ付き防止 */
 }
 
+@media (max-width: 600px) {
+  body {
+    margin: 0;
+    padding: 0;
+  }
+  main, section, .free, table {
+    margin: 8px auto;
+    padding: 8px;
+    max-width: 95%;
+  }
+  table {
+    font-size: 0.9em; /* 行間を少し詰める */
+  }
+}
+
 body, header, main, footer {
     background-color: #F6E7B2;
 }
