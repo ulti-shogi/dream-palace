@@ -26,31 +26,27 @@
 
   /* === age.html の section 内 3行を等間隔＆中央に === */
   main > section:first-of-type {
-    /* 内側の上下余白を均等に確保（端と行間の差をなくす） */
     padding-block: 12px;
-    /* 3つの <p> を縦積みし、行間を一定にする */
     display: grid;
     justify-items: center;   /* 横中央 */
     row-gap: 10px;           /* 行と行の等間隔 */
   }
-  /* 各行の上下マージンをゼロに（ギャップ管理をCSSに一本化） */
   main > section:first-of-type > p { 
     margin: 0;
-    text-align: center;      /* 念のため中央寄せも維持 */
+    text-align: center;
   }
-
-  /* 真ん中の“平均/中央値の年齢”だけ強調して大きく */
   main > section:first-of-type > p:nth-of-type(2) strong {
     font-weight: 800;
-    font-size: clamp(24px, 7vw, 36px); /* 端末に合わせて自動拡大 */
+    font-size: clamp(24px, 7vw, 36px);
     line-height: 1.1;
     letter-spacing: .02em;
   }
 
-  /* 上のラベル/下の日数は控えめ（任意：少し小さくしたい場合） */
-  /* main > section:first-of-type > p:first-of-type,
-  main > section:first-of-type > p:last-of-type { font-size: 0.95rem; } */
-
+  /* ▼ 追加：スクロールボタンの箱＆フッターを中央寄せ */
+  main > section + .free + .free { text-align: center; }
+  main > section + .free + .free button,
+  footer button { padding: 6px 12px; font-weight: 600; }
+  footer { text-align: center; }
 </style>
 </head>
 <body>
@@ -66,22 +62,26 @@
     <p><!-- 例：平均日数 8127.1 日 --></p>
   </section>
 
-  <!-- ★ 新設：ここにラジオボタンを移動 -->
+  <!-- ラジオ -->
   <div class="free">
     <fieldset>
-      
       <label><input type="radio" name="stat" value="mean" checked> 平均年齢</label>
       <label><input type="radio" name="stat" value="median"> 中央値</label>
     </fieldset>
   </div>
 
-  <!-- 既存の唯一の table をそのまま使用 -->
+  <!-- ▼ 新設：下まで飛ぶボタン（ラジオと table の間） -->
+  <div class="free">
+    <button type="button">ページの下まで移動</button>
+  </div>
+
+  <!-- 既存の唯一の table -->
   <table>
     <thead></thead>
     <tbody></tbody>
   </table>
 
-  <!-- 既存の補足情報ブロック（そのまま） -->
+  <!-- 既存の補足情報 -->
   <div class="free">
     <h3>補足情報</h3>
     <p>各棋士の四段昇段時の年齢は、日本将棋連盟の<a href="https://www.shogi.or.jp/player/">棋士データベース</a>の各棋士の生年月日と四段昇段日より算出しました。</p>
@@ -91,7 +91,11 @@
   </div>
 </main>
 
-<footer>著作権情報</footer>
+<!-- ▼ フッターに “上へ” ボタン追加 -->
+<footer>
+  <p><button type="button">ページの一番上へ戻る</button></p>
+  著作権情報
+</footer>
 
 <script>
 (() => {
@@ -129,7 +133,6 @@
     let y = Math.floor(d / DAYS_PER_YEAR); d -= y * DAYS_PER_YEAR;
     let m = Math.floor(d / DAYS_PER_MONTH); d -= m * DAYS_PER_MONTH;
     let dd = Math.round(d);
-    // 繰り上がり補正
     if (dd >= Math.round(DAYS_PER_MONTH)) { dd -= Math.round(DAYS_PER_MONTH); m += 1; }
     if (m >= 12) { m -= 12; y += 1; }
     return { y, m, d: dd };
@@ -147,13 +150,12 @@
   const [titleP, valueP, daysP] = section.querySelectorAll('p'); // 上・中央・下
   const valueStrong = valueP.querySelector('strong');
 
-  const statBox = document.querySelector('main > section + .free'); // ★ section直後の.free（ラジオ置き場）
+  const statBox = document.querySelector('main > section + .free'); // ラジオ置き場
 
   const table = document.querySelector('table');
   const thead = table.querySelector('thead');
   const tbody = table.querySelector('tbody');
 
-  // --- テーブル見出し（固定3列） ---
   function renderHead() {
     thead.innerHTML = '';
     const tr = document.createElement('tr');
@@ -163,7 +165,6 @@
     thead.appendChild(tr);
   }
 
-  // --- テーブル本文 ---
   function renderBody(rows) {
     tbody.innerHTML = '';
     rows.forEach(r => {
@@ -176,7 +177,6 @@
     });
   }
 
-  // --- セクション内の3行を更新（平均⇄中央値の切替対応） ---
   function updateSection(stat, useDays) {
     const isMedian = (stat === 'median');
     titleP.textContent = `将棋棋士の四段昇段年齢の${isMedian ? '中央値' : '平均年齢'}`;
@@ -185,14 +185,12 @@
   }
 
   async function main() {
-    // CSV取得
     const res = await fetch(CSV_PATH, { cache: 'no-store' });
     if (!res.ok) throw new Error('CSV取得に失敗しました: ' + res.status);
     const text = await res.text();
     const rows = parseCSV(text);
     if (!rows.length) throw new Error('CSVが空です');
 
-    // ヘッダ位置の取得
     const header = rows[0];
     const idxNo   = header.indexOf('棋士番号');
     const idxName = header.indexOf('棋士名');
@@ -202,7 +200,6 @@
       throw new Error('必要な列（棋士番号/棋士名/昇段時の年齢/昇段までの日数）が見つかりません');
     }
 
-    // データ整形
     const items = rows.slice(1).map(r => {
       const kishiNo = r[idxNo];
       return {
@@ -214,7 +211,7 @@
       };
     }).filter(r => Number.isFinite(r.days));
 
-    // 並び：棋士番号が小さい順（数値化できないものは末尾）
+    // 棋士番号の小さい順
     items.sort((a, b) => {
       const an = a.kishiNoNum, bn = b.kishiNoNum;
       if (Number.isNaN(an) && Number.isNaN(bn)) return String(a.kishiNo).localeCompare(String(b.kishiNo), 'ja');
@@ -224,7 +221,6 @@
       return String(a.name).localeCompare(String(b.name), 'ja');
     });
 
-    // 集計（日数）
     const n = items.length;
     const sumDays = items.reduce((s, r) => s + r.days, 0);
     const meanDays = n > 0 ? (sumDays / n) : 0;
@@ -233,20 +229,33 @@
       ? sortedDays[(n - 1) / 2]
       : (sortedDays[n / 2 - 1] + sortedDays[n / 2]) / 2);
 
-    // 描画
     renderHead();
     renderBody(items);
-
-    // 初期表示＝平均
     updateSection('mean', meanDays);
 
-    // ★ ラジオ：sectionではなく「section直後の.free」から取得して監視
+    // ラジオ切替
     statBox.querySelectorAll('input[name="stat"]').forEach(r => {
       r.addEventListener('change', () => {
         const stat = statBox.querySelector('input[name="stat"]:checked').value;
         updateSection(stat, stat === 'median' ? medianDays : meanDays);
       });
     });
+
+    // ▼ 下へボタン（table の直前の .free に置いた button を掴む）
+    const jumpDownBtn = table.previousElementSibling?.querySelector('button');
+    if (jumpDownBtn) {
+      jumpDownBtn.addEventListener('click', () => {
+        window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
+      });
+    }
+
+    // ▼ 上へボタン（footer 内の button）
+    const toTopBtn = document.querySelector('footer button');
+    if (toTopBtn) {
+      toTopBtn.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    }
   }
 
   main().catch(err => {
