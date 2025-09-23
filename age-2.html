@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>将棋の殿堂｜四段昇段年齢</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <link rel="stylesheet" href="style.css" />
+
+  <!-- このページ専用の軽い調整 -->
+  <style>
+    /* section内 3行の整列はお好みのまま。この2行は“下へ/上へ”ボタンの中央寄せだけ */
+    main > section + .free + .free { text-align: center; } /* ラジオの次に置く free（=下へボタン箱） */
+    footer { text-align: center; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>将棋の殿堂</h1>
+</header>
+
+<main>
+  <!-- 上：ラベル ／ 中央：大きい年齢 ／ 下：日数 -->
+  <section>
+    <p><!-- 例：将棋棋士の四段昇段年齢の平均年齢 --></p>
+    <p><strong><!-- 例：22歳3ヶ月0日 --></strong></p>
+    <p><!-- 例：平均日数 8127.1 日 --></p>
+  </section>
+
+  <!-- ラジオ（そのまま） -->
+  <div class="free">
+    <fieldset>
+      <legend>集計</legend>
+      <label><input type="radio" name="stat" value="mean" checked> 平均年齢</label>
+      <label><input type="radio" name="stat" value="median"> 中央値</label>
+    </fieldset>
+  </div>
+
+  <!-- ★ 追加：下まで飛ぶボタン -->
+  <div class="free">
+    <button type="button">ページの下まで移動</button>
+  </div>
+
+  <!-- 既存の唯一の table -->
+  <table>
+    <thead></thead>
+    <tbody></tbody>
+  </table>
+
+  <!-- 既存の補足情報 -->
+  <div class="free">
+    <h3>補足情報</h3>
+    <p>（任意の補足文や件数など）</p>
+  </div>
+</main>
+
+<!-- ★ フッターに“上へ”ボタンを追加 -->
+<footer>
+  <p><button type="button">ページの一番上へ戻る</button></p>
+  著作権情報
+</footer>
+
+<script>
+(() => {
+  const CSV_PATH = './age.csv';
+  const DAYS_PER_YEAR = 365.2425;
+  const DAYS_PER_MONTH = DAYS_PER_YEAR / 12;
+
+  // --- CSV ---
+  function parseCSV(text){
+    const rows=[]; let row=[], col='', q=false;
+    for(let i=0;i<text.length;i++){
+      const c=text[i];
+      if(q){ if(c==='\"'){ if(text[i+1]==='\"'){ col+='\"'; i++; } else { q=false; } }
+            else { col+=c; } }
+      else { if(c==='\"') q=true;
+             else if(c===','){ row.push(col); col=''; }
+             else if(c==='\r'){ }
+             else if(c==='\n'){ row.push(col); rows.push(row); row=[]; col=''; }
+             else { col+=c; } }
+    }
+    if(col.length||row.length){ row.push(col); rows.push(row); }
+    return rows;
+  }
+
+  // --- 日数→歳月日 ---
+  function daysToYMD(d0){
+    if(!Number.isFinite(d0)||d0<0) return {y:0,m:0,d:0};
+    let d=d0;
+    let y=Math.floor(d/DAYS_PER_YEAR); d-=y*DAYS_PER_YEAR;
+    let m=Math.floor(d/DAYS_PER_MONTH); d-=m*DAYS_PER_MONTH;
+    let dd=Math.round(d);
+    if(dd>=Math.round(DAYS_PER_MONTH)){ dd-=Math.round(DAYS_PER_MONTH); m+=1; }
+    if(m>=12){ m-=12; y+=1; }
+    return {y,m,d:dd};
+  }
+  const fmt = o => `${o.y}歳${o.m}ヶ月${o.d}日`;
+  const numFrom = s => { const m=String(s??'').match(/\d+/); return m ? parseInt(m[0],10) : NaN; };
+
+  // --- DOM ---
+  const section = document.querySelector('section');
+  const [titleP, valueP, daysP] = section.querySelectorAll('p');
+  const valueStrong = valueP.querySelector('strong');
+  const statBox = document.querySelector('main > section + .free'); // ラジオの箱
+  const table = document.querySelector('table');
+  const thead = table.querySelector('thead');
+  const tbody = table.querySelector('tbody');
+
+  function renderHead(){
+    thead.innerHTML='';
+    const tr=document.createElement('tr');
+    ['棋士番号','棋士名','四段昇段時の年齢'].forEach(t=>{
+      const th=document.createElement('th'); th.textContent=t; tr.appendChild(th);
+    });
+    thead.appendChild(tr);
+  }
+  function renderBody(rows){
+    tbody.innerHTML='';
+    rows.forEach(r=>{
+      const tr=document.createElement('tr');
+      const c1=document.createElement('td'); c1.textContent=r.kishiNo;
+      const c2=document.createElement('td'); c2.textContent=r.name;
+      const c3=document.createElement('td'); c3.textContent=r.ageText;
+      tr.append(c1,c2,c3);
+      tbody.appendChild(tr);
+    });
+  }
+  function updateSection(stat, useDays){
+    const isMedian = (stat==='median');
+    titleP.textContent = `将棋棋士の四段昇段年齢の${isMedian?'中央値':'平均年齢'}`;
+    valueStrong.textContent = fmt(daysToYMD(useDays));
+    daysP.textContent = `${isMedian?'中央値日数':'平均日数'} ${useDays.toFixed(1)} 日`;
+  }
+
+  async function main(){
+    const res=await fetch(CSV_PATH,{cache:'no-store'});
+    if(!res.ok) throw new Error('CSV取得に失敗しました: '+res.status);
+    const text=await res.text();
+    const rows=parseCSV(text);
+    if(!rows.length) throw new Error('CSVが空です');
+
+    const header=rows[0];
+    const idxNo=header.indexOf('棋士番号');
+    const idxName=header.indexOf('棋士名');
+    const idxAgeT=header.indexOf('昇段時の年齢');
+    const idxDays=header.indexOf('昇段までの日数');
+    if(idxNo<0||idxName<0||idxAgeT<0||idxDays<0)
+      throw new Error('必要な列（棋士番号/棋士名/昇段時の年齢/昇段までの日数）が見つかりません');
+
+    const items = rows.slice(1).map(r=>{
+      const kishiNo=r[idxNo];
+      return {
+        kishiNo,
+        kishiNoNum: numFrom(kishiNo),
+        name: r[idxName],
+        ageText: r[idxAgeT],
+        days: Number(r[idxDays])
+      };
+    }).filter(r=>Number.isFinite(r.days));
+
+    // 棋士番号の小さい順
+    items.sort((a,b)=>{
+      const an=a.kishiNoNum, bn=b.kishiNoNum;
+      if(Number.isNaN(an)&&Number.isNaN(bn)) return String(a.kishiNo).localeCompare(String(b.kishiNo),'ja');
+      if(Number.isNaN(an)) return 1;
+      if(Number.isNaN(bn)) return -1;
+      if(an!==bn) return an-bn;
+      return String(a.name).localeCompare(String(b.name),'ja');
+    });
+
+    // 集計
+    const n=items.length;
+    const sum=items.reduce((s,r)=>s+r.days,0);
+    const meanDays = n>0 ? sum/n : 0;
+    const sorted=items.map(r=>r.days).sort((x,y)=>x-y);
+    const medianDays = n===0 ? 0 : (n%2 ? sorted[(n-1)/2] : (sorted[n/2-1]+sorted[n/2])/2);
+
+    renderHead();
+    renderBody(items);
+    updateSection('mean', meanDays);
+
+    // ラジオ切替
+    statBox.querySelectorAll('input[name="stat"]').forEach(r=>{
+      r.addEventListener('change', ()=>{
+        const stat = statBox.querySelector('input[name="stat"]:checked').value;
+        updateSection(stat, stat==='median' ? medianDays : meanDays);
+      });
+    });
+
+    // ★ 下へボタン（ラジオの次の .free 内の button）
+    const jumpDownBtn = document.querySelector('main > section + .free + .free button');
+    if (jumpDownBtn) {
+      jumpDownBtn.addEventListener('click', () => {
+        window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
+      });
+    }
+
+    // ★ 上へボタン（フッター内の button）
+    const toTopBtn = document.querySelector('footer button');
+    if (toTopBtn) {
+      toTopBtn.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    }
+  }
+
+  main().catch(err=>{
+    console.error(err);
+    const p=document.querySelector('section p'); if(p) p.textContent='エラー：'+err.message;
+  });
+})();
+</script>
+</body>
+</html>
