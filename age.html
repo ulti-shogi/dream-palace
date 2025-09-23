@@ -8,6 +8,22 @@
   <style>
   /* section 内の p を全部中央寄せ */
   section > p { text-align: center; }
+  
+  /* 既存 */
+  section > p { text-align: center; }
+
+  /* 追加：ラジオの枠線を消し、内容幅で中央寄せ */
+  fieldset{
+    border: 0;
+    padding: 0;
+    display: block;
+    width: max-content;   /* 中身の幅に縮む */
+    margin: 0 auto;       /* その塊を中央へ */
+    min-inline-size: 0;   /* ブラウザ差の保険 */
+  }
+  fieldset label{ display:inline-flex; align-items:center; gap:8px; }
+  fieldset legend{ margin-right:8px; font-weight:600; }
+
 </style>
 </head>
 <body>
