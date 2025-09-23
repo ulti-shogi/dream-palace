@@ -70,3 +70,5 @@ section h1, section h2, section h3, section h4, section h5, section h6,
     border-width: 1px;
   }
 }
+
+body { max-width: none !important; }
