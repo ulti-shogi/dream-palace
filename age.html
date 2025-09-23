@@ -13,15 +13,18 @@
 
 <main>
   <section>
-    <!-- 集計の表示とトグル（平均 / 中央値） -->
+    <!-- ① 集計表示（平均/中央値の文言） -->
+    <p><!-- ここに「平均年齢：◯歳◯ヶ月◯日（n名）」or「中央値：…」が入る --></p>
+
+    <!-- ③ ラジオは表示文の“下”に配置 -->
     <fieldset>
       <legend>集計</legend>
       <label><input type="radio" name="stat" value="mean" checked> 平均</label>
       <label><input type="radio" name="stat" value="median"> 中央値</label>
     </fieldset>
-    <p><!-- ここに「平均年齢：XX.XX歳（n名）」または「中央値：XX.XX歳（n名）」を出す --></p>
   </section>
 
+  <!-- 既存の唯一の table をそのまま使用 -->
   <table>
     <thead></thead>
     <tbody></tbody>
@@ -39,8 +42,9 @@
 (() => {
   const CSV_PATH = './age.csv';
   const DAYS_PER_YEAR = 365.2425;
+  const DAYS_PER_MONTH = DAYS_PER_YEAR / 12; // 30.436875
 
-  // シンプルCSVパーサ（ダブルクォート対応）
+  // 文字列CSVを配列に（ダブルクォート対応の簡易版）
   function parseCSV(text) {
     const rows = [];
     let row = [], col = '', q = false;
@@ -63,14 +67,48 @@
     return rows;
   }
 
-  // DOM取得（id/classを増やさず、単一要素を素直に拾う）
+  // 「日数」→「◯歳◯ヶ月◯日」へ（平均年長/平均月長で分解）
+  function daysToYMD(daysIn) {
+    if (!Number.isFinite(daysIn) || daysIn < 0) return {y:0, m:0, d:0};
+    let d = daysIn;
+    let y = Math.floor(d / DAYS_PER_YEAR);
+    d -= y * DAYS_PER_YEAR;
+
+    let m = Math.floor(d / DAYS_PER_MONTH);
+    d -= m * DAYS_PER_MONTH;
+
+    let days = Math.round(d);
+
+    // 繰り上がり補正
+    if (days >= Math.round(DAYS_PER_MONTH)) {
+      days -= Math.round(DAYS_PER_MONTH);
+      m += 1;
+    }
+    if (m >= 12) {
+      m -= 12;
+      y += 1;
+    }
+    return { y, m, d: days };
+  }
+
+  function formatYMD(obj) {
+    return `${obj.y}歳${obj.m}ヶ月${obj.d}日`;
+  }
+
+  // 数字抽出（棋士番号の比較用）
+  function numericFromString(s) {
+    const m = String(s ?? '').match(/\d+/);
+    return m ? parseInt(m[0], 10) : NaN;
+  }
+
+  // DOM 取得（idは増やさない）
   const section = document.querySelector('section');
   const infoP = section.querySelector('p');
   const table = document.querySelector('table');
   const thead = table.querySelector('thead');
   const tbody = table.querySelector('tbody');
 
-  // 表ヘッダを固定で描画（列は3つ）
+  // ヘッダ（固定3列）
   function renderHead() {
     thead.innerHTML = '';
     const tr = document.createElement('tr');
@@ -82,76 +120,81 @@
     thead.appendChild(tr);
   }
 
-  // テーブル行を描画
+  // 本文
   function renderBody(rows) {
     tbody.innerHTML = '';
     rows.forEach(r => {
       const tr = document.createElement('tr');
       const c1 = document.createElement('td'); c1.textContent = r.kishiNo;
       const c2 = document.createElement('td'); c2.textContent = r.name;
-      const c3 = document.createElement('td'); c3.textContent = r.ageText;
+      const c3 = document.createElement('td'); c3.textContent = r.ageText; // CSVの文字列をそのまま
       tr.append(c1, c2, c3);
       tbody.appendChild(tr);
     });
   }
 
-  // 数値→年（小数2桁）
-  function yearsFromDays(days) {
-    return (days / DAYS_PER_YEAR);
-  }
-
-  // 表示テキスト更新（平均/中央値のトグルに応じて）
-  function updateInfo(stat, meanYears, medianYears, count) {
-    const label = stat === 'median' ? '中央値' : '平均年齢';
-    const value = (stat === 'median' ? medianYears : meanYears).toFixed(2);
-    infoP.textContent = `${label}：${value}歳（${count}名）`;
+  // 集計ラベル更新（① 平均/中央値を歳月日で表示）
+  function updateInfo(stat, meanDays, medianDays, count) {
+    const useDays = (stat === 'median') ? medianDays : meanDays;
+    const ymd = daysToYMD(useDays);
+    const label = (stat === 'median') ? '中央値' : '平均年齢';
+    infoP.textContent = `${label}：${formatYMD(ymd)}（${count}名）`;
   }
 
   async function main() {
-    // CSVを取得
+    // CSV 取得
     const res = await fetch(CSV_PATH, { cache: 'no-store' });
     if (!res.ok) throw new Error('CSV取得に失敗しました: ' + res.status);
     const text = await res.text();
     const rows = parseCSV(text);
-    if (rows.length === 0) throw new Error('CSVが空です');
+    if (!rows.length) throw new Error('CSVが空です');
 
-    // ヘッダ位置の特定
+    // ヘッダ位置
     const header = rows[0];
     const idxNo   = header.indexOf('棋士番号');
     const idxName = header.indexOf('棋士名');
-    const idxAgeT = header.indexOf('昇段時の年齢');      // 表示に使う（「XX歳YYヶ月ZZ日」）
-    const idxDays = header.indexOf('昇段までの日数');    // 集計に使う（数値）
-
+    const idxAgeT = header.indexOf('昇段時の年齢');    // 表示用（歳月日テキスト）
+    const idxDays = header.indexOf('昇段までの日数');  // 集計用（日数）
     if (idxNo < 0 || idxName < 0 || idxAgeT < 0 || idxDays < 0) {
       throw new Error('必要な列（棋士番号/棋士名/昇段時の年齢/昇段までの日数）が見つかりません');
     }
 
-    // データ整形（有効行のみ）
-    const items = rows.slice(1)
-      .map(r => ({
-        kishiNo: r[idxNo],
+    // データ整形
+    const items = rows.slice(1).map(r => {
+      const kishiNo = r[idxNo];
+      const kishiNoNum = numericFromString(kishiNo);
+      return {
+        kishiNo,
+        kishiNoNum,
         name: r[idxName],
         ageText: r[idxAgeT],
         days: Number(r[idxDays])
-      }))
-      .filter(r => Number.isFinite(r.days));
+      };
+    }).filter(r => Number.isFinite(r.days));
 
-    // 若い順にソート
-    items.sort((a, b) => a.days - b.days);
+    // ② 並び順＝棋士番号が小さい順（数値化できないものは末尾）
+    items.sort((a, b) => {
+      const an = a.kishiNoNum, bn = b.kishiNoNum;
+      if (Number.isNaN(an) && Number.isNaN(bn)) return String(a.kishiNo).localeCompare(String(b.kishiNo), 'ja');
+      if (Number.isNaN(an)) return 1;
+      if (Number.isNaN(bn)) return -1;
+      if (an !== bn) return an - bn;
+      return String(a.name).localeCompare(String(b.name), 'ja');
+    });
 
-    // 集計値
+    // 集計（日数ベース）
     const count = items.length;
     const sumDays = items.reduce((s, r) => s + r.days, 0);
-    const meanYears = yearsFromDays(sumDays / Math.max(count, 1));
+    const meanDays = count > 0 ? (sumDays / count) : 0;
 
-    const sortedDays = items.map(r => r.days).slice().sort((a, b) => a - b);
-    let medianYears = 0;
+    const sortedDays = items.map(r => r.days).slice().sort((x, y) => x - y);
+    let medianDays = 0;
     if (count > 0) {
       if (count % 2 === 1) {
-        medianYears = yearsFromDays(sortedDays[(count - 1) / 2]);
+        medianDays = sortedDays[(count - 1) / 2];
       } else {
         const a = sortedDays[count / 2 - 1], b = sortedDays[count / 2];
-        medianYears = yearsFromDays((a + b) / 2);
+        medianDays = (a + b) / 2;
       }
     }
 
@@ -159,22 +202,23 @@
     renderHead();
     renderBody(items);
 
-    // 初期表示（平均）
-    updateInfo('mean', meanYears, medianYears, count);
+    // 初期表示＝平均
+    updateInfo('mean', meanDays, medianDays, count);
 
-    // ラジオ切替
+    // ③ ラジオ切替
     section.querySelectorAll('input[name="stat"]').forEach(r => {
       r.addEventListener('change', () => {
-        const stat = section.querySelector('input[name="stat"]:checked').value;
-        updateInfo(stat, meanYears, medianYears, count);
+        const val = section.querySelector('input[name="stat"]:checked').value;
+        updateInfo(val, meanDays, medianDays, count);
       });
     });
   }
 
-  // 起動
   main().catch(err => {
     console.error(err);
-    infoP.textContent = 'エラー：' + err.message;
+    // 表示欄にエラー出す（idを増やさず最小限）
+    const p = document.querySelector('section p');
+    if (p) p.textContent = 'エラー：' + err.message;
   });
 })();
 </script>
