@@ -79,3 +79,30 @@ section h1, section h2, section h3, section h4, section h5, section h6,
     padding: 14px;
   }
 }
+
+/* --- 将棋盤スタイル（最小差分パッチ） --- */
+
+/* 角丸をやめて四角に、背景を木肌色に */
+section, .free {
+  border-radius: 0;
+  border: 2px solid #000;        /* セクション枠の太さを明示 */
+  background-color: #F3D38C;     /* 将棋盤っぽい薄い木肌色 */
+}
+
+/* table も同じ木肌色＆枠線太さを section と揃える */
+table {
+  background-color: #F3D38C;
+  border: 2px solid #000;        /* ← セクションと同じ太さに統一 */
+}
+
+/* 内側のグリッド線まで同じ太さにしたい場合は有効（不要ならこのブロックは削除可） */
+th, td {
+  border-width: 2px;             /* ← セクション/テーブル外枠と統一 */
+}
+
+/* モバイル側の過去指定（border-width:1px 等）を確実に打ち消す */
+@media (max-width: 599px) {
+  section, .free { border-radius: 0; }
+  table { border-width: 2px; }
+  th, td { border-width: 2px; }  /* ↑上と同じく、不要なら削除 */
+}
