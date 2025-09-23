@@ -71,4 +71,11 @@ section h1, section h2, section h3, section h4, section h5, section h6,
   }
 }
 
-body { max-width: none !important; }
+/* PCだけ幅を制限して中央寄せ（スマホは全幅のまま） */
+@media (min-width: 600px) {
+  body {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 14px;
+  }
+}
