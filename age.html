@@ -24,6 +24,33 @@
   fieldset label{ display:inline-flex; align-items:center; gap:8px; }
   fieldset legend{ margin-right:8px; font-weight:600; }
 
+  /* === age.html の section 内 3行を等間隔＆中央に === */
+  main > section:first-of-type {
+    /* 内側の上下余白を均等に確保（端と行間の差をなくす） */
+    padding-block: 12px;
+    /* 3つの <p> を縦積みし、行間を一定にする */
+    display: grid;
+    justify-items: center;   /* 横中央 */
+    row-gap: 10px;           /* 行と行の等間隔 */
+  }
+  /* 各行の上下マージンをゼロに（ギャップ管理をCSSに一本化） */
+  main > section:first-of-type > p { 
+    margin: 0;
+    text-align: center;      /* 念のため中央寄せも維持 */
+  }
+
+  /* 真ん中の“平均/中央値の年齢”だけ強調して大きく */
+  main > section:first-of-type > p:nth-of-type(2) strong {
+    font-weight: 800;
+    font-size: clamp(24px, 7vw, 36px); /* 端末に合わせて自動拡大 */
+    line-height: 1.1;
+    letter-spacing: .02em;
+  }
+
+  /* 上のラベル/下の日数は控えめ（任意：少し小さくしたい場合） */
+  /* main > section:first-of-type > p:first-of-type,
+  main > section:first-of-type > p:last-of-type { font-size: 0.95rem; } */
+
 </style>
 </head>
 <body>
