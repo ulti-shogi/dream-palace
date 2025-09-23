@@ -57,7 +57,7 @@
 <main>
   <!-- 上＝ラベル / 中央＝大きな年齢 / 下＝日数（ラジオで平均⇄中央値に切替） -->
   <section>
-    <p><!-- 例：将棋棋士の四段昇段年齢の平均年齢 --></p>
+    <p><!-- 例：将棋棋士の四段昇段時の平均年齢 --></p>
     <p><strong><!-- 例：22歳3ヶ月0日 --></strong></p>
     <p><!-- 例：平均日数 8127.1 日 --></p>
   </section>
@@ -179,7 +179,7 @@
 
   function updateSection(stat, useDays) {
     const isMedian = (stat === 'median');
-    titleP.textContent = `将棋棋士の四段昇段年齢の${isMedian ? '中央値' : '平均年齢'}`;
+    titleP.textContent = `将棋棋士の四段昇段${isMedian ? '年齢の中央値' : '時の平均年齢'}`;
     valueStrong.textContent = formatYMD(daysToYMD(useDays));
     daysP.textContent = `${isMedian ? '中央値日数' : '平均日数'} ${useDays.toFixed(1)} 日`;
   }
