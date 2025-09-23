@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>将棋の殿堂｜四段昇段年齢</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>将棋の殿堂</h1>
+</header>
+
+<main>
+  <section>
+    <!-- 集計の表示とトグル（平均 / 中央値） -->
+    <fieldset>
+      <legend>集計</legend>
+      <label><input type="radio" name="stat" value="mean" checked> 平均</label>
+      <label><input type="radio" name="stat" value="median"> 中央値</label>
+    </fieldset>
+    <p><!-- ここに「平均年齢：XX.XX歳（n名）」または「中央値：XX.XX歳（n名）」を出す --></p>
+  </section>
+
+  <table>
+    <thead></thead>
+    <tbody></tbody>
+  </table>
+
+  <div class="free">
+    <h3>自由欄</h3>
+    <p>補足情報など自由に書き込む。</p>
+  </div>
+</main>
+
+<footer>著作権情報</footer>
+
+<script>
+(() => {
+  const CSV_PATH = './age.csv';
+  const DAYS_PER_YEAR = 365.2425;
+
+  // シンプルCSVパーサ（ダブルクォート対応）
+  function parseCSV(text) {
+    const rows = [];
+    let row = [], col = '', q = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (q) {
+        if (c === '"') {
+          if (text[i + 1] === '"') { col += '"'; i++; }
+          else { q = false; }
+        } else { col += c; }
+      } else {
+        if (c === '"') q = true;
+        else if (c === ',') { row.push(col); col = ''; }
+        else if (c === '\r') { /* skip */ }
+        else if (c === '\n') { row.push(col); rows.push(row); row = []; col = ''; }
+        else { col += c; }
+      }
+    }
+    if (col.length || row.length) { row.push(col); rows.push(row); }
+    return rows;
+  }
+
+  // DOM取得（id/classを増やさず、単一要素を素直に拾う）
+  const section = document.querySelector('section');
+  const infoP = section.querySelector('p');
+  const table = document.querySelector('table');
+  const thead = table.querySelector('thead');
+  const tbody = table.querySelector('tbody');
+
+  // 表ヘッダを固定で描画（列は3つ）
+  function renderHead() {
+    thead.innerHTML = '';
+    const tr = document.createElement('tr');
+    ['棋士番号', '棋士名', '四段昇段時の年齢'].forEach(txt => {
+      const th = document.createElement('th');
+      th.textContent = txt;
+      tr.appendChild(th);
+    });
+    thead.appendChild(tr);
+  }
+
+  // テーブル行を描画
+  function renderBody(rows) {
+    tbody.innerHTML = '';
+    rows.forEach(r => {
+      const tr = document.createElement('tr');
+      const c1 = document.createElement('td'); c1.textContent = r.kishiNo;
+      const c2 = document.createElement('td'); c2.textContent = r.name;
+      const c3 = document.createElement('td'); c3.textContent = r.ageText;
+      tr.append(c1, c2, c3);
+      tbody.appendChild(tr);
+    });
+  }
+
+  // 数値→年（小数2桁）
+  function yearsFromDays(days) {
+    return (days / DAYS_PER_YEAR);
+  }
+
+  // 表示テキスト更新（平均/中央値のトグルに応じて）
+  function updateInfo(stat, meanYears, medianYears, count) {
+    const label = stat === 'median' ? '中央値' : '平均年齢';
+    const value = (stat === 'median' ? medianYears : meanYears).toFixed(2);
+    infoP.textContent = `${label}：${value}歳（${count}名）`;
+  }
+
+  async function main() {
+    // CSVを取得
+    const res = await fetch(CSV_PATH, { cache: 'no-store' });
+    if (!res.ok) throw new Error('CSV取得に失敗しました: ' + res.status);
+    const text = await res.text();
+    const rows = parseCSV(text);
+    if (rows.length === 0) throw new Error('CSVが空です');
+
+    // ヘッダ位置の特定
+    const header = rows[0];
+    const idxNo   = header.indexOf('棋士番号');
+    const idxName = header.indexOf('棋士名');
+    const idxAgeT = header.indexOf('昇段時の年齢');      // 表示に使う（「XX歳YYヶ月ZZ日」）
+    const idxDays = header.indexOf('昇段までの日数');    // 集計に使う（数値）
+
+    if (idxNo < 0 || idxName < 0 || idxAgeT < 0 || idxDays < 0) {
+      throw new Error('必要な列（棋士番号/棋士名/昇段時の年齢/昇段までの日数）が見つかりません');
+    }
+
+    // データ整形（有効行のみ）
+    const items = rows.slice(1)
+      .map(r => ({
+        kishiNo: r[idxNo],
+        name: r[idxName],
+        ageText: r[idxAgeT],
+        days: Number(r[idxDays])
+      }))
+      .filter(r => Number.isFinite(r.days));
+
+    // 若い順にソート
+    items.sort((a, b) => a.days - b.days);
+
+    // 集計値
+    const count = items.length;
+    const sumDays = items.reduce((s, r) => s + r.days, 0);
+    const meanYears = yearsFromDays(sumDays / Math.max(count, 1));
+
+    const sortedDays = items.map(r => r.days).slice().sort((a, b) => a - b);
+    let medianYears = 0;
+    if (count > 0) {
+      if (count % 2 === 1) {
+        medianYears = yearsFromDays(sortedDays[(count - 1) / 2]);
+      } else {
+        const a = sortedDays[count / 2 - 1], b = sortedDays[count / 2];
+        medianYears = yearsFromDays((a + b) / 2);
+      }
+    }
+
+    // 描画
+    renderHead();
+    renderBody(items);
+
+    // 初期表示（平均）
+    updateInfo('mean', meanYears, medianYears, count);
+
+    // ラジオ切替
+    section.querySelectorAll('input[name="stat"]').forEach(r => {
+      r.addEventListener('change', () => {
+        const stat = section.querySelector('input[name="stat"]:checked').value;
+        updateInfo(stat, meanYears, medianYears, count);
+      });
+    });
+  }
+
+  // 起動
+  main().catch(err => {
+    console.error(err);
+    infoP.textContent = 'エラー：' + err.message;
+  });
+})();
+</script>
+</body>
+</html>
