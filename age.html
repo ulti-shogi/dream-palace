@@ -4,37 +4,30 @@
   <meta charset="UTF-8">
   <title>将棋の殿堂｜四段昇段年齢</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <link rel="stylesheet" href="style.css">
+  <!-- ▼ CSSにキャッシュバスター（値は更新ごとに変えてOK） -->
+  <link rel="stylesheet" href="style.css?v=20250924b">
   <style>
   /* section 内の p を全部中央寄せ */
   section > p { text-align: center; }
-  
-  /* 既存 */
-  section > p { text-align: center; }
 
-  /* 追加：ラジオの枠線を消し、内容幅で中央寄せ */
+  /* ラジオの枠線を消し、内容幅で中央寄せ */
   fieldset{
     border: 0;
     padding: 0;
     display: block;
-    width: max-content;   /* 中身の幅に縮む */
-    margin: 0 auto;       /* その塊を中央へ */
-    min-inline-size: 0;   /* ブラウザ差の保険 */
+    width: max-content;
+    margin: 0 auto;
   }
   fieldset label{ display:inline-flex; align-items:center; gap:8px; }
-  fieldset legend{ margin-right:8px; font-weight:600; }
 
-  /* === age.html の section 内 3行を等間隔＆中央に === */
+  /* === section 内 3行を等間隔＆中央に === */
   main > section:first-of-type {
     padding-block: 12px;
     display: grid;
-    justify-items: center;   /* 横中央 */
-    row-gap: 10px;           /* 行と行の等間隔 */
+    justify-items: center;
+    row-gap: 10px;
   }
-  main > section:first-of-type > p { 
-    margin: 0;
-    text-align: center;
-  }
+  main > section:first-of-type > p { margin: 0; }
   main > section:first-of-type > p:nth-of-type(2) strong {
     font-weight: 800;
     font-size: clamp(24px, 7vw, 36px);
@@ -42,12 +35,19 @@
     letter-spacing: .02em;
   }
 
-  /* ▼ 追加：スクロールボタンの箱＆フッターを中央寄せ */
-  main > section + .free + .free { text-align: center; }
+  /* ▼ ラジオとテーブルの間の free（= 件数 + 下へボタン） */
+  main > section + .free + .free {
+    display: flex;
+    justify-content: space-between; /* 左：件数 ／ 右：ボタン */
+    align-items: center;
+    gap: 12px;
+  }
   main > section + .free + .free button,
   footer button { padding: 6px 12px; font-weight: 600; }
+
+  /* フッターは中央寄せ（上へボタン用） */
   footer { text-align: center; }
-</style>
+  </style>
 </head>
 <body>
 <header>
@@ -55,9 +55,9 @@
 </header>
 
 <main>
-  <!-- 上＝ラベル / 中央＝大きな年齢 / 下＝日数（ラジオで平均⇄中央値に切替） -->
+  <!-- 上＝ラベル / 中央＝大きな年齢 / 下＝日数 -->
   <section>
-    <p><!-- 例：将棋棋士の四段昇段時の平均年齢 --></p>
+    <p><!-- 例：将棋棋士の四段昇段年齢の平均年齢 --></p>
     <p><strong><!-- 例：22歳3ヶ月0日 --></strong></p>
     <p><!-- 例：平均日数 8127.1 日 --></p>
   </section>
@@ -70,8 +70,9 @@
     </fieldset>
   </div>
 
-  <!-- ▼ 新設：下まで飛ぶボタン（ラジオと table の間） -->
+  <!-- ▼ 追加：件数（左）＋ 下までボタン（右） -->
   <div class="free">
+    <span><!-- （n名）を自動表示 --></span>
     <button type="button">ページの下まで移動</button>
   </div>
 
@@ -81,17 +82,17 @@
     <tbody></tbody>
   </table>
 
-  <!-- 既存の補足情報 -->
+  <!-- 補足情報 -->
   <div class="free">
     <h3>補足情報</h3>
     <p>各棋士の四段昇段時の年齢は、日本将棋連盟の<a href="https://www.shogi.or.jp/player/">棋士データベース</a>の各棋士の生年月日と四段昇段日より算出しました。</p>
     <p>奨励会三段リーグが開始した1987年6月から2025年4月1日付で四段へ昇段した、全163名の棋士が対象。</p>
     <p>2025年10月1日付で四段へ昇段する棋士4名の情報は、当日以降に追加します。</p>
-    <p>四段昇段時の平均年齢は1年=365.2425日、1ヶ月=30.436875日として算出しています。</p>
+    <p>四段昇段時の平均年齢は、各棋士の「生年月日から四段昇段日までの日数」から算術平均を求め、その平均日数をグレゴリオ暦の1年の平均日数である365.2425日（1ヶ月はその1/12＝30.436875日）で年・月・日に分解して「○歳○ヶ月○日」と近似表示しています。</p>
   </div>
 </main>
 
-<!-- ▼ フッターに “上へ” ボタン追加 -->
+<!-- フッターに “上へ” ボタン -->
 <footer>
   <p><button type="button">ページの一番上へ戻る</button></p>
   著作権情報
@@ -179,13 +180,14 @@
 
   function updateSection(stat, useDays) {
     const isMedian = (stat === 'median');
-    titleP.textContent = `将棋棋士の四段昇段${isMedian ? '年齢の中央値' : '時の平均年齢'}`;
+    titleP.textContent = `将棋棋士の四段昇段年齢の${isMedian ? '中央値' : '平均年齢'}`;
     valueStrong.textContent = formatYMD(daysToYMD(useDays));
     daysP.textContent = `${isMedian ? '中央値日数' : '平均日数'} ${useDays.toFixed(1)} 日`;
   }
 
   async function main() {
-    const res = await fetch(CSV_PATH, { cache: 'no-store' });
+    // ▼ CSV取得時だけ ?v= を付加（キャッシュ回避）
+    const res = await fetch(`${CSV_PATH}?v=${V}`, { cache: 'no-store' });
     if (!res.ok) throw new Error('CSV取得に失敗しました: ' + res.status);
     const text = await res.text();
     const rows = parseCSV(text);
@@ -221,6 +223,7 @@
       return String(a.name).localeCompare(String(b.name), 'ja');
     });
 
+    // 集計
     const n = items.length;
     const sumDays = items.reduce((s, r) => s + r.days, 0);
     const meanDays = n > 0 ? (sumDays / n) : 0;
@@ -241,15 +244,20 @@
       });
     });
 
-    // ▼ 下へボタン（table の直前の .free に置いた button を掴む）
-    const jumpDownBtn = table.previousElementSibling?.querySelector('button');
+    // ▼ 件数表示（table 直前の .free の <span> に n名 を入れる）
+    const jumpBox = table.previousElementSibling; // ラジオの次＝件数+ボタンの箱
+    const countSpan = jumpBox?.querySelector('span');
+    if (countSpan) countSpan.textContent = `（${n}名）`;
+
+    // ▼ 下へボタン
+    const jumpDownBtn = jumpBox?.querySelector('button');
     if (jumpDownBtn) {
       jumpDownBtn.addEventListener('click', () => {
         window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'smooth' });
       });
     }
 
-    // ▼ 上へボタン（footer 内の button）
+    // ▼ 上へボタン（footer 内）
     const toTopBtn = document.querySelector('footer button');
     if (toTopBtn) {
       toTopBtn.addEventListener('click', () => {
@@ -257,6 +265,10 @@
       });
     }
   }
+
+  /* ▼ “いちばん下”の追記：値だけ変えれば即反映 */
+  const V = '20250924b';  // ← 更新ごとに変える
+  /* ▲ main() より上に置く（ここでOK） */
 
   main().catch(err => {
     console.error(err);
