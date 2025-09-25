@@ -5,6 +5,11 @@
   <title>将棋の殿堂｜賞金ランキング</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <link rel="stylesheet" href="style.css?v=20250924d" />
+
+    <!-- html2canvas（DOM→画像化ライブラリ） -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+
   <style>
     main > section:first-of-type {
       display: grid;
@@ -26,6 +31,22 @@
       padding: 6px 8px;
       min-width: 120px;
     }
+
+  /* 右下に常時表示する保存ボタン */
+  #capture-btn{
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    z-index: 1000;
+    padding: 10px 14px;
+    border: none;
+    border-radius: 10px;
+    background: #4CAF50;
+    color: #fff;
+    font-size: 14px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.2);
+  }
+  #capture-btn:disabled{ opacity:.6; }
   </style>
 </head>
 <body>
@@ -51,6 +72,11 @@
     <tbody></tbody>
   </table>
 
+  <!-- 画像保存ボタン（常時表示） -->
+  <button id="capture-btn" type="button" aria-label="表示中のランキングを画像として保存">
+    画像として保存
+  </button>
+    
   <div class="free">
     <h3>補足情報</h3>
     <p>このページでは <code>prize-ranking.csv</code> を読み込み、西暦で年度を選んで絞り込みます。</p>
@@ -172,6 +198,48 @@
     statusP.textContent = 'エラー：' + err.message;
   });
 })();
+
+  // 「画像として保存」ボタンの処理
+  (() => {
+    const btn = document.getElementById('capture-btn');
+    if(!btn) return;
+
+    btn.addEventListener('click', async () => {
+      const tableEl = document.querySelector('main table');
+      if(!tableEl){
+        alert('テーブルが見つかりませんでした。');
+        return;
+      }
+
+      // ボタンの一時無効化＆表示更新
+      const prevLabel = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = '画像生成中…';
+
+      try {
+        // 解像度と背景色を明示（スマホでの発色/透過対策）
+        const canvas = await html2canvas(tableEl, {
+          backgroundColor: '#ffffff',
+          scale: Math.min(2, window.devicePixelRatio || 1)
+        });
+
+        const year = (document.getElementById('year-select')?.value || 'all');
+        const dataURL = canvas.toDataURL('image/png');
+
+        const a = document.createElement('a');
+        a.href = dataURL;
+        a.download = `prize-ranking_${year}.png`;
+        a.click();
+      } catch(err){
+        alert('画像化に失敗しました：' + err.message);
+        console.error(err);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = prevLabel;
+      }
+    });
+  })();
+
 </script>
 </body>
 </html>
