@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <title>将棋の殿堂｜賞金ランキング</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <link rel="stylesheet" href="style.css?v=20250925a" />
+  <link rel="stylesheet" href="style.css?v=20250925b" />
 
     <!-- html2canvas（DOM→画像化ライブラリ） -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -88,7 +88,7 @@
 <script>
 (() => {
   const CSV_PATH = './prize-ranking.csv';
-  const V = '20250925a';
+  const V = '20250925b';
 
   function parseCSV(text) {
     const rows = [];
@@ -199,72 +199,71 @@
   });
 })();
 
-  (() => {
-    const btn = document.getElementById('capture-btn');
-    if (!btn) return;
+(() => {
+  const btn = document.getElementById('capture-btn');
+  if (!btn) return;
 
-    btn.addEventListener('click', async () => {
-      const target = document.querySelector('main table'); // ← 今はテーブルのみ
-      if (!target) {
-        alert('テーブルが見つかりませんでした。');
-        return;
-      }
+  btn.addEventListener('click', async () => {
+    const target = document.querySelector('main table');
+    if (!target) { alert('テーブルが見つかりませんでした。'); return; }
 
-      const year = (document.getElementById('year-select')?.value || 'all');
+    const year = (document.getElementById('year-select')?.value || 'all');
+    const prev = btn.textContent;
+    btn.disabled = true; btn.textContent = '画像生成中…';
 
-      // ボタン状態
-      const prev = btn.textContent;
-      btn.disabled = true;
-      btn.textContent = '画像生成中…';
+    try {
+      // ① Webフォントの読み込み完了を待つ（ズレ防止）
+      if (document.fonts?.ready) { await document.fonts.ready; }
 
-      try {
-        // 高解像度でキャプチャ（スマホでもキレイ）
-        const baseCanvas = await html2canvas(target, {
-          backgroundColor: '#ffffff',
-          scale: Math.min(3, window.devicePixelRatio || 1),
-          scrollY: -window.scrollY, // 画面位置ズレ対策
-          useCORS: true
-        });
+      // ② スケールは「整数」に固定（小数DPR由来のズレ回避）
+      const SCALE = 2; // 端末が重くなければ 3 でもOK
 
-        // ── タイトル付きの“仕上げ画像”を作る ──
-        const pad = 20;              // 余白
-        const titleH = 48;           // タイトル行の高さ
-        const title = `${year}年 賞金ランキング`;
+      // ③ キャプチャ時だけ line-height/padding を少し厚めに（見た目は変えない）
+      const baseCanvas = await html2canvas(target, {
+        backgroundColor: '#ffffff',
+        scale: SCALE,
+        scrollY: -window.scrollY,
+        useCORS: true,
+        onclone: (doc) => {
+          const table = doc.querySelector('main table');
+          if (!table) return;
+          doc.querySelectorAll('th, td').forEach(el => {
+            el.style.lineHeight = '1.35';      // 行間を少し広げる
+            el.style.paddingTop = '0.3em';     // 上の余白を少し足す
+            el.style.paddingBottom = '0.3em';  // 下もバランス取り
+          });
+        }
+      });
 
-        const out = document.createElement('canvas');
-        out.width  = baseCanvas.width + pad * 2;
-        out.height = baseCanvas.height + pad * 3 + titleH;
+      // 以降は今のままでOK（タイトル合成→保存）
+      const pad = 20, titleH = 48;
+      const title = `${year}年 賞金ランキング`;
+      const out = document.createElement('canvas');
+      out.width  = baseCanvas.width + pad * 2;
+      out.height = baseCanvas.height + pad * 3 + titleH;
+      const ctx = out.getContext('2d');
+      ctx.fillStyle = '#fff'; ctx.fillRect(0,0,out.width,out.height);
+      ctx.fillStyle = '#000';
+      ctx.font = 'bold 28px system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", sans-serif';
+      ctx.textBaseline = 'top';
+      ctx.fillText(title, pad, pad);
+      ctx.drawImage(baseCanvas, pad, pad * 2 + titleH);
 
-        const ctx = out.getContext('2d');
-        ctx.fillStyle = '#fff';
-        ctx.fillRect(0, 0, out.width, out.height);
-
-        // タイトル
-        ctx.fillStyle = '#000';
-        ctx.font = 'bold 28px system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", sans-serif';
-        ctx.textBaseline = 'top';
-        ctx.fillText(title, pad, pad);
-
-        // テーブル画像を貼る
-        ctx.drawImage(baseCanvas, pad, pad * 2 + titleH);
-
-        // PNGで軽量に保存（toBlobでサイズ縮小）
-        out.toBlob((blob) => {
-          const a = document.createElement('a');
-          a.href = URL.createObjectURL(blob);
-          a.download = `prize-ranking_${year}.png`;
-          a.click();
-          URL.revokeObjectURL(a.href);
-        }, 'image/png'); // JPEGにしたい場合は 'image/jpeg', 0.95 などに変更
-      } catch (e) {
-        alert('画像化に失敗しました：' + e.message);
-        console.error(e);
-      } finally {
-        btn.disabled = false;
-        btn.textContent = prev;
-      }
-    });
-  })();
+      out.toBlob((blob) => {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `prize-ranking_${year}.png`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+      }, 'image/png');
+    } catch (e) {
+      alert('画像化に失敗しました：' + e.message);
+      console.error(e);
+    } finally {
+      btn.disabled = false; btn.textContent = prev;
+    }
+  });
+})();
 
 </script>
 </body>
