@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <title>将棋の殿堂｜賞金ランキング</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <link rel="stylesheet" href="style.css?v=20250925ef" />
+  <link rel="stylesheet" href="style.css?v=20250925efg" />
 
     <!-- html2canvas（DOM→画像化ライブラリ） -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -78,7 +78,7 @@
   </button>
     
   <div class="free">
-    <h3>当該ページについて</h3>
+    <h3>当該ページ</h3>
     <p>このページでは <code>prize-ranking.csv</code> を読み込み、西暦で年度を選んで絞り込みます。</p>
   </div>
 </main>
@@ -88,7 +88,7 @@
 <script>
 (() => {
   const CSV_PATH = './prize-ranking.csv';
-  const V = '20250925ef';
+  const V = '20250925efg';
 
   function parseCSV(text) {
     const rows = [];
@@ -209,56 +209,63 @@
 
     const year = (document.getElementById('year-select')?.value || 'all');
     const prev = btn.textContent;
-    btn.disabled = true;
-    btn.textContent = '画像生成中…';
+    btn.disabled = true; btn.textContent = '画像生成中…';
 
     try {
       if (document.fonts?.ready) await document.fonts.ready;
 
-      // まず3倍解像度でキャプチャ
-      const rawCanvas = await html2canvas(target, {
+      // 端末差の“上擦り”対策：flexで縦中央＋微小シフト（必要なら調整）
+      const SHIFT_Y_PX = 0.5; // まだ上に寄るなら 1 に上げる、気にならなければ 0 に
+      const raw = await html2canvas(target, {
         backgroundColor: '#ffffff',
-        scale: 3,
+        scale: 3,                        // 高解像度でサンプリング
         scrollY: -window.scrollY,
         useCORS: true,
+        foreignObjectRendering: true,    // 文字の再現性を上げる（モバイルでも多くはOK）
+        letterRendering: true,           // 文字ごと描画でベースラインの揺れを抑制
         onclone: (doc) => {
-          doc.querySelectorAll('th, td').forEach(el => {
-            el.style.verticalAlign = 'middle';
-            el.style.lineHeight = '1.5';      // ズレ対策で行間多め
-            el.style.paddingTop = '0.35em';
-            el.style.paddingBottom = '0.45em';
+          // 実ページには影響させず、キャプチャ時だけ適用
+          doc.querySelectorAll('main table th, main table td').forEach(el => {
+            el.style.display       = 'flex';
+            el.style.alignItems    = 'center';   // 縦中央
+            el.style.justifyContent= 'flex-start';
+            el.style.lineHeight    = '1.25';     // 行間は小さめ（flexで中央にするため）
+            el.style.paddingTop    = '0.48em';
+            el.style.paddingBottom = '0.52em';
+            if (SHIFT_Y_PX) el.style.transform = `translateY(${SHIFT_Y_PX}px)`;
+            el.style.webkitFontSmoothing = 'antialiased';
+            el.style.textRendering = 'optimizeLegibility';
           });
         }
       });
 
-      // 高品質で 2倍解像度にリサイズ
+      // 高品質ダウンサンプル（3x → 2x）
       const canvas = document.createElement('canvas');
-      canvas.width  = Math.round(rawCanvas.width  * 2 / 3);
-      canvas.height = Math.round(rawCanvas.height * 2 / 3);
-      const ctx = canvas.getContext('2d');
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = 'high';
-      ctx.drawImage(rawCanvas, 0, 0, canvas.width, canvas.height);
+      canvas.width  = Math.round(raw.width  * 2 / 3);
+      canvas.height = Math.round(raw.height * 2 / 3);
+      const cctx = canvas.getContext('2d');
+      cctx.imageSmoothingEnabled = true;
+      cctx.imageSmoothingQuality = 'high';
+      cctx.drawImage(raw, 0, 0, canvas.width, canvas.height);
 
       // タイトル合成
       const pad = 20, titleH = 48;
       const out = document.createElement('canvas');
       out.width  = canvas.width + pad * 2;
       out.height = canvas.height + pad * 3 + titleH;
-
       const octx = out.getContext('2d');
-      octx.fillStyle = '#fff';
-      octx.fillRect(0, 0, out.width, out.height);
+      octx.fillStyle = '#fff'; octx.fillRect(0,0,out.width,out.height);
       octx.fillStyle = '#000';
-      octx.font = 'bold 28px system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", sans-serif';
+      octx.font = 'bold 28px system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans JP",sans-serif';
       octx.textBaseline = 'top';
-      octx.fillText(`${year}年 賞金ランキング`, pad, pad);
+      const yearLabel = (year === 'all' || year === '') ? '全年度' : `${year}年`;
+      octx.fillText(`${yearLabel} 賞金ランキング`, pad, pad);
       octx.drawImage(canvas, pad, pad * 2 + titleH);
 
       out.toBlob((blob) => {
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = `prize-ranking_${year}.png`;
+        a.download = `prize-ranking_${(year === 'all'||year==='')?'all':year}.png`;
         a.click();
         URL.revokeObjectURL(a.href);
       }, 'image/png');
@@ -266,8 +273,7 @@
       alert('画像化に失敗：' + e.message);
       console.error(e);
     } finally {
-      btn.disabled = false;
-      btn.textContent = prev;
+      btn.disabled = false; btn.textContent = prev;
     }
   });
 })();
