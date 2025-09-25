@@ -4,12 +4,7 @@
   <meta charset="UTF-8" />
   <title>将棋の殿堂｜賞金ランキング</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <link rel="stylesheet" href="style.css?v=20250924d" />
-
-    <!-- html2canvas（DOM→画像化ライブラリ） -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
-
+  <link rel="stylesheet" href="style.css?v=20250926a" />
   <style>
     main > section:first-of-type {
       display: grid;
@@ -31,22 +26,6 @@
       padding: 6px 8px;
       min-width: 120px;
     }
-
-  /* 右下に常時表示する保存ボタン */
-  #capture-btn{
-    position: fixed;
-    right: 16px;
-    bottom: 16px;
-    z-index: 1000;
-    padding: 10px 14px;
-    border: none;
-    border-radius: 10px;
-    background: #4CAF50;
-    color: #fff;
-    font-size: 14px;
-    box-shadow: 0 4px 12px rgba(0,0,0,.2);
-  }
-  #capture-btn:disabled{ opacity:.6; }
   </style>
 </head>
 <body>
@@ -72,14 +51,10 @@
     <tbody></tbody>
   </table>
 
-  <!-- 画像保存ボタン（常時表示） -->
-  <button id="capture-btn" type="button" aria-label="表示中のランキングを画像として保存">
-    画像として保存
-  </button>
-    
   <div class="free">
     <h3>補足情報</h3>
-    <p>このページでは <code>prize-ranking.csv</code> を読み込み、西暦で年度を選んで絞り込みます。</p>
+    <p>各棋士の年齢は、各対象年の12月31日時点のもの。</p>
+    <p>各対象年の12月31日時点の各棋士の段位・称号を正確に調べるのは極めて困難なので当分は非表示です。</p>
   </div>
 </main>
 
@@ -88,8 +63,9 @@
 <script>
 (() => {
   const CSV_PATH = './prize-ranking.csv';
-  const V = '20250924d';
+  const V = '20250926a';
 
+  // 既存の手書きCSVパーサ（無改変）
   function parseCSV(text) {
     const rows = [];
     let row = [], col = '', q = false;
@@ -112,6 +88,7 @@
     return rows;
   }
 
+  // 既存DOM参照（無改変セレクタ）
   const section = document.querySelector('main > section:first-of-type');
   const yearSelect = section.querySelector('#year-select');
   const statusP = section.querySelector('p[role="status"]');
@@ -146,8 +123,9 @@
     tbody.appendChild(frag);
   }
 
-  function updateStatus(n, total) {
-    statusP.textContent = total ? `${n}件（全${total}件）` : `${n}件`;
+  // ステータスは「YYYY年：n件」に統一
+  function updateStatus(year, n) {
+    statusP.textContent = `${year}年：${n}件`;
   }
 
   async function main() {
@@ -161,35 +139,37 @@
     const header = rows[0];
     const data = rows.slice(1);
 
-    // 表示する列のインデックスを動的に決定
-    const displayedCols = ['順位', '棋士名', '段位・称号', '年齢', '賞金・対局料'];
+    // ② 「段位・称号」を除いた表示列（年齢はCSVにあれば表示）
+    const wanted = ['順位', '棋士名', '年齢', '賞金・対局料'];
+    const displayedCols = wanted.filter(c => header.includes(c));
     const colIndexes = displayedCols.map(c => header.indexOf(c));
-
     renderHead(displayedCols);
-    renderBody(data.map(r => colIndexes.map(i => r[i])));
-    updateStatus(data.length, rows.length - 1);
 
-    // 西暦列を探す
+    // 西暦列の取得
     const yearColIndex = header.indexOf('西暦');
     if (yearColIndex === -1) throw new Error('西暦列が見つかりません');
 
-    // 西暦一覧を抽出して<select>に追加
-    const years = [...new Set(data.map(r => r[yearColIndex]))].sort((a, b) => b - a);
-    years.forEach(y => {
-      const opt = document.createElement('option');
-      opt.value = y;
-      opt.textContent = y + '年';
-      yearSelect.appendChild(opt);
-    });
+    // ① 全年度の廃止：空optionは使わず、最新年のみ初期表示
+    const years = [...new Set(data.map(r => Number(r[yearColIndex])))]
+      .filter(Boolean)
+      .sort((a, b) => b - a);
 
-    // 年度選択イベント
+    // 既存の「全年度」optionは捨てて年だけを再描画
+    yearSelect.innerHTML = years.map(y => `<option value="${y}">${y}年</option>`).join('');
+    yearSelect.value = String(years[0]);
+
+    // 初期表示（最新年）
+    const selected = yearSelect.value;
+    const filtered = data.filter(r => String(r[yearColIndex]) === selected);
+    renderBody(filtered.map(r => colIndexes.map(i => r[i])));
+    updateStatus(selected, filtered.length);
+
+    // 年度選択イベント（空値は存在しない＝常に単年表示）
     yearSelect.addEventListener('change', () => {
-      const selected = yearSelect.value;
-      const filtered = selected
-        ? data.filter(r => r[yearColIndex] === selected)
-        : data;
-      renderBody(filtered.map(r => colIndexes.map(i => r[i])));
-      updateStatus(filtered.length, data.length);
+      const y = yearSelect.value;
+      const rowsY = data.filter(r => String(r[yearColIndex]) === y);
+      renderBody(rowsY.map(r => colIndexes.map(i => r[i])));
+      updateStatus(y, rowsY.length);
     });
   }
 
@@ -198,48 +178,6 @@
     statusP.textContent = 'エラー：' + err.message;
   });
 })();
-
-  // 「画像として保存」ボタンの処理
-  (() => {
-    const btn = document.getElementById('capture-btn');
-    if(!btn) return;
-
-    btn.addEventListener('click', async () => {
-      const tableEl = document.querySelector('main table');
-      if(!tableEl){
-        alert('テーブルが見つかりませんでした。');
-        return;
-      }
-
-      // ボタンの一時無効化＆表示更新
-      const prevLabel = btn.textContent;
-      btn.disabled = true;
-      btn.textContent = '画像生成中…';
-
-      try {
-        // 解像度と背景色を明示（スマホでの発色/透過対策）
-        const canvas = await html2canvas(tableEl, {
-          backgroundColor: '#ffffff',
-          scale: Math.min(2, window.devicePixelRatio || 1)
-        });
-
-        const year = (document.getElementById('year-select')?.value || 'all');
-        const dataURL = canvas.toDataURL('image/png');
-
-        const a = document.createElement('a');
-        a.href = dataURL;
-        a.download = `prize-ranking_${year}.png`;
-        a.click();
-      } catch(err){
-        alert('画像化に失敗しました：' + err.message);
-        console.error(err);
-      } finally {
-        btn.disabled = false;
-        btn.textContent = prevLabel;
-      }
-    });
-  })();
-
 </script>
 </body>
 </html>
