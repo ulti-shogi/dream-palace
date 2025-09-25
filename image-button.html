@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <title>将棋の殿堂｜賞金ランキング</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <link rel="stylesheet" href="style.css?v=20250925e" />
+  <link rel="stylesheet" href="style.css?v=20250925ef" />
 
     <!-- html2canvas（DOM→画像化ライブラリ） -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -78,7 +78,7 @@
   </button>
     
   <div class="free">
-    <h3>このページについて</h3>
+    <h3>当該ページについて</h3>
     <p>このページでは <code>prize-ranking.csv</code> を読み込み、西暦で年度を選んで絞り込みます。</p>
   </div>
 </main>
@@ -88,7 +88,7 @@
 <script>
 (() => {
   const CSV_PATH = './prize-ranking.csv';
-  const V = '20250925e';
+  const V = '20250925ef';
 
   function parseCSV(text) {
     const rows = [];
@@ -209,76 +209,51 @@
 
     const year = (document.getElementById('year-select')?.value || 'all');
     const prev = btn.textContent;
-    btn.disabled = true; btn.textContent = '画像生成中…';
+    btn.disabled = true;
+    btn.textContent = '画像生成中…';
 
     try {
       if (document.fonts?.ready) await document.fonts.ready;
 
-      // 1) 対象テーブルのクローンを作り、画面外に一時配置
-      const clone = target.cloneNode(true);
-      Object.assign(clone.style, {
-        position: 'fixed',
-        left: '-10000px',
-        top: '0',
-        visibility: 'hidden',
-        backgroundColor: getComputedStyle(target).backgroundColor || '#ffffff'
-      });
-      document.body.appendChild(clone);
-
-      // 2) 各セル(th,td)に計算済みスタイルをインライン適用（背景色が抜ける対策）
-      const origCells  = target.querySelectorAll('th, td');
-      const cloneCells = clone.querySelectorAll('th, td');
-      origCells.forEach((el, i) => {
-        const s = getComputedStyle(el);
-        const c = cloneCells[i];
-        c.style.backgroundColor = s.backgroundColor;
-        c.style.color           = s.color;
-        c.style.font            = s.font;             // font-family/size/weight まとめて
-        c.style.lineHeight      = s.lineHeight;
-        c.style.letterSpacing   = s.letterSpacing;
-        c.style.verticalAlign   = s.verticalAlign;
-        c.style.borderColor     = s.borderColor;
-        c.style.borderStyle     = s.borderStyle;
-        c.style.borderWidth     = s.borderWidth;
-        c.style.paddingTop      = s.paddingTop;
-        c.style.paddingBottom   = s.paddingBottom;
-        c.style.paddingLeft     = s.paddingLeft;
-        c.style.paddingRight    = s.paddingRight;
-        // 必要なら textAlign なども追加
+      // まず3倍解像度でキャプチャ
+      const rawCanvas = await html2canvas(target, {
+        backgroundColor: '#ffffff',
+        scale: 3,
+        scrollY: -window.scrollY,
+        useCORS: true,
+        onclone: (doc) => {
+          doc.querySelectorAll('th, td').forEach(el => {
+            el.style.verticalAlign = 'middle';
+            el.style.lineHeight = '1.5';      // ズレ対策で行間多め
+            el.style.paddingTop = '0.35em';
+            el.style.paddingBottom = '0.45em';
+          });
+        }
       });
 
-      // 3) html-to-image でPNGに（失敗時は html2canvas にフォールバック）
-      let dataUrl;
-      try {
-        dataUrl = await htmlToImage.toPng(clone, {
-          backgroundColor: '#ffffff',
-          pixelRatio: 2
-        });
-      } catch (e) {
-        console.warn('html-to-image 失敗 → html2canvasで再試行', e);
-        const canvas = await html2canvas(clone, { backgroundColor: '#ffffff', scale: 2 });
-        dataUrl = canvas.toDataURL('image/png');
-      } finally {
-        clone.remove();
-      }
+      // 高品質で 2倍解像度にリサイズ
+      const canvas = document.createElement('canvas');
+      canvas.width  = Math.round(rawCanvas.width  * 2 / 3);
+      canvas.height = Math.round(rawCanvas.height * 2 / 3);
+      const ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(rawCanvas, 0, 0, canvas.width, canvas.height);
 
-      // 4) タイトル合成 → ダウンロード
-      const img = new Image();
-      img.src = dataUrl;
-      await img.decode();
-
+      // タイトル合成
       const pad = 20, titleH = 48;
       const out = document.createElement('canvas');
-      out.width  = img.width + pad * 2;
-      out.height = img.height + pad * 3 + titleH;
+      out.width  = canvas.width + pad * 2;
+      out.height = canvas.height + pad * 3 + titleH;
 
-      const ctx = out.getContext('2d');
-      ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, out.width, out.height);
-      ctx.fillStyle = '#000';
-      ctx.font = 'bold 28px system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", sans-serif';
-      ctx.textBaseline = 'top';
-      ctx.fillText(`${year}年 賞金ランキング`, pad, pad);
-      ctx.drawImage(img, pad, pad * 2 + titleH);
+      const octx = out.getContext('2d');
+      octx.fillStyle = '#fff';
+      octx.fillRect(0, 0, out.width, out.height);
+      octx.fillStyle = '#000';
+      octx.font = 'bold 28px system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", sans-serif';
+      octx.textBaseline = 'top';
+      octx.fillText(`${year}年 賞金ランキング`, pad, pad);
+      octx.drawImage(canvas, pad, pad * 2 + titleH);
 
       out.toBlob((blob) => {
         const a = document.createElement('a');
@@ -291,7 +266,8 @@
       alert('画像化に失敗：' + e.message);
       console.error(e);
     } finally {
-      btn.disabled = false; btn.textContent = prev;
+      btn.disabled = false;
+      btn.textContent = prev;
     }
   });
 })();
