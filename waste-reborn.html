@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>将棋の殿堂｜賞金ランキング</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <link rel="stylesheet" href="style.css?v=20250926a" />
+  <style>
+    main > section:first-of-type {
+      display: grid;
+      grid-auto-flow: row;
+      gap: 8px;
+      padding-block: 8px;
+    }
+    main > section:first-of-type > p[role="status"] {
+      margin: 0;
+      text-align: center;
+    }
+    main > section:first-of-type > div {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    main > section:first-of-type select {
+      padding: 6px 8px;
+      min-width: 120px;
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1><a href="./index.html">将棋の殿堂</a></h1>
+</header>
+
+<main>
+  <!-- 年度選択UI -->
+  <section>
+    <div>
+      <select id="year-select">
+        <option value="">全年度</option>
+        <!-- JSで西暦を追加 -->
+      </select>
+    </div>
+
+<!-- 追加：表示モードのラジオ -->
+<fieldset id="mode-switch" aria-label="表示モード" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">
+  <label><input type="radio" name="mode" value="year" checked> 各年の賞金ランキング</label>
+  <label><input type="radio" name="mode" value="player"> 各棋士の過去の賞金額一覧</label>
+  <label><input type="radio" name="mode" value="sum10"> 各年上位10名の合計</label>
+  <label><input type="radio" name="mode" value="top10"> 歴代賞金額上位10名</label>
+</fieldset>
+
+<!-- 追加：棋士セレクト（player時だけ表示/有効化） -->
+<select id="player-select" aria-label="棋士を選択" hidden disabled></select>
+      
+    <p role="status" aria-live="polite"></p>
+  </section>
+
+  <!-- ランキング表示テーブル -->
+  <table>
+    <thead></thead>
+    <tbody></tbody>
+  </table>
+
+  <div class="free">
+    <h3>補足情報</h3>
+    <p>各棋士の年齢は、各対象年の12月31日時点のもの。</p>
+    <p>各対象年の12月31日時点の各棋士の段位・称号を正確に調べるのは極めて困難なので当分は非表示です。</p>
+  </div>
+</main>
+
+<footer>著作権情報</footer>
+
+<script>
+(() => {
+  const CSV_PATH = './prize-ranking.csv';
+  const V = '20250925-b'; // cache-bust
+
+  // 既存の手書きCSVパーサ（無改変）
+  function parseCSV(text) {
+    const rows = [];
+    let row = [], col = '', q = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (q) {
+        if (c === '"') { if (text[i + 1] === '"') { col += '"'; i++; } else { q = false; } }
+        else { col += c; }
+      } else {
+        if (c === '"') q = true;
+        else if (c === ',') { row.push(col); col = ''; }
+        else if (c === '\r') { /* skip */ }
+        else if (c === '\n') { row.push(col); rows.push(row); row = []; col = ''; }
+        else { col += c; }
+      }
+    }
+    if (col.length || row.length) { row.push(col); rows.push(row); }
+    return rows;
+  }
+
+  // 既存DOM（セレクタは不変）＋ 追記した要素
+  const section = document.querySelector('main > section:first-of-type');
+  const yearSelect   = section.querySelector('#year-select');
+  const playerSelect = section.querySelector('#player-select');   // 追記
+  const statusP      = section.querySelector('p[role="status"]');
+
+  const table = document.querySelector('main table');
+  const thead = table.querySelector('thead');
+  const tbody = table.querySelector('tbody');
+
+  const modeRadios = section.querySelectorAll('input[name="mode"]'); // 追記
+
+  // ユーティリティ
+  function renderHead(cols) {
+    thead.innerHTML = '';
+    const tr = document.createElement('tr');
+    cols.forEach(h => {
+      const th = document.createElement('th');
+      th.textContent = h;
+      th.setAttribute('scope', 'col');
+      tr.appendChild(th);
+    });
+    thead.appendChild(tr);
+  }
+  function renderBody(rows) {
+    tbody.innerHTML = '';
+    const frag = document.createDocumentFragment();
+    rows.forEach(r => {
+      const tr = document.createElement('tr');
+      r.forEach(cell => { const td = document.createElement('td'); td.textContent = cell; tr.appendChild(td); });
+      frag.appendChild(tr);
+    });
+    tbody.appendChild(frag);
+  }
+  function setStatus(text) { statusP.textContent = text; }
+  const fmtInt = n => (+n || 0).toLocaleString('ja-JP');
+
+  // 内部状態
+  let header = [], data = [], idx = {};
+  let years = [];
+  let mode = 'year';         // 'year' | 'player' | 'sum10' | 'top10'
+  let currentYear = null;    // '2024' など
+  let currentPlayer = null;  // '藤井 聡太' など
+  let nameColPos = -1;       // 現在表示の「棋士名」列位置（クリック検出用）
+
+  // 棋士別インデックス：Map<name, Array<{year, rank, amount, prizeText}>>
+  const playerIndex = new Map();
+  let playerListBuilt = false; // 棋士セレクトを一度だけ構築
+
+  // 数値化
+  const toAmount = v => {
+    if (typeof v === 'number') return v;
+    if (v == null) return 0;
+    const s = String(v).replace(/,/g, '');
+    const n = Number(s);
+    return Number.isFinite(n) ? n : 0;
+  };
+  const toRankInt = v => { const m = String(v).match(/\d+/); return m ? Number(m[0]) : NaN; };
+
+  // 初期化
+  async function main() {
+    setStatus('読み込み中…');
+    const res = await fetch(`${CSV_PATH}?v=${V}`, { cache: 'no-store' });
+    if (!res.ok) throw new Error('CSV取得に失敗: ' + res.status);
+    const rows = parseCSV(await res.text());
+    if (!rows.length) throw new Error('CSVが空です');
+
+    header = rows[0];
+    data   = rows.slice(1);
+
+    idx = {
+      year:   header.indexOf('西暦'),
+      rank:   header.indexOf('順位'),
+      name:   header.indexOf('棋士名'),
+      amount: header.indexOf('金額'),
+      age:    header.indexOf('年齢'),            // 無ければ -1
+      prizeT: header.indexOf('賞金・対局料'),
+    };
+    if ([idx.year, idx.rank, idx.name, idx.amount, idx.prizeT].some(i => i === -1)) {
+      throw new Error('必須列（西暦/順位/棋士名/金額/賞金・対局料）が不足しています');
+    }
+
+    // 年リスト（降順）— 特殊値（sum10/top10）は入れない
+    years = [...new Set(data.map(r => String(r[idx.year])))].filter(Boolean)
+            .sort((a, b) => Number(b) - Number(a));
+    yearSelect.innerHTML = years.map(y => `<option value="${y}">${y}年</option>`).join('');
+    currentYear = years[0];
+    yearSelect.value = currentYear;
+
+    // インデックス構築
+    for (const r of data) {
+      const name = r[idx.name]; if (!name) continue;
+      const entry = { year: Number(r[idx.year]), rank: r[idx.rank], amount: toAmount(r[idx.amount]), prizeText: r[idx.prizeT] };
+      if (!playerIndex.has(name)) playerIndex.set(name, []);
+      playerIndex.get(name).push(entry);
+    }
+    for (const arr of playerIndex.values()) arr.sort((a,b)=> b.year - a.year);
+
+    // 初期表示：年別
+    mode = 'year';
+    renderYear(currentYear);
+
+    // イベント：年セレクト
+    yearSelect.addEventListener('change', () => {
+      currentYear = yearSelect.value;
+      if (mode !== 'year') setMode('year');
+      renderYear(currentYear);
+    });
+
+    // イベント：棋士セレクト
+    playerSelect.addEventListener('change', () => {
+      if (mode !== 'player') setMode('player');
+      currentPlayer = playerSelect.value || null;
+      if (currentPlayer) renderPlayer(currentPlayer);
+      else setStatus('棋士を選択してください');
+    });
+
+    // イベント：ラジオ（表示モード）
+    modeRadios.forEach(r => r.addEventListener('change', () => {
+      if (!r.checked) return;
+      setMode(r.value);
+      if (mode === 'year') {
+        renderYear(currentYear);
+      } else if (mode === 'player') {
+        ensurePlayerSelect();
+        if (playerSelect.value) { currentPlayer = playerSelect.value; renderPlayer(currentPlayer); }
+        else setStatus('棋士を選択してください');
+      } else if (mode === 'sum10') {
+        renderSum10();
+      } else if (mode === 'top10') {
+        renderTop10();
+      }
+    }));
+
+    // 既存：表内の「棋士名」クリックで player へ遷移
+    tbody.addEventListener('click', (e) => {
+      const cell = e.target.closest('td'); if (!cell) return;
+      if (nameColPos === -1) return; // このビューに棋士名列が無い
+      const tr = cell.parentElement;
+      const cells = Array.from(tr.children);
+      const clickedIsName = cells.indexOf(cell) === nameColPos;
+      if (!clickedIsName) return;
+
+      const name = cells[nameColPos].textContent.trim();
+      if (!name) return;
+
+      setMode('player');
+      ensurePlayerSelect();
+      if (!playerSelect.querySelector(`option[value="${name}"]`)) return; // セーフガード
+      playerSelect.value = name;
+      currentPlayer = name;
+      renderPlayer(name);
+    });
+  }
+
+  // 表示モードのUI状態をまとめて切替
+  function setMode(next) {
+    mode = next;
+    // ラジオ同期
+    modeRadios.forEach(r => { r.checked = (r.value === next); });
+    // セレクト可視/不可視
+    if (next === 'year') {
+      yearSelect.disabled = false; yearSelect.hidden = false;
+      playerSelect.disabled = true; playerSelect.hidden = true;
+    } else if (next === 'player') {
+      yearSelect.disabled = true; yearSelect.hidden = true;
+      playerSelect.disabled = false; playerSelect.hidden = false;
+    } else { // sum10 / top10
+      yearSelect.disabled = true; yearSelect.hidden = true;
+      playerSelect.disabled = true; playerSelect.hidden = true;
+    }
+  }
+
+  // 棋士セレクトを一度だけ構築
+  function ensurePlayerSelect() {
+    if (playerListBuilt) return;
+    const names = Array.from(playerIndex.keys()).sort((a,b)=> a.localeCompare(b,'ja'));
+    playerSelect.innerHTML = `<option value="" selected disabled>棋士を選択</option>` +
+                             names.map(n => `<option value="${n}">${n}</option>`).join('');
+    playerListBuilt = true;
+  }
+
+  // ===== 各ビュー描画 =====
+
+  // 年別（段位・称号は表示しない）
+  function renderYear(yearStr) {
+    const cols = ['順位', '棋士名']; if (idx.age !== -1) cols.push('年齢'); cols.push('賞金・対局料');
+    renderHead(cols);
+    nameColPos = cols.indexOf('棋士名');
+
+    const rows = data.filter(r => String(r[idx.year]) === String(yearStr));
+    const out = rows.map(r => {
+      const arr = [ r[idx.rank], r[idx.name] ];
+      if (idx.age !== -1) arr.push(r[idx.age]);
+      arr.push(r[idx.prizeT]);
+      return arr;
+    });
+    renderBody(out);
+    setStatus(`${yearStr}年：${out.length}件`);
+  }
+
+  // ③ 棋士別：西暦 / 順位 / 賞金・対局料
+  function renderPlayer(name) {
+    renderHead(['西暦','順位','賞金・対局料']);
+    nameColPos = -1; // このビューに「棋士名」列は無い
+
+    const list = playerIndex.get(name) || [];
+    const out = list.map(x => [ String(x.year), x.rank, x.prizeText ]);
+    renderBody(out);
+
+    if (list.length) {
+      const minY = list[list.length - 1].year, maxY = list[0].year;
+      setStatus(`${name}：${minY}〜${maxY}年、${list.length}件`);
+    } else {
+      setStatus(`${name}：0件`);
+    }
+  }
+
+  // ④ 年別Top10合計：西暦 / 上位10名 合計（計算は金額列）
+  function renderSum10() {
+    renderHead(['西暦','上位10名 合計']);
+    nameColPos = -1;
+
+    const byYear = new Map(); for (const y of years) byYear.set(y, 0);
+
+    for (const r of data) {
+      const y = String(r[idx.year]); if (!byYear.has(y)) continue;
+      const rankN = toRankInt(r[idx.rank]);
+      if (rankN >= 1 && rankN <= 10) {
+        byYear.set(y, byYear.get(y) + toAmount(r[idx.amount]));
+      }
+    }
+
+    const out = Array.from(byYear.entries())
+      .sort((a,b)=> Number(b[0]) - Number(a[0])) // 年降順
+      .map(([y,sum]) => [ y, fmtInt(sum) ]);
+
+    renderBody(out);
+    setStatus(`年別Top10合計：${out.length}年`);
+  }
+
+  // ⑤ 歴代Top10：西暦 / 棋士名 / （年齢） / 賞金・対局料
+  function renderTop10() {
+    const cols = ['西暦','棋士名']; if (idx.age !== -1) cols.push('年齢'); cols.push('賞金・対局料');
+    renderHead(cols);
+    nameColPos = cols.indexOf('棋士名');
+
+    const top = data.map(r => ({
+      year: String(r[idx.year]),
+      name: r[idx.name],
+      age:  idx.age !== -1 ? r[idx.age] : null,
+      prizeT: r[idx.prizeT],
+      amount: toAmount(r[idx.amount]),
+    }))
+    .sort((a,b)=> b.amount - a.amount)
+    .slice(0, 10);
+
+    const out = top.map(x => {
+      const arr = [ x.year, x.name ];
+      if (idx.age !== -1) arr.push(x.age);
+      arr.push(x.prizeT);
+      return arr;
+    });
+
+    renderBody(out);
+    setStatus('歴代Top10：10件');
+  }
+
+  // 実行
+  main().catch(err => { console.error(err); setStatus('エラー：' + err.message); });
+})();
+</script>
+</body>
+</html>
