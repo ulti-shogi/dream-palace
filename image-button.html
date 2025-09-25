@@ -4,11 +4,11 @@
   <meta charset="UTF-8" />
   <title>将棋の殿堂｜賞金ランキング</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <link rel="stylesheet" href="style.css?v=20250925c" />
+  <link rel="stylesheet" href="style.css?v=20250925d" />
 
     <!-- html2canvas（DOM→画像化ライブラリ） -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-
+<script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.min.js"></script>
 
   <style>
     main > section:first-of-type {
@@ -83,12 +83,12 @@
   </div>
 </main>
 
-<footer>将棋の殿堂</footer>
+<footer>将棋の殿堂（データパレス）</footer>
 
 <script>
 (() => {
   const CSV_PATH = './prize-ranking.csv';
-  const V = '20250925c';
+  const V = '20250925d';
 
   function parseCSV(text) {
     const rows = [];
@@ -205,7 +205,7 @@
 
   btn.addEventListener('click', async () => {
     const target = document.querySelector('main table');
-    if (!target) { alert('テーブルが見つかりませんでした。'); return; }
+    if (!target) return alert('テーブルが見つかりません');
 
     const year = (document.getElementById('year-select')?.value || 'all');
     const prev = btn.textContent;
@@ -214,54 +214,35 @@
     try {
       if (document.fonts?.ready) await document.fonts.ready;
 
-      // oversample(=3) で取り、あとで高品質ダウンサンプル → ベースラインの“滲み/ズレ”を軽減
-      const CAP_SCALE = 3;
-
-      const baseCanvas = await html2canvas(target, {
-        backgroundColor: '#ffffff',
-        scale: CAP_SCALE,
-        scrollY: -window.scrollY,
-        useCORS: true,
-        onclone: (doc) => {
-          // キャプチャ時だけ行間と縦中央寄せを強化（実ページは不変）
-          doc.querySelectorAll('th, td').forEach(el => {
-            el.style.verticalAlign   = 'middle'; // baseline→middle
-            el.style.lineHeight      = '1.45';   // 少し広め
-            el.style.paddingTop      = '0.36em'; // 上下非対称で“上擦り”を打消し
-            el.style.paddingBottom   = '0.46em';
-            el.style.letterSpacing   = '0';      // 字詰めの誤差を抑制
-            el.style.webkitFontSmoothing = 'antialiased';
-            el.style.textRendering   = 'optimizeLegibility';
-          });
-        }
-      });
-
-      // 高品質ダウンサンプル (3 → 2)
-      const OUT_SCALE = 2;
-      const dCanvas = document.createElement('canvas');
-      dCanvas.width  = Math.round(baseCanvas.width  * OUT_SCALE / CAP_SCALE);
-      dCanvas.height = Math.round(baseCanvas.height * OUT_SCALE / CAP_SCALE);
-      {
-        const dctx = dCanvas.getContext('2d');
-        dctx.imageSmoothingEnabled = true;
-        dctx.imageSmoothingQuality = 'high';
-        dctx.drawImage(baseCanvas, 0, 0, dCanvas.width, dCanvas.height);
+      // html-to-image を優先利用
+      let dataUrl;
+      try {
+        dataUrl = await htmlToImage.toPng(target, {
+          backgroundColor: '#ffffff',
+          pixelRatio: 2 // 高解像度
+        });
+      } catch (e) {
+        console.warn('html-to-image 失敗 → html2canvasで再試行', e);
+        const canvas = await html2canvas(target, { backgroundColor: '#ffffff', scale: 2 });
+        dataUrl = canvas.toDataURL('image/png');
       }
 
       // タイトル合成
-      const pad = 20, titleH = 48;
-      const title = `${year}年 賞金ランキング`;
-      const out = document.createElement('canvas');
-      out.width  = dCanvas.width + pad * 2;
-      out.height = dCanvas.height + pad * 3 + titleH;
+      const img = new Image();
+      img.src = dataUrl;
+      await img.decode();
 
+      const pad = 20, titleH = 48;
+      const out = document.createElement('canvas');
+      out.width  = img.width + pad * 2;
+      out.height = img.height + pad * 3 + titleH;
       const ctx = out.getContext('2d');
       ctx.fillStyle = '#fff'; ctx.fillRect(0,0,out.width,out.height);
       ctx.fillStyle = '#000';
+      ctx.font = 'bold 28px system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans JP",sans-serif';
       ctx.textBaseline = 'top';
-      ctx.font = 'bold 28px system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", sans-serif';
-      ctx.fillText(title, pad, pad);
-      ctx.drawImage(dCanvas, pad, pad * 2 + titleH);
+      ctx.fillText(`${year}年 賞金ランキング`, pad, pad);
+      ctx.drawImage(img, pad, pad * 2 + titleH);
 
       out.toBlob((blob) => {
         const a = document.createElement('a');
@@ -271,7 +252,7 @@
         URL.revokeObjectURL(a.href);
       }, 'image/png');
     } catch (e) {
-      alert('画像化に失敗しました：' + e.message);
+      alert('画像化に失敗：' + e.message);
       console.error(e);
     } finally {
       btn.disabled = false; btn.textContent = prev;
