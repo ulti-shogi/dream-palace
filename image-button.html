@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <title>将棋の殿堂｜賞金ランキング</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <link rel="stylesheet" href="style.css?v=20250925b" />
+  <link rel="stylesheet" href="style.css?v=20250925c" />
 
     <!-- html2canvas（DOM→画像化ライブラリ） -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -83,12 +83,12 @@
   </div>
 </main>
 
-<footer>著作権情報</footer>
+<footer>将棋の殿堂</footer>
 
 <script>
 (() => {
   const CSV_PATH = './prize-ranking.csv';
-  const V = '20250925b';
+  const V = '20250925c';
 
   function parseCSV(text) {
     const rows = [];
@@ -212,42 +212,56 @@
     btn.disabled = true; btn.textContent = '画像生成中…';
 
     try {
-      // ① Webフォントの読み込み完了を待つ（ズレ防止）
-      if (document.fonts?.ready) { await document.fonts.ready; }
+      if (document.fonts?.ready) await document.fonts.ready;
 
-      // ② スケールは「整数」に固定（小数DPR由来のズレ回避）
-      const SCALE = 2; // 端末が重くなければ 3 でもOK
+      // oversample(=3) で取り、あとで高品質ダウンサンプル → ベースラインの“滲み/ズレ”を軽減
+      const CAP_SCALE = 3;
 
-      // ③ キャプチャ時だけ line-height/padding を少し厚めに（見た目は変えない）
       const baseCanvas = await html2canvas(target, {
         backgroundColor: '#ffffff',
-        scale: SCALE,
+        scale: CAP_SCALE,
         scrollY: -window.scrollY,
         useCORS: true,
         onclone: (doc) => {
-          const table = doc.querySelector('main table');
-          if (!table) return;
+          // キャプチャ時だけ行間と縦中央寄せを強化（実ページは不変）
           doc.querySelectorAll('th, td').forEach(el => {
-            el.style.lineHeight = '1.35';      // 行間を少し広げる
-            el.style.paddingTop = '0.3em';     // 上の余白を少し足す
-            el.style.paddingBottom = '0.3em';  // 下もバランス取り
+            el.style.verticalAlign   = 'middle'; // baseline→middle
+            el.style.lineHeight      = '1.45';   // 少し広め
+            el.style.paddingTop      = '0.36em'; // 上下非対称で“上擦り”を打消し
+            el.style.paddingBottom   = '0.46em';
+            el.style.letterSpacing   = '0';      // 字詰めの誤差を抑制
+            el.style.webkitFontSmoothing = 'antialiased';
+            el.style.textRendering   = 'optimizeLegibility';
           });
         }
       });
 
-      // 以降は今のままでOK（タイトル合成→保存）
+      // 高品質ダウンサンプル (3 → 2)
+      const OUT_SCALE = 2;
+      const dCanvas = document.createElement('canvas');
+      dCanvas.width  = Math.round(baseCanvas.width  * OUT_SCALE / CAP_SCALE);
+      dCanvas.height = Math.round(baseCanvas.height * OUT_SCALE / CAP_SCALE);
+      {
+        const dctx = dCanvas.getContext('2d');
+        dctx.imageSmoothingEnabled = true;
+        dctx.imageSmoothingQuality = 'high';
+        dctx.drawImage(baseCanvas, 0, 0, dCanvas.width, dCanvas.height);
+      }
+
+      // タイトル合成
       const pad = 20, titleH = 48;
       const title = `${year}年 賞金ランキング`;
       const out = document.createElement('canvas');
-      out.width  = baseCanvas.width + pad * 2;
-      out.height = baseCanvas.height + pad * 3 + titleH;
+      out.width  = dCanvas.width + pad * 2;
+      out.height = dCanvas.height + pad * 3 + titleH;
+
       const ctx = out.getContext('2d');
       ctx.fillStyle = '#fff'; ctx.fillRect(0,0,out.width,out.height);
       ctx.fillStyle = '#000';
-      ctx.font = 'bold 28px system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", sans-serif';
       ctx.textBaseline = 'top';
+      ctx.font = 'bold 28px system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", sans-serif';
       ctx.fillText(title, pad, pad);
-      ctx.drawImage(baseCanvas, pad, pad * 2 + titleH);
+      ctx.drawImage(dCanvas, pad, pad * 2 + titleH);
 
       out.toBlob((blob) => {
         const a = document.createElement('a');
