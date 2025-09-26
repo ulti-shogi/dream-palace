@@ -5,11 +5,11 @@
 body {
   margin: 0 auto;
   padding: 8px; /* ← 元は14px。スマホでも詰めて表示 */
-  background-color: #F6E7B2;
+  
 }
 
 header, main, footer {
-  background-color: #F6E7B2;
+  
 }
 
 h1 { text-align: center; }
@@ -85,14 +85,14 @@ section h1, section h2, section h3, section h4, section h5, section h6,
 /* 角丸をやめて四角に、背景を木肌色に */
 section, .free {
   border-radius: 0;
-  border: 2px solid #000;        /* セクション枠の太さを明示 */
-  background-color: #F3D38C;     /* 将棋盤っぽい薄い木肌色 */
+  border: 1px solid #000;        /* セクション枠の太さを明示 */
+  background-color: #F6E7B2;     /* 将棋盤っぽい薄い木肌色 */
 }
 
 /* table も同じ木肌色＆枠線太さを section と揃える */
 table {
-  background-color: #F3D38C;
-  border: 2px solid #000;        /* ← セクションと同じ太さに統一 */
+  background-color: #F6E7B2;
+  border: 1px solid #000;        /* ← セクションと同じ太さに統一 */
 }
 
 /* 内側のグリッド線まで同じ太さにしたい場合は有効（不要ならこのブロックは削除可） */
