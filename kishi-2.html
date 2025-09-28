@@ -60,56 +60,6 @@ function parseCSV(text) {
   });
 }
 
-function toDate(str) {
-  return str ? new Date(str) : null;
-}
-
-function calcAge(birth, death = null) {
-  if (!birth) return null;
-  const b = toDate(birth);
-  const base = death ? toDate(death) : new Date();
-  let y = base.getFullYear() - b.getFullYear();
-  let m = base.getMonth() - b.getMonth();
-  let d = base.getDate() - b.getDate();
-  if (d < 0) {
-    m--;
-    d += new Date(base.getFullYear(), base.getMonth(), 0).getDate();
-  }
-  if (m < 0) {
-    y--;
-    m += 12;
-  }
-  return `${y}歳${m}ヶ月${d}日`;
-}
-
-function calcAgeAt4Dan(birth, pro4) {
-  if (!birth || !pro4) return null;
-  const b = toDate(birth);
-  const p = toDate(pro4);
-  let y = p.getFullYear() - b.getFullYear();
-  let m = p.getMonth() - b.getMonth();
-  let d = p.getDate() - b.getDate();
-  if (d < 0) {
-    m--;
-    d += new Date(p.getFullYear(), p.getMonth(), 0).getDate();
-  }
-  if (m < 0) {
-    y--;
-    m += 12;
-  }
-  return `${y}歳${m}ヶ月${d}日`;
-}
-
-// 小数年で四段昇段年齢を計算（ソート用）
-function calcAgeAt4DanYearFrac(birth, pro4) {
-  if (!birth || !pro4) return Number.POSITIVE_INFINITY;
-  const b = toDate(birth);
-  const p = toDate(pro4);
-  const diffMs = p - b;
-  const days = diffMs / (1000 * 60 * 60 * 24);
-  return days / 365.2425; // グレゴリオ暦平均年長
-}
-
 function renderCards(data) {
   const container = document.querySelector("div.card");
   container.innerHTML = "";
@@ -122,9 +72,9 @@ function renderCards(data) {
       <p>区分：${row["区分"] || "—"}</p>
       <p>棋士番号：${row["棋士番号"] || "—"}</p>
       <p>生年月日：${row["生年月日"] || "—"}</p>
-      <p>${row["逝去日"] ? "享年" : "現在年齢"}：${calcAge(row["生年月日"], row["逝去日"]) || "—"}</p>
+      <p>${row["逝去日"] ? "享年" : "現在年齢"}：${row["現在年齢"] || "—"}</p>
       <p>四段昇段日：${row["四段昇段日"] || "—"}</p>
-      <p>四段昇段時年齢：${calcAgeAt4Dan(row["生年月日"], row["四段昇段日"]) || "—"}</p>
+      <p>四段昇段時年齢：${row["四段昇段年齢"] || "—"}</p>
     `;
     container.appendChild(entry);
   });
@@ -134,7 +84,7 @@ function sortData(data, key) {
   if (key === "kishiNo") {
     data.sort((a, b) => Number(a["棋士番号"]) - Number(b["棋士番号"]));
   } else if (key === "ageAt4dan") {
-    data.sort((a, b) => a._ageAt4danYear - b._ageAt4danYear || Number(a["席次"]) - Number(b["席次"]));
+    data.sort((a, b) => Number(a["四段昇段所要日数"]) - Number(b["四段昇段所要日数"]) || Number(a["席次"]) - Number(b["席次"]));
   } else {
     data.sort((a, b) => Number(a["席次"]) - Number(b["席次"]));
   }
@@ -147,11 +97,6 @@ function filterByKubun(data) {
 
 async function init() {
   let data = await loadCSV(CSV_URL);
-
-  // ソート用の四段昇段年齢（小数年）を追加
-  data.forEach(row => {
-    row._ageAt4danYear = calcAgeAt4DanYearFrac(row["生年月日"], row["四段昇段日"]);
-  });
 
   // 初期表示：席次順
   sortData(data, "sekiji");
