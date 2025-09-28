@@ -75,6 +75,10 @@ div.card .entry[data-status="現役"] {
         <option value="ageAt4dan">四段昇段時年齢（若い順）</option>
       </select>
     </div>
+    <div id="sortOrderControls">
+  <label><input type="radio" name="sortOrder" value="asc" checked> 昇順</label>
+  <label><input type="radio" name="sortOrder" value="desc"> 降順</label>
+</div>
   </div>
 </section>
 
@@ -145,7 +149,7 @@ function renderCards(data) {
   });
 }
 
-function sortData(data, key) {
+function sortData(data, key, order = "asc") {
   if (key === "kishiNo") {
     data.sort((a, b) => Number(a["棋士番号"]) - Number(b["棋士番号"]));
   } else if (key === "ageAt4dan") {
@@ -158,6 +162,9 @@ function sortData(data, key) {
   } else {
     data.sort((a, b) => Number(a["席次"]) - Number(b["席次"]));
   }
+
+  // 降順指定なら逆順
+  if (order === "desc") data.reverse();
 }
 
 function filterByKubun(data) {
@@ -165,18 +172,32 @@ function filterByKubun(data) {
   return data.filter(row => checked.includes(row["区分"]));
 }
 
+function getSelectedOrder() {
+  const checked = document.querySelector('input[name="sortOrder"]:checked');
+  return checked ? checked.value : "asc";
+}
+
 async function init() {
   let data = await loadCSV(CSV_URL);
 
-  // 初期表示：席次順
-  sortData(data, "sekiji");
+  // 初期表示：席次順・昇順
+  sortData(data, "sekiji", getSelectedOrder());
   renderCards(data);
 
   // 並び替えイベント
   document.querySelector("#sortSelect").addEventListener("change", e => {
     const key = e.target.value;
-    sortData(data, key);
+    sortData(data, key, getSelectedOrder());
     renderCards(filterByKubun(data));
+  });
+
+  // 昇順・降順切替イベント
+  document.querySelectorAll('input[name="sortOrder"]').forEach(rb => {
+    rb.addEventListener("change", () => {
+      const key = document.querySelector("#sortSelect").value;
+      sortData(data, key, getSelectedOrder());
+      renderCards(filterByKubun(data));
+    });
   });
 
   // 区分フィルタイベント
