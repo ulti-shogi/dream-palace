@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <title>将棋の殿堂｜棋士プロフィール検索</title>
+  <!-- 既存サイトの共通スタイル（任意） -->
+  <link rel="stylesheet" href="style.css" />
+
+  <style>
+  /* ===== スマホ前提アダプティブ：カードUI最小スタイル ===== */
+  :root {
+    --bg: #fff;
+    --fg: #111;
+    --muted: #666;
+    --line: #e6e6e6;
+    --accent: #0d6efd;
+    --badge: #111;
+    --badge-fg: #fff;
+  }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans JP", "Hiragino Kaku Gothic ProN", Meiryo, Arial, sans-serif;
+    font-size: 16px;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* 検索UI（section） */
+  #controls {
+    padding: 12px 12px 8px;
+    border-bottom: 1px solid var(--line);
+    background: var(--bg);
+    position: sticky;
+    top: 0;
+    z-index: 5;
+  }
+  #controls .row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  #controls .row.full { grid-template-columns: 1fr; }
+  #controls label {
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+  #controls input[type="text"],
+  #controls select {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: #fafafa;
+    font-size: 15px;
+  }
+  #controls .chips {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  #controls .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: #fafafa;
+    font-size: 13px;
+  }
+  #controls .chip input { transform: scale(1.1); }
+
+  /* カード一覧 */
+  #cards {
+    padding: 10px 10px 80px; /* 底に余白（無限スクロール/フッタ余白用） */
+  }
+  .card {
+    position: relative;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 12px 12px 12px 14px;
+    background: var(--bg);
+    box-shadow: 0 1px 0 rgba(0,0,0,0.04);
+    margin-bottom: 10px;
+  }
+  .badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background: var(--badge);
+    color: var(--badge-fg);
+    font-weight: 700;
+    font-size: 12px;
+    line-height: 1;
+    padding: 6px 8px;
+    border-radius: 999px;
+    min-width: 36px;
+    text-align: center;
+  }
+  .card-header {
+    padding-left: 52px; /* バッジの分だけ内側に */
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: 6px;
+  }
+  .name-line {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .name {
+    font-size: 18px;
+    font-weight: 700;
+  }
+  .title-rank {
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .meta {
+    padding-left: 52px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 14px;
+    font-size: 13px;
+  }
+  .meta .item {
+    display: flex;
+    gap: 6px;
+  }
+  .label {
+    color: var(--muted);
+    min-width: 5em;
+  }
+  .value {
+    color: var(--fg);
+    font-variant-numeric: tabular-nums;
+  }
+  .empty { color: #bbb; }
+
+  /* フッタ（件数表示など） */
+  #footerBar {
+    position: sticky;
+    bottom: 0;
+    background: #fff;
+    border-top: 1px solid var(--line);
+    padding: 8px 12px;
+    font-size: 13px;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  </style>
+</head>
+<body>
+
+  <!-- 検索／フィルタ／並び替え -->
+  <section id="controls">
+    <div class="row full">
+      <div>
+        <label for="q">氏名検索</label>
+        <input type="text" id="q" placeholder="例：藤井、羽生、佐藤…">
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label for="filterRank">段位フィルタ</label>
+        <select id="filterRank">
+          <option value="">すべて</option>
+          <option value="九段">九段</option>
+          <option value="八段">八段</option>
+          <option value="七段">七段</option>
+          <option value="六段">六段</option>
+          <option value="五段">五段</option>
+          <option value="四段">四段</option>
+        </select>
+      </div>
+      <div>
+        <label for="filterTitle">称号フィルタ</label>
+        <select id="filterTitle">
+          <option value="">すべて</option>
+          <!-- CSV読み込み後に動的にユニークリストを追加 -->
+        </select>
+      </div>
+    </div>
+    <div class="row full">
+      <div class="chips">
+        <label class="chip"><input type="checkbox" class="cb-kubun" value="現役" checked> 現役</label>
+        <label class="chip"><input type="checkbox" class="cb-kubun" value="引退" checked> 引退</label>
+        <label class="chip"><input type="checkbox" class="cb-kubun" value="物故"> 物故</label>
+        <label class="chip"><input type="checkbox" class="cb-kubun" value="退会"> 退会</label>
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label for="sortBy">並び替え</label>
+        <select id="sortBy">
+          <option value="sekiji">席次（既定）</option>
+          <option value="kishiNo">棋士番号順</option>
+          <option value="ageNow">現在年齢の若い順</option>
+          <option value="ageAt4dan">四段昇段時年齢の若い順</option>
+        </select>
+      </div>
+      <div>
+        <label for="limit">表示件数</label>
+        <select id="limit">
+          <option value="50">50件</option>
+          <option value="100">100件</option>
+          <option value="200">200件</option>
+          <option value="0">すべて</option>
+        </select>
+      </div>
+    </div>
+  </section>
+
+  <!-- カード表示領域 -->
+  <section id="cards" aria-live="polite"></section>
+
+  <div id="footerBar">
+    <span id="countLabel">— 件</span>
+    <span id="noteLabel">席次昇順が既定・称号/段位はフィルタ専用</span>
+  </div>
+
+  <script>
+  /* ===== 設定 ===== */
+  const CSV_URL = "kishi.csv"; // 同階層に置いたCSV名に合わせて変更可
+  const JPN_TZ = "+09:00";
+
+  /* ===== ユーティリティ ===== */
+  const byId = (id) => document.getElementById(id);
+  const qSel = (sel, root=document) => root.querySelector(sel);
+  const qAll = (sel, root=document) => Array.from(root.querySelectorAll(sel));
+
+  function parseJSTDate(yyyy_mm_dd) {
+    if (!yyyy_mm_dd) return null;
+    // 'YYYY-MM-DDT00:00:00+09:00' としてパース（端末TZ差でズレない）
+    return new Date(yyyy_mm_dd + "T00:00:00" + JPN_TZ);
+  }
+
+  function formatYmd(d) {
+    if (!d) return "—";
+    const y = d.getFullYear();
+    const m = (d.getMonth()+1).toString().padStart(2,"0");
+    const day = d.getDate().toString().padStart(2,"0");
+    return `${y}-${m}-${day}`;
+  }
+
+  function diffYMD(from, to) {
+    // 年月日差（借位調整）
+    if (!from || !to) return null;
+    let y = to.getFullYear() - from.getFullYear();
+    let m = to.getMonth() - from.getMonth();
+    let d = to.getDate() - from.getDate();
+
+    if (d < 0) {
+      m -= 1;
+      const prevMonthDays = new Date(to.getFullYear(), to.getMonth(), 0).getDate();
+      d += prevMonthDays;
+    }
+    if (m < 0) {
+      y -= 1;
+      m += 12;
+    }
+    return { years: y, months: m, days: d };
+  }
+
+  function formatAgeYMD(obj) {
+    if (!obj) return "—";
+    return `${obj.years}歳${obj.months}ヶ月${obj.days}日`;
+  }
+
+  function yearFraction(from, to) {
+    if (!from || !to) return Number.POSITIVE_INFINITY;
+    const ms = to - from;
+    const days = ms / (1000*60*60*24);
+    return days / 365.2425; // グレゴリオ暦平均年長
+  }
+
+  function sanitize(s){ return (s ?? "").toString().trim(); }
+
+  /* ===== CSV簡易パーサ（カンマ基準。フィールド内にカンマがない前提）===== */
+  function parseCSV(text) {
+    const lines = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n").filter(l => l.trim() !== "");
+    if (lines.length === 0) return [];
+    const header = lines[0].split(",");
+    return lines.slice(1).map(line => {
+      const cols = line.split(",");
+      const obj = {};
+      header.forEach((h, i) => obj[h.trim()] = (cols[i] ?? "").trim());
+      return obj;
+    });
+  }
+
+  /* ===== データ保持 ===== */
+  let RAW = [];     // 生データ（CSV）
+  let VIEW = [];    // 描画用（フィルタ/並び替え後）
+
+  /* ===== 読み込み ===== */
+  async function loadCSV() {
+    const res = await fetch(CSV_URL, { cache: "no-cache" });
+    const text = await res.text();
+    RAW = parseCSV(text).map(row => normalizeRow(row));
+    populateTitleFilter(RAW);
+    applyPipeline(); // 既定表示
+  }
+
+  function normalizeRow(row) {
+    // 列名のゆれ対応（氏名/棋士名）
+    const name = sanitize(row["氏名"] ?? row["棋士名"]);
+    const kubun = sanitize(row["区分"]);
+    const rank = sanitize(row["段位"]);
+    const title = sanitize(row["称号"]);
+    const no   = Number(sanitize(row["棋士番号"])) || 0;
+    const sekiji = Number(sanitize(row["席次"])) || 999999;
+
+    const birth = parseJSTDate(sanitize(row["生年月日"]));
+    const died  = parseJSTDate(sanitize(row["逝去日"]));
+    const pro4  = parseJSTDate(sanitize(row["四段昇段日"]));
+
+    // 年齢計算：現在は生存なら今日、逝去なら逝去日基準
+    const todayJST = new Date(new Date().toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" }));
+    const nowBase = died || todayJST;
+    const ageNowYMD = birth ? diffYMD(birth, nowBase) : null;
+    const ageNowYears = birth ? Math.floor(yearFraction(birth, nowBase)) : Number.POSITIVE_INFINITY;
+
+    const age4YMD = (birth && pro4) ? diffYMD(birth, pro4) : null;
+    const age4YearsFrac = (birth && pro4) ? yearFraction(birth, pro4) : Number.POSITIVE_INFINITY;
+
+    return {
+      原: row,
+      氏名: name,
+      区分: kubun,
+      段位: rank,
+      称号: title,
+      棋士番号: no,
+      席次: sekiji,
+      生年月日: birth,
+      逝去日: died,
+      四段昇段日: pro4,
+      現在年齢_YMD: ageNowYMD,
+      現在年齢_年: ageNowYears,
+      四段昇段時年齢_YMD: age4YMD,
+      四段昇段時年齢_年: age4YearsFrac
+    };
+  }
+
+  /* ===== フィルタ＆並び替え ===== */
+  function applyPipeline() {
+    const q = byId("q").value.trim();
+    const rank = byId("filterRank").value;
+    const title = byId("filterTitle").value;
+    const allowedKubun = new Set(qAll(".cb-kubun:checked").map(cb => cb.value));
+
+    let arr = RAW.filter(rec => {
+      if (allowedKubun.size && !allowedKubun.has(rec.区分)) return false;
+      if (rank && rec.段位 !== rank) return false;
+      if (title && rec.称号.indexOf(title) === -1) return false;
+      if (q) {
+        // シンプルな氏名部分一致（ひらがな/カナ等の正規化は今は行わない）
+        if (rec.氏名.indexOf(q) === -1) return false;
+      }
+      return true;
+    });
+
+    // 並び替え
+    const sortKey = byId("sortBy").value;
+    switch (sortKey) {
+      case "kishiNo":
+        arr.sort((a, b) => a.棋士番号 - b.棋士番号);
+        break;
+      case "ageNow":
+        arr.sort((a, b) => a.現在年齢_年 - b.現在年齢_年 || a.席次 - b.席次);
+        break;
+      case "ageAt4dan":
+        arr.sort((a, b) => a.四段昇段時年齢_年 - b.四段昇段時年齢_年 || a.席次 - b.席次);
+        break;
+      case "sekiji":
+      default:
+        arr.sort((a, b) => a.席次 - b.席次);
+        break;
+    }
+
+    // 件数制限
+    const lim = Number(byId("limit").value);
+    VIEW = (lim && lim > 0) ? arr.slice(0, lim) : arr;
+    renderCards(VIEW, arr.length);
+  }
+
+  function populateTitleFilter(data) {
+    const select = byId("filterTitle");
+    // ユニーク抽出（空は除外）
+    const set = new Set();
+    data.forEach(r => {
+      const v = sanitize(r.称号);
+      if (!v) return;
+      // 複数称号を区切っていれば分解（「・」「／」「,」など想定）
+      const parts = v.split(/[・/／,，、\s]+/).map(s => s.trim()).filter(Boolean);
+      parts.forEach(p => set.add(p));
+    });
+    // ソートして追加
+    Array.from(set).sort().forEach(t => {
+      const opt = document.createElement("option");
+      opt.value = t; opt.textContent = t;
+      select.appendChild(opt);
+    });
+  }
+
+  /* ===== 描画 ===== */
+  function renderCards(list, totalCount) {
+    const wrap = byId("cards");
+    wrap.innerHTML = "";
+
+    list.forEach(rec => {
+      const card = document.createElement("div");
+      card.className = "card";
+      // バッジ（席次）
+      const badge = document.createElement("div");
+      badge.className = "badge";
+      badge.textContent = `#${rec.席次}`;
+      card.appendChild(badge);
+
+      const header = document.createElement("div");
+      header.className = "card-header";
+
+      const nameLine = document.createElement("div");
+      nameLine.className = "name-line";
+
+      const nameEl = document.createElement("div");
+      nameEl.className = "name";
+      nameEl.textContent = rec.氏名 || "（氏名不明）";
+
+      const trEl = document.createElement("div");
+      trEl.className = "title-rank";
+      const trText = sanitize(rec.称号) || sanitize(rec.段位) || "—";
+      trEl.textContent = trText;
+
+      nameLine.appendChild(nameEl);
+      nameLine.appendChild(trEl);
+      header.appendChild(nameLine);
+
+      const meta = document.createElement("div");
+      meta.className = "meta";
+
+      // 行ユーティリティ
+      const addItem = (label, value, isEmpty=false) => {
+        const it = document.createElement("div");
+        it.className = "item";
+        const lab = document.createElement("div");
+        lab.className = "label"; lab.textContent = label;
+        const val = document.createElement("div");
+        val.className = "value";
+        if (isEmpty) val.classList.add("empty");
+        val.textContent = value;
+        it.appendChild(lab); it.appendChild(val);
+        meta.appendChild(it);
+      };
+
+      addItem("区分", rec.区分 || "—", !rec.区分);
+      addItem("棋士番号", rec.棋士番号 ? String(rec.棋士番号) : "—", !rec.棋士番号);
+      addItem("生年月日", formatYmd(rec.生年月日), !rec.生年月日);
+
+      // 現在年齢 or 享年
+      const ageNowLabel = rec.逝去日 ? "享年" : "現在年齢";
+      const ageNowText = rec.現在年齢_YMD ? formatAgeYMD(rec.現在年齢_YMD) : "—";
+      addItem(ageNowLabel, ageNowText, !rec.現在年齢_YMD);
+
+      addItem("四段昇段日", formatYmd(rec.四段昇段日), !rec.四段昇段日);
+      const age4Text = rec.四段昇段時年齢_YMD ? formatAgeYMD(rec.四段昇段時年齢_YMD) : "—";
+      addItem("四段昇段年齢", age4Text, !rec.四段昇段時年齢_YMD);
+
+      card.appendChild(header);
+      card.appendChild(meta);
+      wrap.appendChild(card);
+    });
+
+    // 件数表示
+    byId("countLabel").textContent = `${list.length} / ${totalCount ?? list.length} 件`;
+  }
+
+  /* ===== イベント ===== */
+  function debounce(fn, wait=300) {
+    let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), wait); };
+  }
+
+  function wireEvents() {
+    byId("q").addEventListener("input", debounce(applyPipeline, 250));
+    byId("filterRank").addEventListener("change", applyPipeline);
+    byId("filterTitle").addEventListener("change", applyPipeline);
+    qAll(".cb-kubun").forEach(cb => cb.addEventListener("change", applyPipeline));
+    byId("sortBy").addEventListener("change", applyPipeline);
+    byId("limit").addEventListener("change", applyPipeline);
+  }
+
+  /* ===== 起動 ===== */
+  window.addEventListener("DOMContentLoaded", async () => {
+    wireEvents();
+    try {
+      await loadCSV();
+    } catch (e) {
+      console.error(e);
+      byId("cards").innerHTML = "<p>データの読み込みに失敗しました。CSVの場所やファイル名をご確認ください。</p>";
+    }
+  });
+  </script>
+</body>
+</html>
