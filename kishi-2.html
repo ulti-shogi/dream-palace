@@ -12,25 +12,25 @@
   </header>
 <main>
   <section>
-    <!-- 検索UIをsection内に追加 -->
-    <div id="controls">
-      <fieldset>
-        <legend>区分フィルタ</legend>
-        <label><input type="checkbox" name="kubun" value="現役" checked> 現役</label>
-        <label><input type="checkbox" name="kubun" value="引退" checked> 引退</label>
-        <label><input type="checkbox" name="kubun" value="物故" checked> 物故</label>
-        <label><input type="checkbox" name="kubun" value="退会" checked> 退会</label>
-      </fieldset>
+  <div id="controls">
+    <fieldset>
+      <legend>区分フィルタ</legend>
+      <label><input type="checkbox" name="kubun" value="現役" checked> 現役</label>
+      <label><input type="checkbox" name="kubun" value="引退" checked> 引退</label>
+      <label><input type="checkbox" name="kubun" value="物故" checked> 物故</label>
+      <label><input type="checkbox" name="kubun" value="退会" checked> 退会</label>
+    </fieldset>
 
-      <div>
-        <label for="sortSelect">並び替え:</label>
-        <select id="sortSelect">
-          <option value="sekiji" selected>席次順</option>
-          <option value="kishiNo">棋士番号順</option>
-        </select>
-      </div>
+    <div>
+      <label for="sortSelect">並び替え:</label>
+      <select id="sortSelect">
+        <option value="sekiji" selected>席次順</option>
+        <option value="kishiNo">棋士番号順</option>
+        <option value="ageAt4dan">四段昇段時年齢（若い順）</option>
+      </select>
     </div>
-  </section>
+  </div>
+</section>
 
   <!-- 検索結果の描画先 -->
   <div class="card"></div>
@@ -41,117 +41,138 @@
   </footer>
 
   <script>
-  const CSV_URL = "kishi.csv";
+const CSV_URL = "kishi.csv";
 
-  async function loadCSV(url) {
-    const res = await fetch(url, { cache: "no-cache" });
-    const text = await res.text();
-    return parseCSV(text);
+async function loadCSV(url) {
+  const res = await fetch(url, { cache: "no-cache" });
+  const text = await res.text();
+  return parseCSV(text);
+}
+
+function parseCSV(text) {
+  const lines = text.replace(/\r\n/g, "\n").trim().split("\n");
+  const header = lines[0].split(",");
+  return lines.slice(1).map(line => {
+    const cols = line.split(",");
+    const obj = {};
+    header.forEach((h, i) => obj[h.trim()] = (cols[i] ?? "").trim());
+    return obj;
+  });
+}
+
+function toDate(str) {
+  return str ? new Date(str) : null;
+}
+
+function calcAge(birth, death = null) {
+  if (!birth) return null;
+  const b = toDate(birth);
+  const base = death ? toDate(death) : new Date();
+  let y = base.getFullYear() - b.getFullYear();
+  let m = base.getMonth() - b.getMonth();
+  let d = base.getDate() - b.getDate();
+  if (d < 0) {
+    m--;
+    d += new Date(base.getFullYear(), base.getMonth(), 0).getDate();
   }
-
-  function parseCSV(text) {
-    const lines = text.replace(/\r\n/g, "\n").trim().split("\n");
-    const header = lines[0].split(",");
-    return lines.slice(1).map(line => {
-      const cols = line.split(",");
-      const obj = {};
-      header.forEach((h, i) => obj[h.trim()] = (cols[i] ?? "").trim());
-      return obj;
-    });
+  if (m < 0) {
+    y--;
+    m += 12;
   }
+  return `${y}歳${m}ヶ月${d}日`;
+}
 
-  function calcAge(birth, death = null) {
-    if (!birth) return null;
-    const b = new Date(birth);
-    const base = death ? new Date(death) : new Date();
-    let y = base.getFullYear() - b.getFullYear();
-    let m = base.getMonth() - b.getMonth();
-    let d = base.getDate() - b.getDate();
-    if (d < 0) {
-      m--;
-      d += new Date(base.getFullYear(), base.getMonth(), 0).getDate();
-    }
-    if (m < 0) {
-      y--;
-      m += 12;
-    }
-    return `${y}歳${m}ヶ月${d}日`;
+function calcAgeAt4Dan(birth, pro4) {
+  if (!birth || !pro4) return null;
+  const b = toDate(birth);
+  const p = toDate(pro4);
+  let y = p.getFullYear() - b.getFullYear();
+  let m = p.getMonth() - b.getMonth();
+  let d = p.getDate() - b.getDate();
+  if (d < 0) {
+    m--;
+    d += new Date(p.getFullYear(), p.getMonth(), 0).getDate();
   }
-
-  function calcAgeAt4Dan(birth, pro4) {
-    if (!birth || !pro4) return null;
-    const b = new Date(birth);
-    const p = new Date(pro4);
-    let y = p.getFullYear() - b.getFullYear();
-    let m = p.getMonth() - b.getMonth();
-    let d = p.getDate() - b.getDate();
-    if (d < 0) {
-      m--;
-      d += new Date(p.getFullYear(), p.getMonth(), 0).getDate();
-    }
-    if (m < 0) {
-      y--;
-      m += 12;
-    }
-    return `${y}歳${m}ヶ月${d}日`;
+  if (m < 0) {
+    y--;
+    m += 12;
   }
+  return `${y}歳${m}ヶ月${d}日`;
+}
 
-  function renderCards(data) {
-    const container = document.querySelector("div.card");
-    container.innerHTML = "";
+// 小数年で四段昇段年齢を計算（ソート用）
+function calcAgeAt4DanYearFrac(birth, pro4) {
+  if (!birth || !pro4) return Number.POSITIVE_INFINITY;
+  const b = toDate(birth);
+  const p = toDate(pro4);
+  const diffMs = p - b;
+  const days = diffMs / (1000 * 60 * 60 * 24);
+  return days / 365.2425; // グレゴリオ暦平均年長
+}
 
-    data.forEach(row => {
-      const entry = document.createElement("div");
-      entry.className = "entry";
-      entry.innerHTML = `
-        <p><strong>${row["棋士名"]}</strong>（${row["称号"] || row["段位"] || "—"}）</p>
-        <p>区分：${row["区分"] || "—"}</p>
-        <p>棋士番号：${row["棋士番号"] || "—"}</p>
-        <p>生年月日：${row["生年月日"] || "—"}</p>
-        <p>${row["逝去日"] ? "享年" : "現在年齢"}：${calcAge(row["生年月日"], row["逝去日"]) || "—"}</p>
-        <p>四段昇段日：${row["四段昇段日"] || "—"}</p>
-        <p>四段昇段時年齢：${calcAgeAt4Dan(row["生年月日"], row["四段昇段日"]) || "—"}</p>
-      `;
-      container.appendChild(entry);
-    });
+function renderCards(data) {
+  const container = document.querySelector("div.card");
+  container.innerHTML = "";
+
+  data.forEach(row => {
+    const entry = document.createElement("div");
+    entry.className = "entry";
+    entry.innerHTML = `
+      <p><strong>${row["棋士名"]}</strong>（${row["称号"] || row["段位"] || "—"}）</p>
+      <p>区分：${row["区分"] || "—"}</p>
+      <p>棋士番号：${row["棋士番号"] || "—"}</p>
+      <p>生年月日：${row["生年月日"] || "—"}</p>
+      <p>${row["逝去日"] ? "享年" : "現在年齢"}：${calcAge(row["生年月日"], row["逝去日"]) || "—"}</p>
+      <p>四段昇段日：${row["四段昇段日"] || "—"}</p>
+      <p>四段昇段時年齢：${calcAgeAt4Dan(row["生年月日"], row["四段昇段日"]) || "—"}</p>
+    `;
+    container.appendChild(entry);
+  });
+}
+
+function sortData(data, key) {
+  if (key === "kishiNo") {
+    data.sort((a, b) => Number(a["棋士番号"]) - Number(b["棋士番号"]));
+  } else if (key === "ageAt4dan") {
+    data.sort((a, b) => a._ageAt4danYear - b._ageAt4danYear || Number(a["席次"]) - Number(b["席次"]));
+  } else {
+    data.sort((a, b) => Number(a["席次"]) - Number(b["席次"]));
   }
+}
 
-  function sortData(data, key) {
-    if (key === "kishiNo") {
-      data.sort((a, b) => Number(a["棋士番号"]) - Number(b["棋士番号"]));
-    } else {
-      data.sort((a, b) => Number(a["席次"]) - Number(b["席次"]));
-    }
-  }
+function filterByKubun(data) {
+  const checked = [...document.querySelectorAll("input[name='kubun']:checked")].map(cb => cb.value);
+  return data.filter(row => checked.includes(row["区分"]));
+}
 
-  function filterByKubun(data) {
-    const checked = [...document.querySelectorAll("input[name='kubun']:checked")].map(cb => cb.value);
-    return data.filter(row => checked.includes(row["区分"]));
-  }
+async function init() {
+  let data = await loadCSV(CSV_URL);
 
-  async function init() {
-    let data = await loadCSV(CSV_URL);
+  // ソート用の四段昇段年齢（小数年）を追加
+  data.forEach(row => {
+    row._ageAt4danYear = calcAgeAt4DanYearFrac(row["生年月日"], row["四段昇段日"]);
+  });
 
-    // 初期表示：席次順
-    sortData(data, "sekiji");
-    renderCards(data);
+  // 初期表示：席次順
+  sortData(data, "sekiji");
+  renderCards(data);
 
-    // 並び替えイベント
-    document.querySelector("#sortSelect").addEventListener("change", e => {
-      const key = e.target.value;
-      sortData(data, key);
+  // 並び替えイベント
+  document.querySelector("#sortSelect").addEventListener("change", e => {
+    const key = e.target.value;
+    sortData(data, key);
+    renderCards(filterByKubun(data));
+  });
+
+  // 区分フィルタイベント
+  document.querySelectorAll("input[name='kubun']").forEach(cb => {
+    cb.addEventListener("change", () => {
       renderCards(filterByKubun(data));
     });
+  });
+}
 
-    // 区分フィルタイベント
-    document.querySelectorAll("input[name='kubun']").forEach(cb => {
-      cb.addEventListener("change", () => {
-        renderCards(filterByKubun(data));
-      });
-    });
-  }
-
-  document.addEventListener("DOMContentLoaded", init);
-  </script>
+document.addEventListener("DOMContentLoaded", init);
+</script>
 </body>
 </html>
