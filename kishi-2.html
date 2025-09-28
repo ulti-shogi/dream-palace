@@ -40,7 +40,7 @@
     将棋の殿堂
   </footer>
 
-  <script>
+<script>
 const CSV_URL = "kishi.csv";
 
 async function loadCSV(url) {
@@ -60,6 +60,25 @@ function parseCSV(text) {
   });
 }
 
+// 現在年齢（または享年）を計算
+function calcCurrentAge(birth, death = null) {
+  if (!birth) return "—";
+  const b = new Date(birth);
+  const base = death ? new Date(death) : new Date();
+  let y = base.getFullYear() - b.getFullYear();
+  let m = base.getMonth() - b.getMonth();
+  let d = base.getDate() - b.getDate();
+  if (d < 0) {
+    m--;
+    d += new Date(base.getFullYear(), base.getMonth(), 0).getDate();
+  }
+  if (m < 0) {
+    y--;
+    m += 12;
+  }
+  return `${y}歳${m}ヶ月${d}日`;
+}
+
 function renderCards(data) {
   const container = document.querySelector("div.card");
   container.innerHTML = "";
@@ -72,7 +91,7 @@ function renderCards(data) {
       <p>区分：${row["区分"] || "—"}</p>
       <p>棋士番号：${row["棋士番号"] || "—"}</p>
       <p>生年月日：${row["生年月日"] || "—"}</p>
-      <p>${row["逝去日"] ? "享年" : "現在年齢"}：${row["現在年齢"] || "—"}</p>
+      <p>${row["逝去日"] ? "享年" : "現在年齢"}：${calcCurrentAge(row["生年月日"], row["逝去日"])}</p>
       <p>四段昇段日：${row["四段昇段日"] || "—"}</p>
       <p>四段昇段時年齢：${row["四段昇段年齢"] || "—"}</p>
     `;
@@ -84,7 +103,12 @@ function sortData(data, key) {
   if (key === "kishiNo") {
     data.sort((a, b) => Number(a["棋士番号"]) - Number(b["棋士番号"]));
   } else if (key === "ageAt4dan") {
-    data.sort((a, b) => Number(a["四段昇段所要日数"]) - Number(b["四段昇段所要日数"]) || Number(a["席次"]) - Number(b["席次"]));
+    data.sort((a, b) => {
+      const aDays = a["四段昇段所要日数"] ? Number(a["四段昇段所要日数"]) : Number.POSITIVE_INFINITY;
+      const bDays = b["四段昇段所要日数"] ? Number(b["四段昇段所要日数"]) : Number.POSITIVE_INFINITY;
+      if (aDays !== bDays) return aDays - bDays;
+      return Number(a["席次"]) - Number(b["席次"]);
+    });
   } else {
     data.sort((a, b) => Number(a["席次"]) - Number(b["席次"]));
   }
