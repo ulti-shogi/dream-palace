@@ -70,9 +70,10 @@ div.card .entry[data-status="現役"] {
     <div>
       <label for="sortSelect">並び替え:</label>
       <select id="sortSelect">
-        <option value="sekiji" selected>席次順</option>
+        <option value="sekiji" selected>席次</option>
         <option value="kishiNo">棋士番号順</option>
-        <option value="ageAt4dan">四段昇段時年齢（若い順）</option>
+        <option value="currentAge">現在の年齢</option>
+        <option value="ageAt4dan">四段昇段年齢</option>
       </select>
     </div>
     <div id="sortOrderControls">
@@ -112,9 +113,11 @@ function parseCSV(text) {
 
 // 現在年齢（または享年）を計算
 function calcCurrentAge(birth, death = null) {
-  if (!birth) return "—";
+  if (!birth) return { text: "—", days: Number.POSITIVE_INFINITY };
   const b = new Date(birth);
   const base = death ? new Date(death) : new Date();
+
+  // 年齢計算（表示用）
   let y = base.getFullYear() - b.getFullYear();
   let m = base.getMonth() - b.getMonth();
   let d = base.getDate() - b.getDate();
@@ -126,7 +129,11 @@ function calcCurrentAge(birth, death = null) {
     y--;
     m += 12;
   }
-  return `${y}歳${m}ヶ月${d}日`;
+
+  // 日数計算（ソート用）
+  const diffDays = Math.floor((base - b) / 86400000);
+
+  return { text: `${y}歳${m}ヶ月${d}日`, days: diffDays };
 }
 
 function renderCards(data) {
@@ -141,7 +148,7 @@ function renderCards(data) {
       <p>区分：${row["区分"] || "—"}</p>
       <p>棋士番号：${row["棋士番号"] || "—"}</p>
       <p>生年月日：${row["生年月日"] || "—"}</p>
-      <p>${row["逝去日"] ? "享年" : "現在年齢"}：${calcCurrentAge(row["生年月日"], row["逝去日"])}</p>
+      <p>${row["逝去日"] ? "享年" : "現在年齢"}：${row._currentAgeText}</p>
       <p>四段昇段日：${row["四段昇段日"] || "—"}</p>
       <p>四段昇段時年齢：${row["四段昇段年齢"] || "—"}</p>
     `;
@@ -159,11 +166,12 @@ function sortData(data, key, order = "asc") {
       if (aDays !== bDays) return aDays - bDays;
       return Number(a["席次"]) - Number(b["席次"]);
     });
+  } else if (key === "currentAge") {
+    data.sort((a, b) => a._currentAgeDays - b._currentAgeDays || Number(a["席次"]) - Number(b["席次"]));
   } else {
     data.sort((a, b) => Number(a["席次"]) - Number(b["席次"]));
   }
 
-  // 降順指定なら逆順
   if (order === "desc") data.reverse();
 }
 
@@ -179,6 +187,13 @@ function getSelectedOrder() {
 
 async function init() {
   let data = await loadCSV(CSV_URL);
+
+  // 現在年齢を計算して保持
+  data.forEach(row => {
+    const ageInfo = calcCurrentAge(row["生年月日"], row["逝去日"]);
+    row._currentAgeText = ageInfo.text;
+    row._currentAgeDays = ageInfo.days;
+  });
 
   // 初期表示：席次順・昇順
   sortData(data, "sekiji", getSelectedOrder());
