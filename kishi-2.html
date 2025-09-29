@@ -67,19 +67,31 @@ div.card .entry[data-status="現役"] {
       <label><input type="checkbox" name="kubun" value="退会" checked> 退会</label>
     </fieldset>
 
+    <fieldset>
+      <legend>段位・称号フィルタ</legend>
+      <label><input type="checkbox" name="rank" value="称号" checked> 称号</label>
+      <label><input type="checkbox" name="rank" value="九段" checked> 九段</label>
+      <label><input type="checkbox" name="rank" value="八段" checked> 八段</label>
+      <label><input type="checkbox" name="rank" value="七段" checked> 七段</label>
+      <label><input type="checkbox" name="rank" value="六段" checked> 六段</label>
+      <label><input type="checkbox" name="rank" value="五段" checked> 五段</label>
+      <label><input type="checkbox" name="rank" value="四段" checked> 四段</label>
+    </fieldset>
+
     <div>
       <label for="sortSelect">並び替え:</label>
       <select id="sortSelect">
         <option value="sekiji" selected>席次</option>
-        <option value="kishiNo">棋士番号順</option>
+        <option value="kishiNo">棋士番号</option>
         <option value="currentAge">現在の年齢</option>
         <option value="ageAt4dan">四段昇段年齢</option>
       </select>
     </div>
+
     <div id="sortOrderControls">
-  <label><input type="radio" name="sortOrder" value="asc" checked> 昇順</label>
-  <label><input type="radio" name="sortOrder" value="desc"> 降順</label>
-</div>
+      <label><input type="radio" name="sortOrder" value="asc" checked> 昇順</label>
+      <label><input type="radio" name="sortOrder" value="desc"> 降順</label>
+    </div>
   </div>
 </section>
 
@@ -117,7 +129,6 @@ function calcCurrentAge(birth, death = null) {
   const b = new Date(birth);
   const base = death ? new Date(death) : new Date();
 
-  // 年齢計算（表示用）
   let y = base.getFullYear() - b.getFullYear();
   let m = base.getMonth() - b.getMonth();
   let d = base.getDate() - b.getDate();
@@ -130,9 +141,7 @@ function calcCurrentAge(birth, death = null) {
     m += 12;
   }
 
-  // 日数計算（ソート用）
   const diffDays = Math.floor((base - b) / 86400000);
-
   return { text: `${y}歳${m}ヶ月${d}日`, days: diffDays };
 }
 
@@ -171,13 +180,20 @@ function sortData(data, key, order = "asc") {
   } else {
     data.sort((a, b) => Number(a["席次"]) - Number(b["席次"]));
   }
-
   if (order === "desc") data.reverse();
 }
 
 function filterByKubun(data) {
   const checked = [...document.querySelectorAll("input[name='kubun']:checked")].map(cb => cb.value);
   return data.filter(row => checked.includes(row["区分"]));
+}
+
+function filterByRank(data) {
+  const checked = [...document.querySelectorAll("input[name='rank']:checked")].map(cb => cb.value);
+  return data.filter(row => {
+    if (checked.includes("称号") && row["段位"] === "") return true;
+    return checked.includes(row["段位"]);
+  });
 }
 
 function getSelectedOrder() {
@@ -195,15 +211,15 @@ async function init() {
     row._currentAgeDays = ageInfo.days;
   });
 
-  // 初期表示：席次順・昇順
+  // 初期表示
   sortData(data, "sekiji", getSelectedOrder());
-  renderCards(data);
+  renderCards(filterByRank(filterByKubun(data)));
 
   // 並び替えイベント
   document.querySelector("#sortSelect").addEventListener("change", e => {
     const key = e.target.value;
     sortData(data, key, getSelectedOrder());
-    renderCards(filterByKubun(data));
+    renderCards(filterByRank(filterByKubun(data)));
   });
 
   // 昇順・降順切替イベント
@@ -211,14 +227,21 @@ async function init() {
     rb.addEventListener("change", () => {
       const key = document.querySelector("#sortSelect").value;
       sortData(data, key, getSelectedOrder());
-      renderCards(filterByKubun(data));
+      renderCards(filterByRank(filterByKubun(data)));
     });
   });
 
   // 区分フィルタイベント
   document.querySelectorAll("input[name='kubun']").forEach(cb => {
     cb.addEventListener("change", () => {
-      renderCards(filterByKubun(data));
+      renderCards(filterByRank(filterByKubun(data)));
+    });
+  });
+
+  // 段位・称号フィルタイベント
+  document.querySelectorAll("input[name='rank']").forEach(cb => {
+    cb.addEventListener("change", () => {
+      renderCards(filterByRank(filterByKubun(data)));
     });
   });
 }
