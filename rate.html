@@ -12,14 +12,15 @@
 </header>
   <main>
       <section>
-  <p>過去に年度勝率8割以上を達成した棋士と勝率その他の情報を一覧にまとめました。</p>
   <select id="sortSelect">
     <option value="winrate">勝率が高い順</option>
     <option value="age">達成年齢が若い順</option>
     <option value="year">達成年度が古い順</option>
   </select>
 
-      </section>
+  <label><input type="radio" name="filter" value="all" checked> 全ての記録を表示する</label>
+  <label><input type="radio" name="filter" value="range"> 年度1960〜2016のみ表示する</label>
+</section>
   
 <table>
     <thead></thead>
@@ -36,6 +37,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const thead   = document.querySelector('table thead');
   const tbody   = document.querySelector('table tbody');
   const select  = document.getElementById('sortSelect');
+  const radios  = document.querySelectorAll('input[name="filter"]');
+
+  let filterMode = 'all'; // 初期値
 
   fetch('rate.csv')
     .then(r => r.text())
@@ -54,7 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
         days : header.indexOf('日数換算')
       };
 
-      // 表示する列（順位＋年度／棋士名／段位／年齢／勝率）
+      // 表示列（順位＋…）
       const displayCols = [idx.name, idx.grade, idx.age, idx.rate, idx.year];
 
       // thead
@@ -70,15 +74,26 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       thead.appendChild(trh);
 
-      // 数値化のユーティリティ
+      // 数値変換
       const toNum = v => {
         const n = Number(String(v).replace(/[^0-9.\-]/g, ''));
         return Number.isNaN(n) ? NaN : n;
       };
 
-      // 並び替え
+      // データ抽出（フィルタ）
+      function getFilteredData() {
+        if (filterMode === 'range') {
+          return dataRaw.filter(row => {
+            const y = toNum(row[idx.year]);
+            return y >= 1960 && y <= 2016;
+          });
+        }
+        return dataRaw.slice();
+      }
+
+      // 並べ替え
       function sortData(kind) {
-        const arr = dataRaw.slice();
+        const arr = getFilteredData();
         if (kind === 'winrate') {
           arr.sort((a, b) => toNum(b[idx.rate]) - toNum(a[idx.rate]));
         } else if (kind === 'age') {
@@ -89,13 +104,13 @@ document.addEventListener('DOMContentLoaded', () => {
         return arr;
       }
 
-      // tbody描画（順位を付ける）
+      // tbody描画（順位付き）
       function renderBody(arr, criteria) {
         tbody.innerHTML = '';
 
         let rank = 0;
         let prevValue = null;
-        let actualPos = 0; // 実際の行番号
+        let actualPos = 0;
 
         arr.forEach(row => {
           actualPos++;
@@ -115,12 +130,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
           const tr = document.createElement('tr');
 
-          // 順位セル
+          // 順位
           const tdRank = document.createElement('td');
           tdRank.textContent = rank;
           tr.appendChild(tdRank);
 
-          // 他のセル
+          // 他の列
           displayCols.forEach(i => {
             const td = document.createElement('td');
             td.textContent = row[i];
@@ -135,10 +150,18 @@ document.addEventListener('DOMContentLoaded', () => {
       renderBody(sortData('winrate'), 'winrate');
       select.value = 'winrate';
 
-      // 切り替え
+      // セレクトボックス変更
       select.addEventListener('change', e => {
         const criteria = e.target.value;
         renderBody(sortData(criteria), criteria);
+      });
+
+      // ラジオボタン変更
+      radios.forEach(radio => {
+        radio.addEventListener('change', e => {
+          filterMode = e.target.value;
+          renderBody(sortData(select.value), select.value);
+        });
       });
     });
 });
