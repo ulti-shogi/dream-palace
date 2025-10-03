@@ -13,41 +13,7 @@
   <main>
       <section>
   <section>
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-  fetch("rate.csv")
-    .then(response => response.text())
-    .then(data => {
-      const rows = data.trim().split("\n").map(r => r.split(","));
-      const header = rows[0];
-      const bodyRows = rows.slice(1);
 
-      bodyRows.sort((a, b) => parseFloat(b[4]) - parseFloat(a[4]));
-
-      const targetIndexes = [0, 1, 2, 3, 4];
-
-      const thead = document.querySelector("table thead");
-      let headerRow = document.createElement("tr");
-      targetIndexes.forEach(i => {
-        let th = document.createElement("th");
-        th.textContent = header[i];
-        headerRow.appendChild(th);
-      });
-      thead.appendChild(headerRow);
-
-      const tbody = document.querySelector("table tbody");
-      bodyRows.forEach(row => {
-        let tr = document.createElement("tr");
-        targetIndexes.forEach(i => {
-          let td = document.createElement("td");
-          td.textContent = row[i];
-          tr.appendChild(td);
-        });
-        tbody.appendChild(tr);
-      });
-    });
-});
-</script>
 </section>
       </section>
   
@@ -60,7 +26,87 @@ document.addEventListener("DOMContentLoaded", function () {
   <h3>自由欄</h3>
   <p>補足情報など自由に書き込む。</p>
       </div>
-  
+
+    <script>
+document.addEventListener("DOMContentLoaded", function () {
+  // セレクトボックスを設置
+  const section = document.querySelector("section");
+  const select = document.createElement("select");
+
+  const options = [
+    { value: "winrate", text: "勝率が高い順" },
+    { value: "age", text: "達成年齢が若い順" },
+    { value: "year", text: "達成年度が古い順" }
+  ];
+
+  options.forEach(opt => {
+    const option = document.createElement("option");
+    option.value = opt.value;
+    option.textContent = opt.text;
+    select.appendChild(option);
+  });
+
+  section.appendChild(select);
+
+  fetch("rate.csv")
+    .then(response => response.text())
+    .then(data => {
+      const rows = data.trim().split("\n").map(r => r.split(","));
+      const header = rows[0];
+      let bodyRows = rows.slice(1);
+
+      // 「日数換算」の列インデックスを特定
+      const daysIndex = header.indexOf("日数換算");
+
+      // 表示する列（年度, 棋士名, 段位, 年齢, 勝率）
+      const targetIndexes = [0, 1, 2, 3, 4];
+
+      const thead = document.querySelector("table thead");
+      const tbody = document.querySelector("table tbody");
+
+      // ヘッダー行を生成
+      let headerRow = document.createElement("tr");
+      targetIndexes.forEach(i => {
+        let th = document.createElement("th");
+        th.textContent = header[i];
+        headerRow.appendChild(th);
+      });
+      thead.appendChild(headerRow);
+
+      // ソート関数
+      function sortAndRender(criteria) {
+        let sorted = [...bodyRows];
+        if (criteria === "winrate") {
+          sorted.sort((a, b) => parseFloat(b[4]) - parseFloat(a[4]));
+        } else if (criteria === "age") {
+          sorted.sort((a, b) => parseInt(a[daysIndex]) - parseInt(b[daysIndex]));
+        } else if (criteria === "year") {
+          sorted.sort((a, b) => parseInt(a[0]) - parseInt(b[0]));
+        }
+
+        // tbodyを再描画
+        tbody.innerHTML = "";
+        sorted.forEach(row => {
+          let tr = document.createElement("tr");
+          targetIndexes.forEach(i => {
+            let td = document.createElement("td");
+            td.textContent = row[i];
+            tr.appendChild(td);
+          });
+          tbody.appendChild(tr);
+        });
+      }
+
+      // 初期表示（勝率が高い順）
+      sortAndRender("winrate");
+
+      // セレクトボックス変更イベント
+      select.addEventListener("change", function () {
+        sortAndRender(this.value);
+      });
+    });
+});
+</script>
   </main>
   <footer>著作権情報</footer>
 </body>
