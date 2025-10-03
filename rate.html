@@ -12,7 +12,7 @@
 </header>
   <main>
       <section>
-  
+  <p>過去に年度勝率8割以上を達成した棋士と勝率その他の情報を一覧にまとめました。</p>
   <select id="sortSelect">
     <option value="winrate">勝率が高い順</option>
     <option value="age">達成年齢が若い順</option>
@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
       };
 
       // 表示する列（順位＋年度／棋士名／段位／年齢／勝率）
-      const displayCols = [idx.year, idx.name, idx.grade, idx.age, idx.rate];
+      const displayCols = [idx.name, idx.grade, idx.age, idx.rate, idx.year];
 
       // thead
       thead.innerHTML = '';
