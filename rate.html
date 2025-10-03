@@ -11,17 +11,19 @@
 <h1>将棋の殿堂</h1>
 </header>
   <main>
-      <section>
+     <section>
+         <p>日本将棋連盟において、過去に年度勝率8割以上を達成した棋士と勝率その他の情報を一覧にまとめました。最高勝率記録は60年近く経った今でもなお破られていません。</p>
   <select id="sortSelect">
     <option value="winrate">勝率が高い順</option>
     <option value="age">達成年齢が若い順</option>
     <option value="year">達成年度が古い順</option>
   </select>
 
-  <label><input type="radio" name="filter" value="all" checked> 全ての記録を表示する</label>
-  <label><input type="radio" name="filter" value="range"> 年度1960〜2016のみ表示する</label>
+  <div style="margin-top: 10px; display: flex; flex-direction: column;">
+    <label><input type="radio" name="filter" value="all" checked> 全ての記録を表示する</label>
+    <label><input type="radio" name="filter" value="range"> 年度1960〜2016のみ表示する</label>
+  </div>
 </section>
-  
 <table>
     <thead></thead>
     <tbody></tbody>
