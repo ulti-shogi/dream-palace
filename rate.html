@@ -13,6 +13,12 @@
   <main>
       <section>
   
+  <select id="sortSelect">
+    <option value="winrate">勝率が高い順</option>
+    <option value="age">達成年齢が若い順</option>
+    <option value="year">達成年度が古い順</option>
+  </select>
+
       </section>
   
 <table>
@@ -24,81 +30,84 @@
   <h3>自由欄</h3>
   <p>補足情報など自由に書き込む。</p>
       </div>
-<script>
+
+      <script>
 document.addEventListener('DOMContentLoaded', () => {
-  const section = document.querySelector('section');
   const thead   = document.querySelector('table thead');
   const tbody   = document.querySelector('table tbody');
-
-  // セレクトボックス（UI）
-  const select = document.createElement('select');
-  [['winrate','勝率が高い順'],['age','達成年齢が若い順'],['year','達成年度が古い順']].forEach(([v,t])=>{
-    const o=document.createElement('option'); o.value=v; o.textContent=t; select.appendChild(o);
-  });
-  section.appendChild(select);
+  const select  = document.getElementById('sortSelect');
 
   fetch('rate.csv')
     .then(r => r.text())
     .then(text => {
       const rows    = text.trim().split(/\r?\n/).map(l => l.split(',').map(s => s.trim()));
       const header  = rows[0];
-      const dataRaw = rows.slice(1); // 基準データ（不変）
+      const dataRaw = rows.slice(1); // 基準データ
 
-      // 列インデックスを列名で取得（位置ズレに強い）
+      // 列インデックス
       const idx = {
         year : header.indexOf('年度'),
         name : header.indexOf('棋士名'),
         grade: header.indexOf('段位'),
         age  : header.indexOf('年齢'),
         rate : header.indexOf('勝率'),
-        days : header.indexOf('日数換算') // ← これで年齢順ソートの基準にする
+        days : header.indexOf('日数換算')
       };
 
-      // 表示する5列（年度／棋士名／段位／年齢／勝率）
+      // 表示する列（年度／棋士名／段位／年齢／勝率）
       const displayCols = [idx.year, idx.name, idx.grade, idx.age, idx.rate];
 
       // thead
       thead.innerHTML = '';
       const trh = document.createElement('tr');
-      displayCols.forEach(i => { const th=document.createElement('th'); th.textContent=header[i]; trh.appendChild(th); });
+      displayCols.forEach(i => {
+        const th = document.createElement('th');
+        th.textContent = header[i];
+        trh.appendChild(th);
+      });
       thead.appendChild(trh);
 
-      // 数値化のユーティリティ（桁・空白・記号を許容）
+      // 数値化のユーティリティ
       const toNum = v => {
-        const n = Number(String(v).replace(/[^0-9.\-]/g,''));
+        const n = Number(String(v).replace(/[^0-9.\-]/g, ''));
         return Number.isNaN(n) ? NaN : n;
       };
 
-      // 並べ替え関数：毎回「生配列の複製」から作るのがポイント
-      function sortData(kind){
+      // 並び替え
+      function sortData(kind) {
         const arr = dataRaw.slice();
         if (kind === 'winrate') {
-          arr.sort((a,b) => toNum(b[idx.rate]) - toNum(a[idx.rate]));           // 勝率：降順
+          arr.sort((a, b) => toNum(b[idx.rate]) - toNum(a[idx.rate])); // 勝率 降順
         } else if (kind === 'age') {
-          arr.sort((a,b) => {                                                    // 日数換算：昇順（若い順）
-            const av = toNum(a[idx.days]), bv = toNum(b[idx.days]);
+          arr.sort((a, b) => {
+            const av = toNum(a[idx.days]);
+            const bv = toNum(b[idx.days]);
             if (Number.isNaN(av) && Number.isNaN(bv)) return 0;
             if (Number.isNaN(av)) return 1;
             if (Number.isNaN(bv)) return -1;
-            return av - bv;
+            return av - bv; // 日数昇順＝若い順
           });
         } else if (kind === 'year') {
-          arr.sort((a,b) => toNum(a[idx.year]) - toNum(b[idx.year]));           // 年度：昇順（古い順）
+          arr.sort((a, b) => toNum(a[idx.year]) - toNum(b[idx.year])); // 年度 昇順
         }
         return arr;
       }
 
       // tbody描画
-      function renderBody(arr){
+      function renderBody(arr) {
         tbody.innerHTML = '';
         arr.forEach(row => {
           const tr = document.createElement('tr');
-          displayCols.forEach(i => { const td=document.createElement('td'); td.textContent=row[i]; tr.appendChild(td); });
+          displayCols.forEach(i => {
+            const td = document.createElement('td');
+            td.textContent = row[i];
+            tr.appendChild(td);
+          });
           tbody.appendChild(tr);
         });
       }
 
-      // 初期表示：勝率が高い順
+      // 初期表示
       renderBody(sortData('winrate'));
       select.value = 'winrate';
 
