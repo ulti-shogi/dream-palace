@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>将棋の殿堂</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+<h1>将棋の殿堂</h1>
+</header>
+  <main>
+      <section>
+  <section>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  fetch("rate.csv")
+    .then(response => response.text())
+    .then(data => {
+      const rows = data.trim().split("\n").map(r => r.split(","));
+      const header = rows[0];
+      const bodyRows = rows.slice(1);
+
+      bodyRows.sort((a, b) => parseFloat(b[4]) - parseFloat(a[4]));
+
+      const targetIndexes = [0, 1, 2, 3, 4];
+
+      const thead = document.querySelector("table thead");
+      let headerRow = document.createElement("tr");
+      targetIndexes.forEach(i => {
+        let th = document.createElement("th");
+        th.textContent = header[i];
+        headerRow.appendChild(th);
+      });
+      thead.appendChild(headerRow);
+
+      const tbody = document.querySelector("table tbody");
+      bodyRows.forEach(row => {
+        let tr = document.createElement("tr");
+        targetIndexes.forEach(i => {
+          let td = document.createElement("td");
+          td.textContent = row[i];
+          tr.appendChild(td);
+        });
+        tbody.appendChild(tr);
+      });
+    });
+});
+</script>
+</section>
+      </section>
+  
+<table>
+    <thead></thead>
+    <tbody></tbody>
+  </table>
+
+<div class="free">
+  <h3>自由欄</h3>
+  <p>補足情報など自由に書き込む。</p>
+      </div>
+  
+  </main>
+  <footer>著作権情報</footer>
+</body>
+</html>
+
