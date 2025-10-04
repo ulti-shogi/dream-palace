@@ -86,12 +86,12 @@ section h1, section h2, section h3, section h4, section h5, section h6,
 section, .free {
   border-radius: 0;
   border: 2px solid #000;        /* セクション枠の太さを明示 */
-  /*background-color: #F6E7B2;*/     /* 将棋盤っぽい薄い木肌色 */
+  background-color: #F6E7B2;     /* 将棋盤っぽい薄い木肌色 */
 }
 
 /* table も同じ木肌色＆枠線太さを section と揃える */
 table {
-  background-color: #F6E7B2;
+  /* background-color: #F6E7B2; */
   border: 2px solid #000;        /* ← セクションと同じ太さに統一 */
 }
 
