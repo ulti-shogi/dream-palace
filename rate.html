@@ -20,9 +20,10 @@
   </select>
 
   <div style="margin-top: 10px; display: flex; flex-direction: column;">
-    <label><input type="radio" name="filter" value="all" checked> 全ての記録を表示する</label>
-    <label><input type="radio" name="filter" value="range"> 藤井聡太登場以前の記録のみ表示する</label>
-  </div>
+  <label><input type="radio" name="filter" value="all" checked> 全ての記録を表示する</label>
+  <label><input type="radio" name="filter" value="range1"> 藤井聡太登場以前の記録のみ表示する</label>
+  <label><input type="radio" name="filter" value="range2"> 藤井聡太登場以後の記録のみ表示する</label>
+</div>
 </section>
 <table>
     <thead></thead>
@@ -60,7 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
         days : header.indexOf('日数換算')
       };
 
-      // 表示列（順位＋…）
+      // 表示列（順位＋…） 例: 棋士名／段位／年齢／勝率／年度 の順
       const displayCols = [idx.name, idx.grade, idx.age, idx.rate, idx.year];
 
       // thead
@@ -84,13 +85,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // データ抽出（フィルタ）
       function getFilteredData() {
-        if (filterMode === 'range') {
+        if (filterMode === 'range1') {
           return dataRaw.filter(row => {
             const y = toNum(row[idx.year]);
             return y >= 1960 && y <= 2016;
           });
         }
-        return dataRaw.slice();
+        if (filterMode === 'range2') {
+          return dataRaw.filter(row => {
+            const y = toNum(row[idx.year]);
+            return y >= 2017;
+          });
+        }
+        return dataRaw.slice(); // all
       }
 
       // 並べ替え
