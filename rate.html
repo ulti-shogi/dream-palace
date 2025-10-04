@@ -24,6 +24,11 @@
   <label><input type="radio" name="filter" value="range1"> 藤井聡太登場以前の記録のみ表示する</label>
   <label><input type="radio" name="filter" value="range2"> 藤井聡太登場以後の記録のみ表示する</label>
 </div>
+
+<div style="margin-top: 10px;">
+  <input type="number" id="limitInput" min="1" max="26" value="26">
+  <button id="limitBtn">表示切替</button>
+</div>
 </section>
 <table>
     <thead></thead>
@@ -42,6 +47,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const tbody   = document.querySelector('table tbody');
   const select  = document.getElementById('sortSelect');
   const radios  = document.querySelectorAll('input[name="filter"]');
+  const limitInput = document.getElementById('limitInput');
+  const limitBtn   = document.getElementById('limitBtn');
 
   let filterMode = 'all'; // 初期値
 
@@ -62,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
         days : header.indexOf('日数換算')
       };
 
-      // 表示列（順位＋…） 例: 棋士名／段位／年齢／勝率／年度 の順
+      // 表示列（順位＋…）
       const displayCols = [idx.name, idx.grade, idx.age, idx.rate, idx.year];
 
       // thead
@@ -156,6 +163,40 @@ document.addEventListener('DOMContentLoaded', () => {
         });
       }
 
+      // 部分表示：上位N位まで (順位ベース)
+      function renderLimited(criteria) {
+        const fullArr = sortData(criteria);
+        const limitedArr = [];
+        let maxRank = Number(limitInput.value) || fullArr.length;
+
+        let prevValue = null;
+        let currentRank = 0;
+        let actualPos = 0;
+
+        for (const row of fullArr) {
+          actualPos++;
+          let currentValue;
+          if (criteria === 'winrate') {
+            currentValue = toNum(row[idx.rate]);
+          } else if (criteria === 'age') {
+            currentValue = toNum(row[idx.days]);
+          } else if (criteria === 'year') {
+            currentValue = toNum(row[idx.year]);
+          }
+
+          if (prevValue === null || currentValue !== prevValue) {
+            currentRank = actualPos;
+          }
+          prevValue = currentValue;
+
+          if (currentRank <= maxRank) {
+            limitedArr.push(row);
+          }
+        }
+
+        renderBody(limitedArr, criteria);
+      }
+
       // 初期表示
       renderBody(sortData('winrate'), 'winrate');
       select.value = 'winrate';
@@ -173,11 +214,17 @@ document.addEventListener('DOMContentLoaded', () => {
           renderBody(sortData(select.value), select.value);
         });
       });
+
+      // ボタンで上位N位まで絞り込み
+      limitBtn.addEventListener('click', () => {
+        const criteria = select.value;
+        renderLimited(criteria);
+      });
     });
 });
 </script>
   </main>
-  <footer>著作権情報</footer>
+  <footer>ヘッダー</footer>
 </body>
 </html>
 
