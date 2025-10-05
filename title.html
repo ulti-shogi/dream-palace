@@ -99,7 +99,7 @@
     <p>補足情報など自由に書き込む。</p>
   </div>
 </main>
-<footer>著作権情報</footer>
+<footer>フッダー</footer>
 
 <script>
 // ✅ CSVデータ格納用
@@ -154,8 +154,10 @@ function renderTable(data) {
   const thead = table.querySelector("thead");
   const tbody = table.querySelector("tbody");
 
+  // ✅ ヘッダーに「順位」列を追加
   thead.innerHTML = `
     <tr>
+      <th>順位</th>
       <th>棋士名</th>
       <th>登場</th>
       <th>獲得</th>
@@ -165,9 +167,31 @@ function renderTable(data) {
   `;
 
   tbody.innerHTML = "";
-  data.forEach(row => {
+
+  // ✅ 順位計算（競技順位方式）
+  let currentRank = 0;      // 表示する順位
+  let prevValue = null;     // ひとつ前の比較値
+  let count = 0;            // 行数カウント（順位スキップ判定）
+
+  data.forEach((row, index) => {
+    count++;
+
+    // 並べ替え基準を取得（今は totalSortKey & totalOrder を想定）
+    // → もし直近に並べ替えが実行されてなければ "total_titles" が使われることもある
+    const sortKey = document.getElementById("totalSortKey")?.value || "total_titles";
+
+    // 今回の順位比較対象
+    const currentValue = row[sortKey];
+
+    // 1行目 or 前の値と違えば順位更新
+    if (prevValue === null || prevValue !== currentValue) {
+      currentRank = count;
+      prevValue = currentValue;
+    }
+
     const tr = document.createElement("tr");
     tr.innerHTML = `
+      <td>${currentRank}</td>
       <td>${row.name}</td>
       <td>${row.appearances}</td>
       <td>${row.total_titles}</td>
