@@ -102,47 +102,14 @@
 <footer>著作権情報</footer>
 
 <script>
-  // ✅ アコーディオン開閉用のJS（既存コードには干渉しない）
-  document.addEventListener("DOMContentLoaded", function() {
-    const headers = document.querySelectorAll(".accordion-header");
-
-    headers.forEach(header => {
-      header.addEventListener("click", function() {
-        const content = this.nextElementSibling;
-        const visible = content.style.display === "block";
-
-        // 全て閉じる
-        document.querySelectorAll(".accordion-content").forEach(c => {
-          c.style.display = "none";
-        });
-
-        // 自分だけ開閉
-        content.style.display = visible ? "none" : "block";
-      });
-    });
-  });
-
-// ✅ 通算検索ボタン（仮処理）
-document.addEventListener("DOMContentLoaded", function() {
-  const totalBtn = document.getElementById("totalSearchBtn");
-  if (totalBtn) {
-    totalBtn.addEventListener("click", function() {
-      const key = document.getElementById("totalSortKey").value;
-      const order = document.querySelector('input[name="totalOrder"]:checked').value;
-      console.log("通算検索実行 →", key, order);
-      // ★ここでCSV読み込み＆table生成処理を後から実装
-    });
-  }
-});
-
-// ✅ CSVデータ格納用
+  // ✅ CSVデータ格納用
 let titleData = [];
 
 // ✅ ページ読み込み時にCSVを取得して表示
 document.addEventListener("DOMContentLoaded", function() {
   loadCSV();
-  setupAccordion();  // アコーディオン開閉（既存コード再利用OK）
-  setupTotalSearch(); // 通算検索ボタン処理
+  setupAccordion();
+  setupTotalSearch();
 });
 
 // ✅ CSV読み込み
@@ -151,17 +118,23 @@ function loadCSV() {
     .then(response => response.text())
     .then(text => {
       const rows = text.trim().split("\n").map(r => r.split(","));
-      const header = rows[0]; // ["棋士名", "登場", "獲得", "敗退", "勝率", "並順"]
+      // 1行目がヘッダー行の場合
+      const header = rows[0]; 
+      
+      // ✅ あなたのCSV列構成に合わせたマッピング
+      // 0:番号, 1:並順, 2:棋士名, 3:登場, 4:獲得, 5:敗退, 6:勝率
       titleData = rows.slice(1).map(r => {
         return {
-          name: r[0],
-          appearances: Number(r[1]), // 登場
-          total_titles: Number(r[2]), // 獲得
-          losses: Number(r[3]), // 敗退
-          winrate: Number(r[4]), // 勝率
-          order: Number(r[5]) // 並順
+          number: r[0],                // 今回は使わない
+          order: Number(r[1]),        // 並順
+          name: r[2],                 // 棋士名
+          appearances: Number(r[3]),  // 登場
+          total_titles: Number(r[4]), // 獲得
+          losses: Number(r[5]),       // 敗退
+          winrate: Number(r[6])       // 勝率
         };
       });
+
       renderTable(titleData);
     })
     .catch(err => {
@@ -169,13 +142,12 @@ function loadCSV() {
     });
 }
 
-// ✅ table表示（5列）
+// ✅ table表示（5列のみ表示）
 function renderTable(data) {
   const table = document.querySelector("table");
   const thead = table.querySelector("thead");
   const tbody = table.querySelector("tbody");
 
-  // ヘッダー生成
   thead.innerHTML = `
     <tr>
       <th>棋士名</th>
@@ -186,7 +158,6 @@ function renderTable(data) {
     </tr>
   `;
 
-  // 本体生成
   tbody.innerHTML = "";
   data.forEach(row => {
     const tr = document.createElement("tr");
@@ -217,12 +188,10 @@ function setupTotalSearch() {
 
     // 並べ替え処理
     const sortedData = [...titleData].sort((a, b) => {
-      // a[key]が数値になる前提
       if (a[key] === b[key]) {
-        // 同率なら「並順(order)」の昇順で比較
+        // ✅ 同率なら「並順(order)」の昇順
         return a.order - b.order;
       }
-      // 通常の比較（昇順 or 降順）
       if (order === "asc") {
         return a[key] - b[key];
       } else {
@@ -234,7 +203,7 @@ function setupTotalSearch() {
   });
 }
 
-// ✅ アコーディオン（既存コードを流用する場合は二重定義しない）
+// ✅ アコーディオン開閉（元コードを壊さない形で保持）
 function setupAccordion() {
   const headers = document.querySelectorAll(".accordion-header");
   headers.forEach(header => {
