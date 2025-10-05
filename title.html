@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>将棋の殿堂</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=1.0">
 
   <style>
     /* ✅ アコーディオン用の最低限CSS。（既存CSSには干渉しない） */
@@ -172,7 +172,7 @@ function renderTable(data) {
       <td>${row.appearances}</td>
       <td>${row.total_titles}</td>
       <td>${row.losses}</td>
-      <td>${row.winrate}</td>
+      <td>${row.winrate.toFixed(4)}</td>
     `;
     tbody.appendChild(tr);
   });
