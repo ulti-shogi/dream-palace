@@ -102,36 +102,42 @@
 <footer>著作権情報</footer>
 
 <script>
-  // ✅ CSVデータ格納用
+// ✅ CSVデータ格納用
 let titleData = [];
 
-// ✅ ページ読み込み時にCSVを取得して表示
+// ✅ ページ読み込み時
 document.addEventListener("DOMContentLoaded", function() {
   loadCSV();
   setupAccordion();
   setupTotalSearch();
 });
 
-// ✅ CSV読み込み
+// ✅ CSV読み込み（列名対応）
 function loadCSV() {
   fetch("title.csv")
     .then(response => response.text())
     .then(text => {
       const rows = text.trim().split("\n").map(r => r.split(","));
-      // 1行目がヘッダー行の場合
-      const header = rows[0]; 
-      
-      // ✅ あなたのCSV列構成に合わせたマッピング
-      // 0:番号, 1:並順, 2:棋士名, 3:登場, 4:獲得, 5:敗退, 6:勝率
+      const header = rows[0]; // ["番号","並順","棋士名","登場","獲得","敗退","勝率"]
+
+      // ✅ 任意の順番でも対応できるように列の位置を特定
+      const idxNumber = header.indexOf("番号");
+      const idxOrder = header.indexOf("並順");
+      const idxName = header.indexOf("棋士名");
+      const idxAppear = header.indexOf("登場");
+      const idxTitles = header.indexOf("獲得");
+      const idxLosses = header.indexOf("敗退");
+      const idxWinrate = header.indexOf("勝率");
+
       titleData = rows.slice(1).map(r => {
         return {
-          number: r[0],                // 今回は使わない
-          order: Number(r[1]),        // 並順
-          name: r[2],                 // 棋士名
-          appearances: Number(r[3]),  // 登場
-          total_titles: Number(r[4]), // 獲得
-          losses: Number(r[5]),       // 敗退
-          winrate: Number(r[6])       // 勝率
+          number: r[idxNumber],                     // 今回は表示しない
+          order: Number(r[idxOrder]),              // 並順
+          name: r[idxName],                        // 棋士名
+          appearances: Number(r[idxAppear]),       // 登場
+          total_titles: Number(r[idxTitles]),      // 獲得
+          losses: Number(r[idxLosses]),            // 敗退
+          winrate: Number(r[idxWinrate])           // 勝率
         };
       });
 
@@ -142,7 +148,7 @@ function loadCSV() {
     });
 }
 
-// ✅ table表示（5列のみ表示）
+// ✅ 表示 (5列)
 function renderTable(data) {
   const table = document.querySelector("table");
   const thead = table.querySelector("thead");
@@ -186,31 +192,29 @@ function setupTotalSearch() {
       return;
     }
 
-    // 並べ替え処理
+    // 例: key = "total_titles" / "appearances" / "losses" / "winrate"
     const sortedData = [...titleData].sort((a, b) => {
       if (a[key] === b[key]) {
-        // ✅ 同率なら「並順(order)」の昇順
+        // ✅ 同値なら並順を昇順
         return a.order - b.order;
       }
-      if (order === "asc") {
-        return a[key] - b[key];
-      } else {
-        return b[key] - a[key];
-      }
+      return order === "asc"
+        ? a[key] - b[key]
+        : b[key] - a[key];
     });
 
     renderTable(sortedData);
   });
 }
 
-// ✅ アコーディオン開閉（元コードを壊さない形で保持）
+// ✅ アコーディオン
 function setupAccordion() {
   const headers = document.querySelectorAll(".accordion-header");
   headers.forEach(header => {
     header.addEventListener("click", function() {
       const content = this.nextElementSibling;
       const visible = content.style.display === "block";
-      // 全閉じ
+      // 全部閉じる
       document.querySelectorAll(".accordion-content").forEach(c => {
         c.style.display = "none";
       });
