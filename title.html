@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>将棋の殿堂</title>
+  <link rel="stylesheet" href="style.css">
+
+  <style>
+    /* ✅ アコーディオン用の最低限CSS。（既存CSSには干渉しない） */
+    .accordion {
+      width: 100%;
+    }
+    .accordion-item {
+      border-bottom: 1px solid #ddd;
+    }
+    .accordion-header {
+      width: 100%;
+      text-align: left;
+      padding: 10px;
+      font-size: 16px;
+      background-color: #f2f2f2;
+      border: none;
+    }
+    .accordion-content {
+      display: none;
+      padding: 10px;
+      background-color: #fff;
+    }
+  </style>
+</head>
+<body>
+<header>
+<h1>将棋の殿堂</h1>
+</header>
+<main>
+  <section>
+
+    <!-- ✅ アコーディオン構造ここから -->
+    <div class="accordion">
+
+      <!-- A: 通算・総合成績 -->
+      <div class="accordion-item">
+        <button class="accordion-header">通算・総合成績で検索</button>
+        <div class="accordion-content">
+  <!-- ✅ 通算・総合成績用の検索UI（修正版） -->
+<div class="search-total">
+  <label for="totalSortKey">並べ替え：</label>
+  <select id="totalSortKey">
+    <option value="">選択してください</option>
+    <option value="total_titles">通算タイトル数</option>
+    <option value="appearances">登場回数</option>
+    <option value="winrate">勝率</option>
+    <option value="losses">敗退数</option>
+  </select>
+
+  <div class="sort-order">
+    <label>
+      <input type="radio" name="totalOrder" value="desc" checked> 多い順・高い順
+    </label>
+    <label>
+      <input type="radio" name="totalOrder" value="asc"> 少ない順・低い順
+    </label>
+  </div>
+
+  <button id="totalSearchBtn">検索</button>
+</div>        
+        </div>
+      </div>
+
+      <!-- B: 棋戦別 -->
+      <div class="accordion-item">
+        <button class="accordion-header">棋戦別で検索</button>
+        <div class="accordion-content">
+          <p>ここに棋戦別検索UIを実装予定</p>
+        </div>
+      </div>
+
+      <!-- C: 記録系 -->
+      <div class="accordion-item">
+        <button class="accordion-header">記録系で検索</button>
+        <div class="accordion-content">
+          <p>ここに最年少・最短などの検索UIを実装予定</p>
+        </div>
+      </div>
+
+    </div>
+    <!-- ✅ アコーディオンここまで -->
+
+  </section>
+
+  <table>
+    <thead>
+    <tbody>
+  </table>
+
+  <div class="free">
+    <h3>自由欄</h3>
+    <p>補足情報など自由に書き込む。</p>
+  </div>
+</main>
+<footer>著作権情報</footer>
+
+<script>
+  // ✅ アコーディオン開閉用のJS（既存コードには干渉しない）
+  document.addEventListener("DOMContentLoaded", function() {
+    const headers = document.querySelectorAll(".accordion-header");
+
+    headers.forEach(header => {
+      header.addEventListener("click", function() {
+        const content = this.nextElementSibling;
+        const visible = content.style.display === "block";
+
+        // 全て閉じる
+        document.querySelectorAll(".accordion-content").forEach(c => {
+          c.style.display = "none";
+        });
+
+        // 自分だけ開閉
+        content.style.display = visible ? "none" : "block";
+      });
+    });
+  });
+
+// ✅ 通算検索ボタン（仮処理）
+document.addEventListener("DOMContentLoaded", function() {
+  const totalBtn = document.getElementById("totalSearchBtn");
+  if (totalBtn) {
+    totalBtn.addEventListener("click", function() {
+      const key = document.getElementById("totalSortKey").value;
+      const order = document.querySelector('input[name="totalOrder"]:checked').value;
+      console.log("通算検索実行 →", key, order);
+      // ★ここでCSV読み込み＆table生成処理を後から実装
+    });
+  }
+});
+
+// ✅ CSVデータ格納用
+let titleData = [];
+
+// ✅ ページ読み込み時にCSVを取得して表示
+document.addEventListener("DOMContentLoaded", function() {
+  loadCSV();
+  setupAccordion();  // アコーディオン開閉（既存コード再利用OK）
+  setupTotalSearch(); // 通算検索ボタン処理
+});
+
+// ✅ CSV読み込み
+function loadCSV() {
+  fetch("title.csv")
+    .then(response => response.text())
+    .then(text => {
+      const rows = text.trim().split("\n").map(r => r.split(","));
+      const header = rows[0]; // ["棋士名", "登場", "獲得", "敗退", "勝率", "並順"]
+      titleData = rows.slice(1).map(r => {
+        return {
+          name: r[0],
+          appearances: Number(r[1]), // 登場
+          total_titles: Number(r[2]), // 獲得
+          losses: Number(r[3]), // 敗退
+          winrate: Number(r[4]), // 勝率
+          order: Number(r[5]) // 並順
+        };
+      });
+      renderTable(titleData);
+    })
+    .catch(err => {
+      console.error("CSVの読み込みに失敗：", err);
+    });
+}
+
+// ✅ table表示（5列）
+function renderTable(data) {
+  const table = document.querySelector("table");
+  const thead = table.querySelector("thead");
+  const tbody = table.querySelector("tbody");
+
+  // ヘッダー生成
+  thead.innerHTML = `
+    <tr>
+      <th>棋士名</th>
+      <th>登場</th>
+      <th>獲得</th>
+      <th>敗退</th>
+      <th>勝率</th>
+    </tr>
+  `;
+
+  // 本体生成
+  tbody.innerHTML = "";
+  data.forEach(row => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${row.name}</td>
+      <td>${row.appearances}</td>
+      <td>${row.total_titles}</td>
+      <td>${row.losses}</td>
+      <td>${row.winrate}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// ✅ 通算検索ボタン処理
+function setupTotalSearch() {
+  const totalBtn = document.getElementById("totalSearchBtn");
+  if (!totalBtn) return;
+
+  totalBtn.addEventListener("click", function() {
+    const key = document.getElementById("totalSortKey").value;
+    const order = document.querySelector('input[name="totalOrder"]:checked').value;
+
+    if (!key) {
+      alert("並べ替え項目を選択してください");
+      return;
+    }
+
+    // 並べ替え処理
+    const sortedData = [...titleData].sort((a, b) => {
+      // a[key]が数値になる前提
+      if (a[key] === b[key]) {
+        // 同率なら「並順(order)」の昇順で比較
+        return a.order - b.order;
+      }
+      // 通常の比較（昇順 or 降順）
+      if (order === "asc") {
+        return a[key] - b[key];
+      } else {
+        return b[key] - a[key];
+      }
+    });
+
+    renderTable(sortedData);
+  });
+}
+
+// ✅ アコーディオン（既存コードを流用する場合は二重定義しない）
+function setupAccordion() {
+  const headers = document.querySelectorAll(".accordion-header");
+  headers.forEach(header => {
+    header.addEventListener("click", function() {
+      const content = this.nextElementSibling;
+      const visible = content.style.display === "block";
+      // 全閉じ
+      document.querySelectorAll(".accordion-content").forEach(c => {
+        c.style.display = "none";
+      });
+      // 自分だけ開閉
+      content.style.display = visible ? "none" : "block";
+    });
+  });
+}
+</script>
+
+</body>
+</html>
