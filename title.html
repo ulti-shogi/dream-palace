@@ -315,7 +315,7 @@ function setupRecordSearch() {
     } else if (type === "shortest") {
       // ✅ 最短記録（四段からの日数 昇順 → 同率は並順）
       const rows = [...titleData]
-        .filter(r => r.daysFrom4dan >= 0 && r.shortestText) 
+        .filter(r => r.daysFrom4dan > 0 && r.shortestText) 
         .sort((a, b) => {
           if (a.daysFrom4dan === b.daysFrom4dan) {
             return a.order - b.order;
