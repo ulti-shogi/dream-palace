@@ -141,7 +141,63 @@ function loadCSV() {
         };
       });
 
-      renderTable(titleData);
+      // ✅ CSV読み込み
+function loadCSV() {
+  fetch("title.csv")
+    .then(response => response.text())
+    .then(text => {
+      const rows = text.trim().split("\n").map(r => r.split(","));
+      const header = rows[0]; // ["番号","並順","棋士名","登場","獲得","敗退","勝率"]
+
+      // ✅ 列名対応のインデックス取得
+      const idxNumber = header.indexOf("番号");
+      const idxOrder = header.indexOf("並順");
+      const idxName = header.indexOf("棋士名");
+      const idxAppear = header.indexOf("登場");
+      const idxTitles = header.indexOf("獲得");
+      const idxLosses = header.indexOf("敗退");
+      const idxWinrate = header.indexOf("勝率");
+
+      titleData = rows.slice(1).map(r => {
+        return {
+          number: r[idxNumber],
+          order: Number(r[idxOrder]),
+          name: r[idxName],
+          appearances: Number(r[idxAppear]),
+          total_titles: Number(r[idxTitles]),
+          losses: Number(r[idxLosses]),
+          winrate: Number(r[idxWinrate])
+        };
+      });
+
+      // ✅ ここから「初期表示TOP10＋同率者含める」処理
+      // ① 獲得数で降順 → 同率なら並順で昇順
+      const sorted = [...titleData].sort((a, b) => {
+        if (a.total_titles === b.total_titles) {
+          return a.order - b.order; // 並順の小さい方を上へ
+        }
+        return b.total_titles - a.total_titles; // 獲得降順
+      });
+
+      // ② 上位10件を抽出
+      const top10 = sorted.slice(0, 10);
+
+      // ③ 10位の獲得数を取得
+      const baseValue = top10[top10.length - 1].total_titles;
+
+      // ④ 10位以下で同じ獲得数の者がいたら追加取得
+      const extended = sorted.filter((player, index) => {
+        if (index < 10) return true; // TOP10はそのまま
+        return player.total_titles === baseValue; // 同率者も含める
+      });
+
+      // ✅ 初期表示
+      renderTable(extended);
+    })
+    .catch(err => {
+      console.error("CSVの読み込みに失敗：", err);
+    });
+}
     })
     .catch(err => {
       console.error("CSVの読み込みに失敗：", err);
