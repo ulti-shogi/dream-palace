@@ -295,23 +295,33 @@ function setupRecordSearch() {
   if (!btn) return;
   btn.addEventListener("click", () => {
     const type = document.getElementById("recordType").value;
-    if (!type) { alert("記録の種類を選択してください"); return; }
+    if (!type) {
+      alert("記録の種類を選択してください");
+      return;
+    }
 
     if (type === "youngest") {
-      // 最年少：生年からの日数 昇順 → 同率は並順 昇順
+      // ✅ 最年少記録（生年からの日数 昇順 → 同率は並順）
       const rows = [...titleData]
-        .filter(r => r.daysFromBirth > 0 && r.youngestText)  // 必要列が揃っている行のみ
-        .sort((a, b) => (a.daysFromBirth === b.daysFromBirth)
-              ? (a.order - b.order)
-              : (a.daysFromBirth - b.daysFromBirth));
+        .filter(r => r.daysFromBirth > 0 && r.youngestText)
+        .sort((a, b) => {
+          if (a.daysFromBirth === b.daysFromBirth) {
+            return a.order - b.order;
+          }
+          return a.daysFromBirth - b.daysFromBirth;
+        });
       renderRecordTable(rows, "youngest");
+
     } else if (type === "shortest") {
-      // 最短：四段からの日数 昇順 → 同率は並順 昇順
+      // ✅ 最短記録（四段からの日数 昇順 → 同率は並順）
       const rows = [...titleData]
-        .filter(r => r.daysFrom4dan > 0 && r.shortestText && r.fourDanDate)
-        .sort((a, b) => (a.daysFrom4dan === b.daysFrom4dan)
-              ? (a.order - b.order)
-              : (a.daysFrom4dan - b.daysFrom4dan));
+        .filter(r => r.daysFrom4dan >= 0 && r.shortestText) 
+        .sort((a, b) => {
+          if (a.daysFrom4dan === b.daysFrom4dan) {
+            return a.order - b.order;
+          }
+          return a.daysFrom4dan - b.daysFrom4dan;
+        });
       renderRecordTable(rows, "shortest");
     }
   });
@@ -333,20 +343,26 @@ function renderRecordTable(rows, mode) {
   `;
   tbody.innerHTML = "";
 
-  // 競技順位方式（同率同順位・次の順位は飛ばす）
   let currentRank = 0, prevKey = null, count = 0;
 
   rows.forEach(r => {
     count++;
-    const key = (mode === "youngest") ? r.daysFromBirth : r.daysFrom4dan;
+    // ✅ ランキング比較キーの決定
+    const key = (mode === "youngest") 
+      ? r.daysFromBirth 
+      : r.daysFrom4dan;
+
     if (prevKey === null || key !== prevKey) {
       currentRank = count;
       prevKey = key;
     }
 
-    // 一覧行
+    const valueText = (mode === "youngest") 
+      ? r.youngestText 
+      : r.shortestText;
+
+    // ✅ メイン行
     const tr = document.createElement("tr");
-    const valueText = (mode === "youngest") ? r.youngestText : r.shortestText;
     tr.innerHTML = `
       <td>${currentRank}</td>
       <td>${r.name}</td>
@@ -355,22 +371,37 @@ function renderRecordTable(rows, mode) {
     `;
     tbody.appendChild(tr);
 
-    // 詳細行（折りたたみ）
+    // ✅ 詳細行
     const detail = document.createElement("tr");
     detail.className = "detail-row";
     detail.style.display = "none";
-    const detailHtml = (mode === "youngest")
-      ? `生年月日：${r.birthDate || "-"}　／　獲得日：${r.firstTitleDate || "-"}`
-      : `四段昇段日：${r.fourDanDate || "-"}　／　獲得日：${r.firstTitleDate || "-"}`;
+
+    let detailHtml = "";
+    if (mode === "youngest") {
+      detailHtml = `
+        生年月日：${r.birthDate || "-"}　
+        ／　獲得日：${r.firstTitleDate || "-"}
+      `;
+    } else {
+      // 最短記録
+      detailHtml = `
+        四段昇段日：${r.fourDanDate || "-"}　
+        ／　獲得日：${r.firstTitleDate || "-"}
+      `;
+    }
+
     detail.innerHTML = `<td colspan="4">${detailHtml}</td>`;
     tbody.appendChild(detail);
   });
 
-  // トグル
+  // ✅ トグルイベント設定
   tbody.querySelectorAll(".detail-toggle").forEach(btn => {
     btn.addEventListener("click", function() {
       const row = this.closest("tr").nextElementSibling;
-      row.style.display = (row.style.display === "none" || row.style.display === "") ? "table-row" : "none";
+      row.style.display = 
+        (row.style.display === "none" || row.style.display === "") 
+          ? "table-row" 
+          : "none";
     });
   });
 }
