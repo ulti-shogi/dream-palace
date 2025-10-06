@@ -111,94 +111,94 @@
 <footer>フッダー</footer>
 
 <script>
-  // ✅ CSVデータ格納用
+  // =======================
+  // グローバル
+  // =======================
   let titleData = [];
 
-  // ✅ ページ読み込み時に初期処理
   document.addEventListener("DOMContentLoaded", function() {
-  loadCSV();
-  setupAccordion();
-  setupTotalSearch();
-  setupRecordSearch(); // ← 追加
-});
+    loadCSV();
+    setupAccordion();
+    setupTotalSearch();
+    setupRecordSearch();
+  });
 
-  // ✅ CSV読み込み（列名対応 & 初期表示TOP10＋同率）
+  // =======================
+  // CSV 読み込み
+  // =======================
   function loadCSV() {
     fetch("title.csv")
       .then(response => response.text())
       .then(text => {
         const rows = text.trim().split("\n").map(r => r.split(","));
-        const header = rows[0]; // ["番号","並順","棋士名","登場","獲得","敗退","勝率", ...]
+        const header = rows[0];
 
-        // ✅ 列名からインデックスを抽出
-        const idxNumber  = header.indexOf("番号");
-        const idxOrder   = header.indexOf("並順");
-        const idxName    = header.indexOf("棋士名");
-        const idxAppear  = header.indexOf("登場");
-        const idxTitles  = header.indexOf("獲得");
-        const idxLosses  = header.indexOf("敗退");
-        const idxWinrate = header.indexOf("勝率");
+        // ヘッダー名→index取得のヘルパ
+        const idx = (name) => header.indexOf(name);
 
-        // ✅ データ整形
-        // …中略（既存の loadCSV そのまま）…
+        // 数値化ヘルパ（小数対応 / 余計な空白やカンマだけ除去）
+        const toNum = (v) => {
+          if (v === undefined || v === null) return NaN;
+          const s = String(v).trim().replace(/,/g, "");
+          if (s === "") return NaN;
+          const n = Number(s);
+          return Number.isFinite(n) ? n : NaN;
+        };
 
-// ✅ データ整形（既存フィールドに加えて記録系で使う列も取り込む）
-titleData = rows.slice(1).map(r => {
-  return {
-    number: r[idxNumber],
-    order: Number(r[idxOrder]),
-    name:  r[idxName],
-    appearances: Number(r[idxAppear]),
-    total_titles: Number(r[idxTitles]),
-    losses: Number(r[idxLosses]),
-    winrate: Number(r[idxWinrate]),
+        // 「四段からの日数」専用：数字以外排除して整数化（より厳密）
+        const toIntDaysStrict = (v) => {
+          if (v === undefined || v === null) return NaN;
+          const s = String(v).trim().replace(/[^\d]/g, "");
+          if (s === "") return NaN;
+          const n = Number(s);
+          return Number.isFinite(n) ? n : NaN;
+        };
 
-    // ▼ ここから記録系で使用
-    youngestText:   r[ header.indexOf("最年少記録") ] ?? "",      // 表示用（例: "17歳11ヶ月27日"）
-    daysFromBirth:  Number(r[ header.indexOf("生年からの日数") ] ?? 0), // 並べ替えキー（若い順=昇順）
-    birthDate:      r[ header.indexOf("生年月日") ] ?? "",
+        titleData = rows.slice(1).map(r => {
+          return {
+            // 基本
+            number:        r[idx("番号")],
+            order:         toNum(r[idx("並順")]),
+            name:          r[idx("棋士名")],
+            appearances:   toNum(r[idx("登場")]),
+            total_titles:  toNum(r[idx("獲得")]),
+            losses:        toNum(r[idx("敗退")]),
+            winrate:       toNum(r[idx("勝率")]),
+            // 記録系（最年少）
+            youngestText:  header.includes("最年少記録") ? r[idx("最年少記録")] : "",
+            daysFromBirth: header.includes("生年からの日数") ? toIntDaysStrict(r[idx("生年からの日数")]) : NaN,
+            birthDate:     header.includes("生年月日") ? r[idx("生年月日")] : "",
+            // 記録系（最短）
+            shortestText:  header.includes("最短記録") ? r[idx("最短記録")] : "",
+            daysFrom4dan:  header.includes("四段からの日数") ? toIntDaysStrict(r[idx("四段からの日数")]) : NaN,
+            fourDanDate:   header.includes("四段昇段日") ? r[idx("四段昇段日")] : "",
+            firstTitleDate:header.includes("初タイトル") ? r[idx("初タイトル")] : ""
+          };
+        });
 
-    shortestText:   r[ header.indexOf("最短記録") ] ?? "",        // 表示用（例: "3年9ヶ月15日"）
-    daysFrom4dan:   Number(r[ header.indexOf("四段からの日数") ] ?? 0), // 並べ替えキー（短い順=昇順）
-    fourDanDate:    r[ header.indexOf("四段昇段日") ] ?? "",
-
-    firstTitleDate: r[ header.indexOf("初タイトル") ] ?? ""       // 獲得日
-  };
-});
-
-        // ✅ 初期表示：「獲得」降順 → 同率は並順昇順 → 上位10＋同率
+        // 初期表示：獲得の多い順TOP10＋10位と同率
         const sorted = [...titleData].sort((a, b) => {
-          if (a.total_titles === b.total_titles) {
-            return a.order - b.order; // 同率なら並順
-          }
-          return b.total_titles - a.total_titles; // 獲得降順
+          if (a.total_titles === b.total_titles) return a.order - b.order;
+          return b.total_titles - a.total_titles;
         });
 
-        if (sorted.length === 0) {
-          renderTable([]); // データ0件なら空表示
-          return;
-        }
+        if (sorted.length === 0) { renderTable([]); return; }
 
-        // 上位10件を一旦取得
         const top10 = sorted.slice(0, 10);
-        // 10位の値
         const baseValue = top10[top10.length - 1].total_titles;
-
-        // baseValue と同率の者を追加
-        const extended = sorted.filter((player, index) => {
-          if (index < 10) return true; // TOP10
-          return player.total_titles === baseValue; // 10位同率
-        });
+        const extended = sorted.filter((p, i) => i < 10 || p.total_titles === baseValue);
 
         renderTable(extended);
       })
       .catch(err => {
         console.error("CSVの読み込みに失敗：", err);
-        renderTable([]); // 失敗時は空表示を防止
+        renderTable([]);
       });
   }
 
-  // ✅ table表示（順位対応 & 小数第4位固定）
+  // =======================
+  // 通算テーブル描画（順位表示 & 勝率4桁固定）
+  // =======================
   function renderTable(data) {
     const table = document.querySelector("table");
     const thead = table.querySelector("thead");
@@ -214,18 +214,15 @@ titleData = rows.slice(1).map(r => {
         <th>勝率</th>
       </tr>
     `;
-
     tbody.innerHTML = "";
 
-    // ✅ 順位計算（競技順位方式）
     let currentRank = 0;
     let prevValue = null;
     let count = 0;
 
-    // 並べ替え基準（初期表示や検索後対応）
     const sortKey = (document.getElementById("totalSortKey")?.value) || "total_titles";
 
-    data.forEach((row, index) => {
+    data.forEach(row => {
       count++;
       const currentValue = row[sortKey];
 
@@ -238,16 +235,18 @@ titleData = rows.slice(1).map(r => {
       tr.innerHTML = `
         <td>${currentRank}</td>
         <td>${row.name}</td>
-        <td>${row.appearances}</td>
-        <td>${row.total_titles}</td>
-        <td>${row.losses}</td>
-        <td>${row.winrate.toFixed(4)}</td>
+        <td>${Number.isFinite(row.appearances) ? row.appearances : ""}</td>
+        <td>${Number.isFinite(row.total_titles) ? row.total_titles : ""}</td>
+        <td>${Number.isFinite(row.losses) ? row.losses : ""}</td>
+        <td>${Number.isFinite(row.winrate) ? row.winrate.toFixed(4) : ""}</td>
       `;
       tbody.appendChild(tr);
     });
   }
 
-  // ✅ 通算検索ボタン処理（既存UIを活かす）
+  // =======================
+  // 通算検索
+  // =======================
   function setupTotalSearch() {
     const totalBtn = document.getElementById("totalSearchBtn");
     if (!totalBtn) return;
@@ -256,155 +255,129 @@ titleData = rows.slice(1).map(r => {
       const key = document.getElementById("totalSortKey").value;
       const order = document.querySelector('input[name="totalOrder"]:checked').value;
 
-      if (!key) {
-        alert("並べ替え項目を選択してください");
-        return;
-      }
+      if (!key) { alert("並べ替え項目を選択してください"); return; }
 
       const sortedData = [...titleData].sort((a, b) => {
-        if (a[key] === b[key]) {
-          return a.order - b.order; // 同率なら並順
-        }
-        return order === "asc"
-          ? a[key] - b[key]
-          : b[key] - a[key];
+        const av = a[key], bv = b[key];
+        if (av === bv) return a.order - b.order; // 同率は並順
+        if (order === "asc") return av - bv;
+        return bv - av;
       });
 
       renderTable(sortedData);
     });
   }
 
-  // ✅ アコーディオン開閉
+  // =======================
+  // 記録系検索
+  // =======================
+  function setupRecordSearch() {
+    const btn = document.getElementById("recordSearchBtn");
+    if (!btn) return;
+
+    btn.addEventListener("click", () => {
+      const type = document.getElementById("recordType").value;
+      if (!type) { alert("記録の種類を選択してください"); return; }
+
+      if (type === "youngest") {
+        // 最年少：生年からの日数 昇順 → 同値は並順
+        const rows = [...titleData]
+          .filter(r => Number.isFinite(r.daysFromBirth) && r.youngestText)
+          .sort((a, b) => {
+            if (a.daysFromBirth === b.daysFromBirth) return a.order - b.order;
+            return a.daysFromBirth - b.daysFromBirth;
+          });
+        renderRecordTable(rows, "youngest");
+
+      } else if (type === "shortest") {
+        // 最短：四段からの日数 昇順 → 同値は並順
+        const rows = [...titleData]
+          .filter(r => Number.isFinite(r.daysFrom4dan) && r.shortestText)
+          .sort((a, b) => {
+            const ka = a.daysFrom4dan, kb = b.daysFrom4dan;
+            if (ka === kb) return a.order - b.order;
+            return ka - kb;
+          });
+        renderRecordTable(rows, "shortest");
+      }
+    });
+  }
+
+  // 記録系の描画（順位／棋士名／値／詳細）
+  function renderRecordTable(rows, mode) {
+    const table = document.querySelector("table");
+    const thead = table.querySelector("thead");
+    const tbody = table.querySelector("tbody");
+
+    thead.innerHTML = `
+      <tr>
+        <th>順位</th>
+        <th>棋士名</th>
+        <th>${mode === "youngest" ? "獲得年齢" : "最短記録"}</th>
+        <th>詳細</th>
+      </tr>
+    `;
+    tbody.innerHTML = "";
+
+    let currentRank = 0, prevKey = null, count = 0;
+
+    rows.forEach(r => {
+      count++;
+
+      const rawKey = (mode === "youngest") ? r.daysFromBirth : r.daysFrom4dan;
+      const key = Number.isFinite(rawKey) ? rawKey : Infinity;
+
+      if (prevKey === null || key !== prevKey) {
+        currentRank = count;
+        prevKey = key;
+      }
+
+      const valueText = (mode === "youngest") ? r.youngestText : r.shortestText;
+
+      // 本体行
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${currentRank}</td>
+        <td>${r.name}</td>
+        <td>${valueText}</td>
+        <td><button class="detail-toggle">詳細</button></td>
+      `;
+      tbody.appendChild(tr);
+
+      // 詳細行
+      const detail = document.createElement("tr");
+      detail.className = "detail-row";
+      detail.style.display = "none";
+      const detailHtml = (mode === "youngest")
+        ? `生年月日：${r.birthDate || "-"}　／　獲得日：${r.firstTitleDate || "-"}`
+        : `四段昇段日：${r.fourDanDate || "-"}　／　獲得日：${r.firstTitleDate || "-"}`;
+      detail.innerHTML = `<td colspan="4">${detailHtml}</td>`;
+      tbody.appendChild(detail);
+    });
+
+    // トグル
+    tbody.querySelectorAll(".detail-toggle").forEach(btn => {
+      btn.addEventListener("click", function() {
+        const row = this.closest("tr").nextElementSibling;
+        row.style.display = (row.style.display === "none" || row.style.display === "") ? "table-row" : "none";
+      });
+    });
+  }
+
+  // =======================
+  // アコーディオン
+  // =======================
   function setupAccordion() {
     const headers = document.querySelectorAll(".accordion-header");
     headers.forEach(header => {
       header.addEventListener("click", function() {
         const content = this.nextElementSibling;
         const visible = content.style.display === "block";
-        document.querySelectorAll(".accordion-content").forEach(c => {
-          c.style.display = "none";
-        });
+        document.querySelectorAll(".accordion-content").forEach(c => c.style.display = "none");
         content.style.display = visible ? "none" : "block";
       });
     });
   }
-
-// ========== 記録系 UI ==========
-function setupRecordSearch() {
-  const btn = document.getElementById("recordSearchBtn");
-  if (!btn) return;
-  btn.addEventListener("click", () => {
-    const type = document.getElementById("recordType").value;
-    if (!type) {
-      alert("記録の種類を選択してください");
-      return;
-    }
-
-    if (type === "youngest") {
-      // ✅ 最年少記録（生年からの日数 昇順 → 同率は並順）
-      const rows = [...titleData]
-        .filter(r => r.daysFromBirth > 0 && r.youngestText)
-        .sort((a, b) => {
-          if (a.daysFromBirth === b.daysFromBirth) {
-            return a.order - b.order;
-          }
-          return a.daysFromBirth - b.daysFromBirth;
-        });
-      renderRecordTable(rows, "youngest");
-
-    } else if (type === "shortest") {
-      // ✅ 最短記録（四段からの日数 昇順 → 同率は並順）
-      const rows = [...titleData]
-        .filter(r => Number.isFinite(r.daysFrom4dan) && r.shortestText)
-        .sort((a, b) => {
-          if (a.daysFrom4dan === b.daysFrom4dan) {
-            return a.order - b.order;
-          }
-          return a.daysFrom4dan - b.daysFrom4dan;
-        });
-      renderRecordTable(rows, "shortest");
-    }
-  });
-}
-
-// ========== 記録系の描画（順位／棋士名／表示用テキスト／詳細） ==========
-function renderRecordTable(rows, mode) {
-  const table = document.querySelector("table");
-  const thead = table.querySelector("thead");
-  const tbody = table.querySelector("tbody");
-
-  thead.innerHTML = `
-    <tr>
-      <th>順位</th>
-      <th>棋士名</th>
-      <th>${mode === "youngest" ? "獲得年齢" : "最短記録"}</th>
-      <th>詳細</th>
-    </tr>
-  `;
-  tbody.innerHTML = "";
-
-  let currentRank = 0, prevKey = null, count = 0;
-
-  rows.forEach(r => {
-    count++;
-    // ✅ ランキング比較キーの決定
-    const key = (mode === "youngest") 
-      ? r.daysFromBirth 
-      : r.daysFrom4dan;
-
-    if (prevKey === null || key !== prevKey) {
-      currentRank = count;
-      prevKey = key;
-    }
-
-    const valueText = (mode === "youngest") 
-      ? r.youngestText 
-      : r.shortestText;
-
-    // ✅ メイン行
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${currentRank}</td>
-      <td>${r.name}</td>
-      <td>${valueText}</td>
-      <td><button class="detail-toggle">詳細</button></td>
-    `;
-    tbody.appendChild(tr);
-
-    // ✅ 詳細行
-    const detail = document.createElement("tr");
-    detail.className = "detail-row";
-    detail.style.display = "none";
-
-    let detailHtml = "";
-    if (mode === "youngest") {
-      detailHtml = `
-        生年月日：${r.birthDate || "-"}　
-        ／　獲得日：${r.firstTitleDate || "-"}
-      `;
-    } else {
-      // 最短記録
-      detailHtml = `
-        四段昇段日：${r.fourDanDate || "-"}　
-        ／　獲得日：${r.firstTitleDate || "-"}
-      `;
-    }
-
-    detail.innerHTML = `<td colspan="4">${detailHtml}</td>`;
-    tbody.appendChild(detail);
-  });
-
-  // ✅ トグルイベント設定
-  tbody.querySelectorAll(".detail-toggle").forEach(btn => {
-    btn.addEventListener("click", function() {
-      const row = this.closest("tr").nextElementSibling;
-      row.style.display = 
-        (row.style.display === "none" || row.style.display === "") 
-          ? "table-row" 
-          : "none";
-    });
-  });
-}
 </script>
 
 </body>
