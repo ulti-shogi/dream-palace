@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>将棋の殿堂</title>
-  <link rel="stylesheet" href="style.css?v=1.0">
+  <link rel="stylesheet" href="style.css?v=1.1">
 
   <style>
     /* ✅ アコーディオン用の最低限CSS。（既存CSSには干渉しない） */
@@ -102,207 +102,168 @@
 <footer>フッダー</footer>
 
 <script>
-// ✅ CSVデータ格納用
-let titleData = [];
+  // ✅ CSVデータ格納用
+  let titleData = [];
 
-// ✅ ページ読み込み時
-document.addEventListener("DOMContentLoaded", function() {
-  loadCSV();
-  setupAccordion();
-  setupTotalSearch();
-});
+  // ✅ ページ読み込み時に初期処理
+  document.addEventListener("DOMContentLoaded", function() {
+    loadCSV();
+    setupAccordion();
+    setupTotalSearch();
+  });
 
-// ✅ CSV読み込み（列名対応）
-function loadCSV() {
-  fetch("title.csv")
-    .then(response => response.text())
-    .then(text => {
-      const rows = text.trim().split("\n").map(r => r.split(","));
-      const header = rows[0]; // ["番号","並順","棋士名","登場","獲得","敗退","勝率"]
+  // ✅ CSV読み込み（列名対応 & 初期表示TOP10＋同率）
+  function loadCSV() {
+    fetch("title.csv")
+      .then(response => response.text())
+      .then(text => {
+        const rows = text.trim().split("\n").map(r => r.split(","));
+        const header = rows[0]; // ["番号","並順","棋士名","登場","獲得","敗退","勝率", ...]
 
-      // ✅ 任意の順番でも対応できるように列の位置を特定
-      const idxNumber = header.indexOf("番号");
-      const idxOrder = header.indexOf("並順");
-      const idxName = header.indexOf("棋士名");
-      const idxAppear = header.indexOf("登場");
-      const idxTitles = header.indexOf("獲得");
-      const idxLosses = header.indexOf("敗退");
-      const idxWinrate = header.indexOf("勝率");
+        // ✅ 列名からインデックスを抽出
+        const idxNumber  = header.indexOf("番号");
+        const idxOrder   = header.indexOf("並順");
+        const idxName    = header.indexOf("棋士名");
+        const idxAppear  = header.indexOf("登場");
+        const idxTitles  = header.indexOf("獲得");
+        const idxLosses  = header.indexOf("敗退");
+        const idxWinrate = header.indexOf("勝率");
 
-      titleData = rows.slice(1).map(r => {
-        return {
-          number: r[idxNumber],                     // 今回は表示しない
-          order: Number(r[idxOrder]),              // 並順
-          name: r[idxName],                        // 棋士名
-          appearances: Number(r[idxAppear]),       // 登場
-          total_titles: Number(r[idxTitles]),      // 獲得
-          losses: Number(r[idxLosses]),            // 敗退
-          winrate: Number(r[idxWinrate])           // 勝率
-        };
-      });
+        // ✅ データ整形
+        titleData = rows.slice(1).map(r => {
+          return {
+            number: r[idxNumber],
+            order: Number(r[idxOrder]),
+            name:  r[idxName],
+            appearances: Number(r[idxAppear]),
+            total_titles: Number(r[idxTitles]),
+            losses: Number(r[idxLosses]),
+            winrate: Number(r[idxWinrate])
+          };
+        });
 
-      // ✅ CSV読み込み
-function loadCSV() {
-  fetch("title.csv")
-    .then(response => response.text())
-    .then(text => {
-      const rows = text.trim().split("\n").map(r => r.split(","));
-      const header = rows[0]; // ["番号","並順","棋士名","登場","獲得","敗退","勝率"]
+        // ✅ 初期表示：「獲得」降順 → 同率は並順昇順 → 上位10＋同率
+        const sorted = [...titleData].sort((a, b) => {
+          if (a.total_titles === b.total_titles) {
+            return a.order - b.order; // 同率なら並順
+          }
+          return b.total_titles - a.total_titles; // 獲得降順
+        });
 
-      // ✅ 列名対応のインデックス取得
-      const idxNumber = header.indexOf("番号");
-      const idxOrder = header.indexOf("並順");
-      const idxName = header.indexOf("棋士名");
-      const idxAppear = header.indexOf("登場");
-      const idxTitles = header.indexOf("獲得");
-      const idxLosses = header.indexOf("敗退");
-      const idxWinrate = header.indexOf("勝率");
-
-      titleData = rows.slice(1).map(r => {
-        return {
-          number: r[idxNumber],
-          order: Number(r[idxOrder]),
-          name: r[idxName],
-          appearances: Number(r[idxAppear]),
-          total_titles: Number(r[idxTitles]),
-          losses: Number(r[idxLosses]),
-          winrate: Number(r[idxWinrate])
-        };
-      });
-
-      // ✅ ここから「初期表示TOP10＋同率者含める」処理
-      // ① 獲得数で降順 → 同率なら並順で昇順
-      const sorted = [...titleData].sort((a, b) => {
-        if (a.total_titles === b.total_titles) {
-          return a.order - b.order; // 並順の小さい方を上へ
+        if (sorted.length === 0) {
+          renderTable([]); // データ0件なら空表示
+          return;
         }
-        return b.total_titles - a.total_titles; // 獲得降順
+
+        // 上位10件を一旦取得
+        const top10 = sorted.slice(0, 10);
+        // 10位の値
+        const baseValue = top10[top10.length - 1].total_titles;
+
+        // baseValue と同率の者を追加
+        const extended = sorted.filter((player, index) => {
+          if (index < 10) return true; // TOP10
+          return player.total_titles === baseValue; // 10位同率
+        });
+
+        renderTable(extended);
+      })
+      .catch(err => {
+        console.error("CSVの読み込みに失敗：", err);
+        renderTable([]); // 失敗時は空表示を防止
       });
+  }
 
-      // ② 上位10件を抽出
-      const top10 = sorted.slice(0, 10);
+  // ✅ table表示（順位対応 & 小数第4位固定）
+  function renderTable(data) {
+    const table = document.querySelector("table");
+    const thead = table.querySelector("thead");
+    const tbody = table.querySelector("tbody");
 
-      // ③ 10位の獲得数を取得
-      const baseValue = top10[top10.length - 1].total_titles;
-
-      // ④ 10位以下で同じ獲得数の者がいたら追加取得
-      const extended = sorted.filter((player, index) => {
-        if (index < 10) return true; // TOP10はそのまま
-        return player.total_titles === baseValue; // 同率者も含める
-      });
-
-      // ✅ 初期表示
-      renderTable(extended);
-    })
-    .catch(err => {
-      console.error("CSVの読み込みに失敗：", err);
-    });
-}
-    })
-    .catch(err => {
-      console.error("CSVの読み込みに失敗：", err);
-    });
-}
-
-// ✅ 表示 (5列)
-function renderTable(data) {
-  const table = document.querySelector("table");
-  const thead = table.querySelector("thead");
-  const tbody = table.querySelector("tbody");
-
-  // ✅ ヘッダーに「順位」列を追加
-  thead.innerHTML = `
-    <tr>
-      <th>順位</th>
-      <th>棋士名</th>
-      <th>登場</th>
-      <th>獲得</th>
-      <th>敗退</th>
-      <th>勝率</th>
-    </tr>
-  `;
-
-  tbody.innerHTML = "";
-
-  // ✅ 順位計算（競技順位方式）
-  let currentRank = 0;      // 表示する順位
-  let prevValue = null;     // ひとつ前の比較値
-  let count = 0;            // 行数カウント（順位スキップ判定）
-
-  data.forEach((row, index) => {
-    count++;
-
-    // 並べ替え基準を取得（今は totalSortKey & totalOrder を想定）
-    // → もし直近に並べ替えが実行されてなければ "total_titles" が使われることもある
-    const sortKey = document.getElementById("totalSortKey")?.value || "total_titles";
-
-    // 今回の順位比較対象
-    const currentValue = row[sortKey];
-
-    // 1行目 or 前の値と違えば順位更新
-    if (prevValue === null || prevValue !== currentValue) {
-      currentRank = count;
-      prevValue = currentValue;
-    }
-
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${currentRank}</td>
-      <td>${row.name}</td>
-      <td>${row.appearances}</td>
-      <td>${row.total_titles}</td>
-      <td>${row.losses}</td>
-      <td>${row.winrate.toFixed(4)}</td>
+    thead.innerHTML = `
+      <tr>
+        <th>順位</th>
+        <th>棋士名</th>
+        <th>登場</th>
+        <th>獲得</th>
+        <th>敗退</th>
+        <th>勝率</th>
+      </tr>
     `;
-    tbody.appendChild(tr);
-  });
-}
 
-// ✅ 通算検索ボタン処理
-function setupTotalSearch() {
-  const totalBtn = document.getElementById("totalSearchBtn");
-  if (!totalBtn) return;
+    tbody.innerHTML = "";
 
-  totalBtn.addEventListener("click", function() {
-    const key = document.getElementById("totalSortKey").value;
-    const order = document.querySelector('input[name="totalOrder"]:checked').value;
+    // ✅ 順位計算（競技順位方式）
+    let currentRank = 0;
+    let prevValue = null;
+    let count = 0;
 
-    if (!key) {
-      alert("並べ替え項目を選択してください");
-      return;
-    }
+    // 並べ替え基準（初期表示や検索後対応）
+    const sortKey = (document.getElementById("totalSortKey")?.value) || "total_titles";
 
-    // 例: key = "total_titles" / "appearances" / "losses" / "winrate"
-    const sortedData = [...titleData].sort((a, b) => {
-      if (a[key] === b[key]) {
-        // ✅ 同値なら並順を昇順
-        return a.order - b.order;
+    data.forEach((row, index) => {
+      count++;
+      const currentValue = row[sortKey];
+
+      if (prevValue === null || prevValue !== currentValue) {
+        currentRank = count;
+        prevValue = currentValue;
       }
-      return order === "asc"
-        ? a[key] - b[key]
-        : b[key] - a[key];
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${currentRank}</td>
+        <td>${row.name}</td>
+        <td>${row.appearances}</td>
+        <td>${row.total_titles}</td>
+        <td>${row.losses}</td>
+        <td>${row.winrate.toFixed(4)}</td>
+      `;
+      tbody.appendChild(tr);
     });
+  }
 
-    renderTable(sortedData);
-  });
-}
+  // ✅ 通算検索ボタン処理（既存UIを活かす）
+  function setupTotalSearch() {
+    const totalBtn = document.getElementById("totalSearchBtn");
+    if (!totalBtn) return;
 
-// ✅ アコーディオン
-function setupAccordion() {
-  const headers = document.querySelectorAll(".accordion-header");
-  headers.forEach(header => {
-    header.addEventListener("click", function() {
-      const content = this.nextElementSibling;
-      const visible = content.style.display === "block";
-      // 全部閉じる
-      document.querySelectorAll(".accordion-content").forEach(c => {
-        c.style.display = "none";
+    totalBtn.addEventListener("click", function() {
+      const key = document.getElementById("totalSortKey").value;
+      const order = document.querySelector('input[name="totalOrder"]:checked').value;
+
+      if (!key) {
+        alert("並べ替え項目を選択してください");
+        return;
+      }
+
+      const sortedData = [...titleData].sort((a, b) => {
+        if (a[key] === b[key]) {
+          return a.order - b.order; // 同率なら並順
+        }
+        return order === "asc"
+          ? a[key] - b[key]
+          : b[key] - a[key];
       });
-      // 自分だけ開閉
-      content.style.display = visible ? "none" : "block";
+
+      renderTable(sortedData);
     });
-  });
-}
+  }
+
+  // ✅ アコーディオン開閉
+  function setupAccordion() {
+    const headers = document.querySelectorAll(".accordion-header");
+    headers.forEach(header => {
+      header.addEventListener("click", function() {
+        const content = this.nextElementSibling;
+        const visible = content.style.display === "block";
+        document.querySelectorAll(".accordion-content").forEach(c => {
+          c.style.display = "none";
+        });
+        content.style.display = visible ? "none" : "block";
+      });
+    });
+  }
 </script>
 
 </body>
