@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>将棋の殿堂</title>
+    <link rel="stylesheet" href="style.css?v=1.1">
+</head>
+<body>
+<header>
+<h1>将棋の殿堂</h1>
+</header>
+<main>
+      <section>
+  <label>
+  <select>
+    <option value="登場">登場</option>
+    <option value="獲得">獲得</option>
+    <option value="敗退">敗退</option>
+    <option value="勝率">勝率</option>
+  </select>
+</label>
+
+<div>
+  <label><input type="radio" name="order" value="asc"> 昇順</label>
+  <label><input type="radio" name="order" value="desc" checked> 降順</label>
+</div>
+
+<button>検索</button>
+      </section>
+  
+
+<table>
+  <thead>
+  <tbody>
+</table>
+
+<div class="free">
+  <h3>自由欄</h3>
+  <p>補足情報など自由に書き込む。</p>
+      </div>
+  
+  </main>
+  <footer>フッター</footer>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+  const section = document.querySelector("section");
+  const table = document.querySelector("table");
+  const thead = table.querySelector("thead");
+  const tbody = table.querySelector("tbody");
+
+  let csvData = [];
+
+  // CSV読み込み（title.csv）
+  fetch("title.csv")
+    .then(res => res.text())
+    .then(text => {
+      csvData = parseCSV(text);
+      render(); // 初期表示
+    });
+
+  // CSVを配列オブジェクトに変換
+  function parseCSV(text) {
+    const lines = text.trim().split("\n");
+    const header = lines[0].split(",");
+    return lines.slice(1).map(line => {
+      const cols = line.split(",");
+      const obj = {};
+      header.forEach((key, i) => obj[key] = cols[i]);
+      return obj;
+    });
+  }
+
+  // 並び替え実行
+  function render() {
+    const select = section.querySelector("select");
+    const sortKey = select.value; // "登場" "獲得" "敗退" "勝率"
+
+    const orderRadio = section.querySelector('input[type="radio"][name="order"]:checked');
+    const sortOrder = orderRadio ? orderRadio.value : "desc";
+
+    // データをコピーして並び替える
+    const data = csvData.map(row => ({
+      ...row,
+      登場: Number(row["登場"]),
+      獲得: Number(row["獲得"]),
+      敗退: Number(row["敗退"]),
+      勝率: Number(row["勝率"]),
+      並順: Number(row["並順"])
+    }));
+
+    data.sort((a, b) => {
+      const primary = sortOrder === "asc"
+        ? a[sortKey] - b[sortKey]
+        : b[sortKey] - a[sortKey];
+      if (primary !== 0) return primary;
+      return a["並順"] - b["並順"];
+    });
+
+    // 順位の割り当て（同率は同じ順位）
+    let prevValue = null;
+    let prevRank = 0;
+    let count = 0;
+    data.forEach(row => {
+      count++;
+      if (row[sortKey] === prevValue) {
+        row._rank = prevRank;
+      } else {
+        row._rank = count;
+        prevValue = row[sortKey];
+        prevRank = count;
+      }
+    });
+
+    // 見出し作成（固定6列）
+    thead.innerHTML = `
+      <tr>
+        <th>順位</th>
+        <th>棋士名</th>
+        <th>登場</th>
+        <th>獲得</th>
+        <th>敗退</th>
+        <th>勝率</th>
+      </tr>
+    `;
+
+    // 本体表示
+    tbody.innerHTML = "";
+    data.forEach(row => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${row._rank}</td>
+        <td>${row["棋士名"]}</td>
+        <td>${row["登場"]}</td>
+        <td>${row["獲得"]}</td>
+        <td>${row["敗退"]}</td>
+        <td>${row["勝率"].toFixed(4)}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // ボタン押下で実行
+  section.addEventListener("click", e => {
+    if (e.target.tagName === "BUTTON") {
+      render();
+    }
+  });
+});    
+</script>
+</body>
+</html>
+
