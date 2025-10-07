@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>将棋の殿堂</title>
-    <link rel="stylesheet" href="style.css?v=1.1">
+    <link rel="stylesheet" href="style.css?v=1.2">
 </head>
 <body>
 <header>
@@ -104,7 +104,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (mode === "通算") {
       loadCSV("title.csv").then(data => renderTotal(data, sortSelect.value, sortOrder));
     } else {
-      loadCSV("各棋戦ごとのタイトル獲得経験者 - each-title.csv").then(data => {
+      loadCSV("each-title.csv").then(data => {
         const filtered = data.filter(row => row["棋戦"] === kisenSelect.value);
         renderKisen(filtered, sortSelect.value, sortOrder);
       });
