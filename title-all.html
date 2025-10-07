@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>将棋の殿堂</title>
-    <link rel="stylesheet" href="style.css?v=1.2">
+    <link rel="stylesheet" href="style.css?v=1.3">
 </head>
 <body>
 <header>
@@ -159,50 +159,59 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // 棋戦別表示
-  function renderKisen(data, sortKey, sortOrder) {
-    const arr = data.map(row => ({
-      ...row,
-      登場: Number(row["登場"]),
-      獲得: Number(row["獲得"]),
-      敗退: Number(row["敗退"]),
-      並順: Number(row["並順"])
-    }));
-
-    arr.sort((a, b) => {
-      const primary = sortOrder === "asc"
-        ? a[sortKey] - b[sortKey]
-        : b[sortKey] - a[sortKey];
-      if (primary !== 0) return primary;
-      return a["並順"] - b["並順"];
+  // 棋戦別表示（修正版）
+function renderKisen(data, sortKey, sortOrder) {
+  // 列キーのズレ・空白を吸収しつつ数値変換
+  const arr = data.map(row => {
+    const cleanRow = {};
+    Object.keys(row).forEach(key => {
+      cleanRow[key.trim()] = typeof row[key] === "string" ? row[key].trim() : row[key];
     });
+    return {
+      ...cleanRow,
+      登場: Number(cleanRow["登場"]),
+      獲得: Number(cleanRow["獲得"]),
+      敗退: Number(cleanRow["敗退"]),
+      並順: Number(cleanRow["並順"]),
+      永世称号: cleanRow["永世称号"] || ""
+    };
+  });
 
-    assignRank(arr, sortKey);
+  arr.sort((a, b) => {
+    const primary = sortOrder === "asc"
+      ? a[sortKey] - b[sortKey]
+      : b[sortKey] - a[sortKey];
+    if (primary !== 0) return primary;
+    return a["並順"] - b["並順"];
+  });
 
-    thead.innerHTML = `
-      <tr>
-        <th>順位</th>
-        <th>棋士名</th>
-        <th>登場</th>
-        <th>獲得</th>
-        <th>敗退</th>
-        <th>永世称号</th>
-      </tr>
+  assignRank(arr, sortKey);
+
+  thead.innerHTML = `
+    <tr>
+      <th>順位</th>
+      <th>棋士名</th>
+      <th>登場</th>
+      <th>獲得</th>
+      <th>敗退</th>
+      <th>永世称号</th>
+    </tr>
+  `;
+
+  tbody.innerHTML = "";
+  arr.forEach(row => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${row._rank}</td>
+      <td>${row["棋士名"]}</td>
+      <td>${row["登場"]}</td>
+      <td>${row["獲得"]}</td>
+      <td>${row["敗退"]}</td>
+      <td>${row["永世称号"]}</td>
     `;
-
-    tbody.innerHTML = "";
-    arr.forEach(row => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${row._rank}</td>
-        <td>${row["棋士名"]}</td>
-        <td>${row["登場"]}</td>
-        <td>${row["獲得"]}</td>
-        <td>${row["敗退"]}</td>
-        <td>${row["永世称号"] || ""}</td>
-      `;
-      tbody.appendChild(tr);
-    });
-  }
+    tbody.appendChild(tr);
+  });
+}
 
   // 順位割り当て
   function assignRank(arr, sortKey) {
