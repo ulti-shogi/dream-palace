@@ -12,6 +12,26 @@
 </header>
 <main>
       <section>
+<div>
+  <label><input type="radio" name="mode" value="通算" checked> 通算</label>
+  <label><input type="radio" name="mode" value="棋戦別"> 棋戦別</label>
+</div>
+
+<label>
+  <select>
+    <option value="竜王戦">竜王戦</option>
+    <option value="名人戦">名人戦</option>
+    <option value="叡王戦">叡王戦</option>
+    <option value="王位戦">王位戦</option>
+    <option value="王座戦">王座戦</option>
+    <option value="棋聖戦">棋聖戦</option>
+    <option value="棋王戦">棋王戦</option>
+    <option value="王将戦">王将戦</option>
+    <option value="十段戦">十段戦</option>
+    <option value="九段戦">九段戦</option>
+  </select>
+</label>
+          
   <label>
   <select>
     <option value="登場">登場</option>
@@ -44,44 +64,56 @@
   <footer>フッター</footer>
 
 <script>
-    document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", () => {
   const section = document.querySelector("section");
   const table = document.querySelector("table");
   const thead = table.querySelector("thead");
   const tbody = table.querySelector("tbody");
 
-  let csvData = [];
-
-  // CSV読み込み（title.csv）
-  fetch("title.csv")
-    .then(res => res.text())
-    .then(text => {
-      csvData = parseCSV(text);
-      render(); // 初期表示
-    });
-
-  // CSVを配列オブジェクトに変換
-  function parseCSV(text) {
-    const lines = text.trim().split("\n");
-    const header = lines[0].split(",");
-    return lines.slice(1).map(line => {
-      const cols = line.split(",");
-      const obj = {};
-      header.forEach((key, i) => obj[key] = cols[i]);
-      return obj;
-    });
+  // CSV読み込み関数
+  function loadCSV(path) {
+    return fetch(path)
+      .then(res => res.text())
+      .then(text => {
+        const lines = text.trim().split("\n");
+        const header = lines[0].split(",");
+        return lines.slice(1).map(line => {
+          const cols = line.split(",");
+          const obj = {};
+          header.forEach((key, i) => obj[key] = cols[i]);
+          return obj;
+        });
+      });
   }
 
-  // 並び替え実行
-  function render() {
-    const select = section.querySelector("select");
-    const sortKey = select.value; // "登場" "獲得" "敗退" "勝率"
+  // 検索ボタン押下イベント
+  section.addEventListener("click", e => {
+    if (e.target.tagName !== "BUTTON") return;
 
-    const orderRadio = section.querySelector('input[type="radio"][name="order"]:checked');
+    const radios = section.querySelectorAll('input[name="mode"]');
+    let mode = "通算";
+    radios.forEach(r => { if (r.checked) mode = r.value; });
+
+    const selects = section.querySelectorAll("select");
+    const kisenSelect = selects[0]; // 棋戦用
+    const sortSelect  = selects[1]; // 並べ替え用(通算/棋戦共通)
+
+    const orderRadio = section.querySelector('input[name="order"]:checked');
     const sortOrder = orderRadio ? orderRadio.value : "desc";
 
-    // データをコピーして並び替える
-    const data = csvData.map(row => ({
+    if (mode === "通算") {
+      loadCSV("title.csv").then(data => renderTotal(data, sortSelect.value, sortOrder));
+    } else {
+      loadCSV("各棋戦ごとのタイトル獲得経験者 - each-title.csv").then(data => {
+        const filtered = data.filter(row => row["棋戦"] === kisenSelect.value);
+        renderKisen(filtered, sortSelect.value, sortOrder);
+      });
+    }
+  });
+
+  // 通算表示
+  function renderTotal(data, sortKey, sortOrder) {
+    const arr = data.map(row => ({
       ...row,
       登場: Number(row["登場"]),
       獲得: Number(row["獲得"]),
@@ -90,7 +122,7 @@
       並順: Number(row["並順"])
     }));
 
-    data.sort((a, b) => {
+    arr.sort((a, b) => {
       const primary = sortOrder === "asc"
         ? a[sortKey] - b[sortKey]
         : b[sortKey] - a[sortKey];
@@ -98,22 +130,8 @@
       return a["並順"] - b["並順"];
     });
 
-    // 順位の割り当て（同率は同じ順位）
-    let prevValue = null;
-    let prevRank = 0;
-    let count = 0;
-    data.forEach(row => {
-      count++;
-      if (row[sortKey] === prevValue) {
-        row._rank = prevRank;
-      } else {
-        row._rank = count;
-        prevValue = row[sortKey];
-        prevRank = count;
-      }
-    });
+    assignRank(arr, sortKey);
 
-    // 見出し作成（固定6列）
     thead.innerHTML = `
       <tr>
         <th>順位</th>
@@ -125,9 +143,8 @@
       </tr>
     `;
 
-    // 本体表示
     tbody.innerHTML = "";
-    data.forEach(row => {
+    arr.forEach(row => {
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${row._rank}</td>
@@ -135,19 +152,75 @@
         <td>${row["登場"]}</td>
         <td>${row["獲得"]}</td>
         <td>${row["敗退"]}</td>
-        <td>${row["勝率"].toFixed(4)}</td>
+        <td>${Number(row["勝率"]).toFixed(4)}</td>
       `;
       tbody.appendChild(tr);
     });
   }
 
-  // ボタン押下で実行
-  section.addEventListener("click", e => {
-    if (e.target.tagName === "BUTTON") {
-      render();
-    }
-  });
-});    
+  // 棋戦別表示
+  function renderKisen(data, sortKey, sortOrder) {
+    const arr = data.map(row => ({
+      ...row,
+      登場: Number(row["登場"]),
+      獲得: Number(row["獲得"]),
+      敗退: Number(row["敗退"]),
+      並順: Number(row["並順"])
+    }));
+
+    arr.sort((a, b) => {
+      const primary = sortOrder === "asc"
+        ? a[sortKey] - b[sortKey]
+        : b[sortKey] - a[sortKey];
+      if (primary !== 0) return primary;
+      return a["並順"] - b["並順"];
+    });
+
+    assignRank(arr, sortKey);
+
+    thead.innerHTML = `
+      <tr>
+        <th>順位</th>
+        <th>棋士名</th>
+        <th>登場</th>
+        <th>獲得</th>
+        <th>敗退</th>
+        <th>永世称号</th>
+      </tr>
+    `;
+
+    tbody.innerHTML = "";
+    arr.forEach(row => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${row._rank}</td>
+        <td>${row["棋士名"]}</td>
+        <td>${row["登場"]}</td>
+        <td>${row["獲得"]}</td>
+        <td>${row["敗退"]}</td>
+        <td>${row["永世称号"] || ""}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // 順位割り当て
+  function assignRank(arr, sortKey) {
+    let prevValue = null;
+    let prevRank = 0;
+    let count = 0;
+    arr.forEach(row => {
+      count++;
+      if (row[sortKey] === prevValue) {
+        row._rank = prevRank;
+      } else {
+        row._rank = count;
+        prevValue = row[sortKey];
+        prevRank = count;
+      }
+    });
+  }
+});
 </script>
 </body>
 </html>
