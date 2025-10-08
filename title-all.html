@@ -46,9 +46,19 @@
   <label><input type="radio" name="order" value="desc" checked> 降順</label>
 </div>
 
+<div>
+  <label>表示件数：
+    <input type="number" class="limit" placeholder="例：7" min="1" style="width:5em;">
+  </label>
+  <button class="limit-all">全件</button>
+</div>
+
 <button>検索</button>
-      </section>
-  
+</section>
+
+<div class="free">
+    
+</div>
 
 <table>
   <thead>
@@ -70,7 +80,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const thead = table.querySelector("thead");
   const tbody = table.querySelector("tbody");
 
-  // CSV読み込み関数
+  // ✅ CSV読み込み
   function loadCSV(path) {
     return fetch(path)
       .then(res => res.text())
@@ -86,9 +96,25 @@ document.addEventListener("DOMContentLoaded", () => {
       });
   }
 
-  // 検索ボタン押下イベント
+  // ✅ 表示件数取得（0以下なら全件）
+  function getLimit(total) {
+    const input = document.querySelector('.limit');
+    if (!input) return total;
+    const val = Number(input.value);
+    if (!val || val < 1) return total;
+    return val;
+  }
+
+  // ✅ free欄の更新
+  function updateFreeText(modeText, sortKey, sortOrder, shown, total) {
+    const free = document.querySelector(".free");
+    if (!free) return;
+    free.textContent = `${modeText} / ${sortKey} ${sortOrder === "asc" ? "昇順" : "降順"} ｜ ${total}件中 ${shown}件表示`;
+  }
+
+  // ✅ イベント：検索ボタン
   section.addEventListener("click", e => {
-    if (e.target.tagName !== "BUTTON") return;
+    if (e.target.tagName !== "BUTTON" || e.target.classList.contains("limit-all")) return;
 
     const mode = section.querySelector('input[name="mode"]:checked').value;
     const selects = section.querySelectorAll("select");
@@ -101,12 +127,19 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       loadCSV("each-title.csv").then(data => {
         const filtered = data.filter(row => row["棋戦"] === kisenSelect.value);
-        renderKisen(filtered, sortSelect.value, order);
+        renderKisen(filtered, sortSelect.value, order, kisenSelect.value);
       });
     }
   });
 
-  // 通算表示
+  // ✅ 全件ボタン
+  section.addEventListener("click", e => {
+    if (!e.target.classList.contains("limit-all")) return;
+    const input = document.querySelector('.limit');
+    if (input) input.value = ""; // 空欄に
+  });
+
+  // ✅ 通算表示
   function renderTotal(data, sortKey, sortOrder) {
     const arr = data.map(row => ({
       ...row,
@@ -118,14 +151,15 @@ document.addEventListener("DOMContentLoaded", () => {
     }));
 
     arr.sort((a, b) => {
-      const primary = sortOrder === "asc"
-        ? a[sortKey] - b[sortKey]
-        : b[sortKey] - a[sortKey];
+      const primary = sortOrder === "asc" ? a[sortKey] - b[sortKey] : b[sortKey] - a[sortKey];
       if (primary !== 0) return primary;
       return a["並順"] - b["並順"];
     });
 
     assignRank(arr, sortKey);
+
+    const limit = getLimit(arr.length);
+    const limitedArr = arr.slice(0, limit);
 
     thead.innerHTML = `
       <tr>
@@ -139,7 +173,7 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
 
     tbody.innerHTML = "";
-    arr.forEach(row => {
+    limitedArr.forEach(row => {
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${row._rank}</td>
@@ -151,34 +185,31 @@ document.addEventListener("DOMContentLoaded", () => {
       `;
       tbody.appendChild(tr);
     });
+
+    updateFreeText("通算", sortKey, sortOrder, limitedArr.length, arr.length);
   }
 
-  // 棋戦別表示（修正版）
-  function renderKisen(data, sortKey, sortOrder) {
-    const arr = data.map(row => {
-      const cleanRow = {};
-      Object.keys(row).forEach(key => {
-        cleanRow[key.trim()] = typeof row[key] === "string" ? row[key].trim() : row[key];
-      });
-      return {
-        ...cleanRow,
-        登場: Number(cleanRow["登場"]),
-        獲得: Number(cleanRow["獲得"]),
-        敗退: Number(cleanRow["敗退"]),
-        並順: Number(cleanRow["並順"]),
-        永世称号: cleanRow["永世称号"] || ""
-      };
-    });
+  // ✅ 棋戦別表示
+  function renderKisen(data, sortKey, sortOrder, modeLabel) {
+    const arr = data.map(row => ({
+      ...row,
+      登場: Number(row["登場"]),
+      獲得: Number(row["獲得"]),
+      敗退: Number(row["敗退"]),
+      並順: Number(row["並順"]),
+      永世称号: row["永世称号"] || ""
+    }));
 
     arr.sort((a, b) => {
-      const primary = sortOrder === "asc"
-        ? a[sortKey] - b[sortKey]
-        : b[sortKey] - a[sortKey];
+      const primary = sortOrder === "asc" ? a[sortKey] - b[sortKey] : b[sortKey] - a[sortKey];
       if (primary !== 0) return primary;
       return a["並順"] - b["並順"];
     });
 
     assignRank(arr, sortKey);
+
+    const limit = getLimit(arr.length);
+    const limitedArr = arr.slice(0, limit);
 
     thead.innerHTML = `
       <tr>
@@ -192,7 +223,7 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
 
     tbody.innerHTML = "";
-    arr.forEach(row => {
+    limitedArr.forEach(row => {
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${row._rank}</td>
@@ -204,9 +235,11 @@ document.addEventListener("DOMContentLoaded", () => {
       `;
       tbody.appendChild(tr);
     });
+
+    updateFreeText(modeLabel, sortKey, sortOrder, limitedArr.length, arr.length);
   }
 
-  // 順位割り当て
+  // ✅ 順位付け
   function assignRank(arr, sortKey) {
     let prevValue = null;
     let prevRank = 0;
@@ -223,7 +256,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // ✅ 初期表示：獲得数が多い順に5名だけ表示
+  // ✅ 初期表示
   function renderInitial(data) {
     const arr = data.map(row => ({
       ...row,
@@ -240,8 +273,10 @@ document.addEventListener("DOMContentLoaded", () => {
       return a["並順"] - b["並順"];
     });
 
-    const top5 = arr.slice(0, 7);
-    assignRank(top5, "獲得");
+    assignRank(arr, "獲得");
+
+    const limit = getLimit(arr.length);
+    const limitedArr = arr.slice(0, limit);
 
     thead.innerHTML = `
       <tr>
@@ -255,7 +290,7 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
 
     tbody.innerHTML = "";
-    top5.forEach(row => {
+    limitedArr.forEach(row => {
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${row._rank}</td>
@@ -267,9 +302,11 @@ document.addEventListener("DOMContentLoaded", () => {
       `;
       tbody.appendChild(tr);
     });
+
+    updateFreeText("通算", "獲得", "desc", limitedArr.length, arr.length);
   }
 
-  // ✅ ページ読み込み時に初期表示
+  // ✅ 初期表示実行
   loadCSV("title.csv").then(renderInitial);
 });
 </script>
