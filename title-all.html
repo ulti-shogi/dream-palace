@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>将棋の殿堂</title>
-    <link rel="stylesheet" href="style.css?v=1.3">
+    <link rel="stylesheet" href="style.css?v=20251008-1">
 </head>
 <body>
 <header>
@@ -70,8 +70,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const thead = table.querySelector("thead");
   const tbody = table.querySelector("tbody");
 
-loadCSV("title.csv").then(data => renderInitial(data));
-    
   // CSV読み込み関数
   function loadCSV(path) {
     return fetch(path)
@@ -82,7 +80,7 @@ loadCSV("title.csv").then(data => renderInitial(data));
         return lines.slice(1).map(line => {
           const cols = line.split(",");
           const obj = {};
-          header.forEach((key, i) => obj[key] = cols[i]);
+          header.forEach((key, i) => obj[key.trim()] = cols[i] ? cols[i].trim() : "");
           return obj;
         });
       });
@@ -92,23 +90,18 @@ loadCSV("title.csv").then(data => renderInitial(data));
   section.addEventListener("click", e => {
     if (e.target.tagName !== "BUTTON") return;
 
-    const radios = section.querySelectorAll('input[name="mode"]');
-    let mode = "通算";
-    radios.forEach(r => { if (r.checked) mode = r.value; });
-
+    const mode = section.querySelector('input[name="mode"]:checked').value;
     const selects = section.querySelectorAll("select");
-    const kisenSelect = selects[0]; // 棋戦用
-    const sortSelect  = selects[1]; // 並べ替え用(通算/棋戦共通)
-
-    const orderRadio = section.querySelector('input[name="order"]:checked');
-    const sortOrder = orderRadio ? orderRadio.value : "desc";
+    const kisenSelect = selects[0];
+    const sortSelect  = selects[1];
+    const order = section.querySelector('input[name="order"]:checked').value;
 
     if (mode === "通算") {
-      loadCSV("title.csv").then(data => renderTotal(data, sortSelect.value, sortOrder));
+      loadCSV("title.csv").then(data => renderTotal(data, sortSelect.value, order));
     } else {
       loadCSV("each-title.csv").then(data => {
         const filtered = data.filter(row => row["棋戦"] === kisenSelect.value);
-        renderKisen(filtered, sortSelect.value, sortOrder);
+        renderKisen(filtered, sortSelect.value, order);
       });
     }
   });
@@ -160,60 +153,58 @@ loadCSV("title.csv").then(data => renderInitial(data));
     });
   }
 
-  // 棋戦別表示
   // 棋戦別表示（修正版）
-function renderKisen(data, sortKey, sortOrder) {
-  // 列キーのズレ・空白を吸収しつつ数値変換
-  const arr = data.map(row => {
-    const cleanRow = {};
-    Object.keys(row).forEach(key => {
-      cleanRow[key.trim()] = typeof row[key] === "string" ? row[key].trim() : row[key];
+  function renderKisen(data, sortKey, sortOrder) {
+    const arr = data.map(row => {
+      const cleanRow = {};
+      Object.keys(row).forEach(key => {
+        cleanRow[key.trim()] = typeof row[key] === "string" ? row[key].trim() : row[key];
+      });
+      return {
+        ...cleanRow,
+        登場: Number(cleanRow["登場"]),
+        獲得: Number(cleanRow["獲得"]),
+        敗退: Number(cleanRow["敗退"]),
+        並順: Number(cleanRow["並順"]),
+        永世称号: cleanRow["永世称号"] || ""
+      };
     });
-    return {
-      ...cleanRow,
-      登場: Number(cleanRow["登場"]),
-      獲得: Number(cleanRow["獲得"]),
-      敗退: Number(cleanRow["敗退"]),
-      並順: Number(cleanRow["並順"]),
-      永世称号: cleanRow["永世称号"] || ""
-    };
-  });
 
-  arr.sort((a, b) => {
-    const primary = sortOrder === "asc"
-      ? a[sortKey] - b[sortKey]
-      : b[sortKey] - a[sortKey];
-    if (primary !== 0) return primary;
-    return a["並順"] - b["並順"];
-  });
+    arr.sort((a, b) => {
+      const primary = sortOrder === "asc"
+        ? a[sortKey] - b[sortKey]
+        : b[sortKey] - a[sortKey];
+      if (primary !== 0) return primary;
+      return a["並順"] - b["並順"];
+    });
 
-  assignRank(arr, sortKey);
+    assignRank(arr, sortKey);
 
-  thead.innerHTML = `
-    <tr>
-      <th>順位</th>
-      <th>棋士名</th>
-      <th>登場</th>
-      <th>獲得</th>
-      <th>敗退</th>
-      <th>永世称号</th>
-    </tr>
-  `;
-
-  tbody.innerHTML = "";
-  arr.forEach(row => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${row._rank}</td>
-      <td>${row["棋士名"]}</td>
-      <td>${row["登場"]}</td>
-      <td>${row["獲得"]}</td>
-      <td>${row["敗退"]}</td>
-      <td>${row["永世称号"]}</td>
+    thead.innerHTML = `
+      <tr>
+        <th>順位</th>
+        <th>棋士名</th>
+        <th>登場</th>
+        <th>獲得</th>
+        <th>敗退</th>
+        <th>永世称号</th>
+      </tr>
     `;
-    tbody.appendChild(tr);
-  });
-}
+
+    tbody.innerHTML = "";
+    arr.forEach(row => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${row._rank}</td>
+        <td>${row["棋士名"]}</td>
+        <td>${row["登場"]}</td>
+        <td>${row["獲得"]}</td>
+        <td>${row["敗退"]}</td>
+        <td>${row["永世称号"]}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
 
   // 順位割り当て
   function assignRank(arr, sortKey) {
@@ -231,54 +222,56 @@ function renderKisen(data, sortKey, sortOrder) {
       }
     });
   }
-});
 
-// ✅ 初期表示：獲得数が多い順に5人だけ表示
-function renderInitial(data) {
-  // 数値変換と並べ替え
-  const arr = data.map(row => ({
-    ...row,
-    登場: Number(row["登場"]),
-    獲得: Number(row["獲得"]),
-    敗退: Number(row["敗退"]),
-    勝率: Number(row["勝率"]),
-    並順: Number(row["並順"])
-  }));
+  // ✅ 初期表示：獲得数が多い順に5名だけ表示
+  function renderInitial(data) {
+    const arr = data.map(row => ({
+      ...row,
+      登場: Number(row["登場"]),
+      獲得: Number(row["獲得"]),
+      敗退: Number(row["敗退"]),
+      勝率: Number(row["勝率"]),
+      並順: Number(row["並順"])
+    }));
 
-  arr.sort((a, b) => {
-    const primary = b["獲得"] - a["獲得"]; // 降順
-    if (primary !== 0) return primary;
-    return a["並順"] - b["並順"]; // 同順位は並順昇順
-  });
+    arr.sort((a, b) => {
+      const primary = b["獲得"] - a["獲得"];
+      if (primary !== 0) return primary;
+      return a["並順"] - b["並順"];
+    });
 
-  const top5 = arr.slice(0, 5);
-  assignRank(top5, "獲得");
+    const top5 = arr.slice(0, 5);
+    assignRank(top5, "獲得");
 
-  thead.innerHTML = `
-    <tr>
-      <th>順位</th>
-      <th>棋士名</th>
-      <th>登場</th>
-      <th>獲得</th>
-      <th>敗退</th>
-      <th>勝率</th>
-    </tr>
-  `;
-
-  tbody.innerHTML = "";
-  top5.forEach(row => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${row._rank}</td>
-      <td>${row["棋士名"]}</td>
-      <td>${row["登場"]}</td>
-      <td>${row["獲得"]}</td>
-      <td>${row["敗退"]}</td>
-      <td>${Number(row["勝率"]).toFixed(4)}</td>
+    thead.innerHTML = `
+      <tr>
+        <th>順位</th>
+        <th>棋士名</th>
+        <th>登場</th>
+        <th>獲得</th>
+        <th>敗退</th>
+        <th>勝率</th>
+      </tr>
     `;
-    tbody.appendChild(tr);
-  });
-} 
+
+    tbody.innerHTML = "";
+    top5.forEach(row => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${row._rank}</td>
+        <td>${row["棋士名"]}</td>
+        <td>${row["登場"]}</td>
+        <td>${row["獲得"]}</td>
+        <td>${row["敗退"]}</td>
+        <td>${Number(row["勝率"]).toFixed(4)}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  // ✅ ページ読み込み時に初期表示
+  loadCSV("title.csv").then(renderInitial);
+});
 </script>
 </body>
 </html>
