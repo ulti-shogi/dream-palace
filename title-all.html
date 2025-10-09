@@ -33,12 +33,14 @@
 </header>
 <main>
 <section>
+  <!-- 1行目：通算（単独で縦に） -->
   <div class="row mode">
     <label><input type="radio" name="mode" value="通算" checked> 通算</label>
-    <label><input type="radio" name="mode" value="棋戦別"> 棋戦別</label>
   </div>
 
-  <div class="row kisen">
+  <!-- 2行目：棋戦別（右にセレクトを並べる） -->
+  <div class="row mode">
+    <label><input type="radio" name="mode" value="棋戦別"> 棋戦別</label>
     <label>
       <select>
         <option value="竜王戦">竜王戦</option>
@@ -55,6 +57,7 @@
     </label>
   </div>
 
+  <!-- 3行目：指標 + 昇順/降順 -->
   <div class="row sort">
     <label>
       <select>
@@ -68,13 +71,15 @@
     <label><input type="radio" name="order" value="desc" checked> 降順</label>
   </div>
 
+  <!-- 4行目：表示件数（初期値9をHTMLでも入れておく） -->
   <div class="row limit">
     <label>表示件数：
-      <input type="number" class="limit" placeholder="例：9" min="1">
+      <input type="number" class="limit" placeholder="例：9" min="1" value="9">
     </label>
     <button class="limit-all">全件</button>
   </div>
 
+  <!-- 5行目：検索ボタン（独立行） -->
   <div class="row search-row">
     <button>検索</button>
   </div>
