@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>将棋の殿堂</title>
-    <link rel="stylesheet" href="style.css?v=20251009-3">
+    <link rel="stylesheet" href="style.css?v=20251009-4">
     <style>
   section {
     display: flex;
@@ -74,11 +74,11 @@
   <!-- 4行目：表示件数（初期値9をHTMLでも入れておく） -->
   <div class="row limit">
     <label>表示件数：
-      <input type="number" class="limit" placeholder="例：9" min="1" value="9">
-    </label>
-    <button class="limit-all">全件</button>
+  <input type="number" class="limit" placeholder="例：9" min="1">
+</label>
+    <button class="limit-all">全件（空欄）</button>
   </div>
-
+<p>＊入力欄が空欄の場合は全件表示されます。</p>
   <!-- 5行目：検索ボタン（独立行） -->
   <div class="row search-row">
     <button>検索</button>
@@ -96,7 +96,7 @@
 
 <div class="free">
   <h3>自由欄</h3>
-  <p>補足情報など自由に書き込む。</p>
+  <p>初期表示では通算タイトル獲得数二桁以上の棋士のみを表示しています。</p>
       </div>
   
   </main>
@@ -331,12 +331,6 @@ function renderInitial(data) {
   // ✅ 初期表示は常に9件（+同率延長なし＝ピッタリ固定）
   const limit = 9;
   let limitedArr = arr.slice(0, limit);
-
-  // ✅ 入力欄にも10をセットしておく
-  const limitInput = document.querySelector('.limit');
-  if (limitInput) {
-    limitInput.value = limit;
-  }
 
   thead.innerHTML = `
     <tr>
