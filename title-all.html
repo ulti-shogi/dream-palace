@@ -153,12 +153,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const order = section.querySelector('input[name="order"]:checked').value;
   const inputLimit = section.querySelector('.limit-input');
 
-  // ✅ 全件ボタンの場合の特別処理
+  // ✅ 全件ボタンの場合の特別処理（入力欄だけ空にして終了）
   if (e.target.classList.contains("limit-all")) {
-    inputLimit.value = "";                 // 入力欄を空欄にする
+    inputLimit.value = "";     // 入力欄を空欄にする
+    return;                    // ★ 検索処理は実行しない
   }
 
-  // ✅ ここからは通常検索の処理
+  // ✅ 通常の検索処理
   if (mode === "通算") {
     loadCSV("title.csv").then(data => renderTotal(data, sortSelect.value, order));
   } else {
