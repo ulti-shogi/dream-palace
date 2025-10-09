@@ -144,23 +144,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ✅ イベント：検索ボタン
   section.addEventListener("click", e => {
-    if (e.target.tagName !== "BUTTON" || e.target.classList.contains("limit-all")) return;
+  if (e.target.tagName !== "BUTTON") return;
 
-    const mode = section.querySelector('input[name="mode"]:checked').value;
-    const selects = section.querySelectorAll("select");
-    const kisenSelect = selects[0];
-    const sortSelect  = selects[1];
-    const order = section.querySelector('input[name="order"]:checked').value;
+  const mode = section.querySelector('input[name="mode"]:checked').value;
+  const selects = section.querySelectorAll("select");
+  const kisenSelect = selects[0];
+  const sortSelect  = selects[1];
+  const order = section.querySelector('input[name="order"]:checked').value;
+  const inputLimit = section.querySelector('.limit-input');
 
-    if (mode === "通算") {
-      loadCSV("title.csv").then(data => renderTotal(data, sortSelect.value, order));
-    } else {
-      loadCSV("each-title.csv").then(data => {
-        const filtered = data.filter(row => row["棋戦"] === kisenSelect.value);
-        renderKisen(filtered, sortSelect.value, order, kisenSelect.value);
-      });
-    }
-  });
+  // ✅ 全件ボタンの場合の特別処理
+  if (e.target.classList.contains("limit-all")) {
+    inputLimit.value = "";                 // 入力欄を空欄にする
+  }
+
+  // ✅ ここからは通常検索の処理
+  if (mode === "通算") {
+    loadCSV("title.csv").then(data => renderTotal(data, sortSelect.value, order));
+  } else {
+    loadCSV("each-title.csv").then(data => {
+      const filtered = data.filter(row => row["棋戦"] === kisenSelect.value);
+      renderKisen(filtered, sortSelect.value, order, kisenSelect.value);
+    });
+  }
+});
 
   // ✅ 全件ボタン
   section.addEventListener("click", e => {
