@@ -107,4 +107,4 @@ th, td {
   th, td { border-width: 2px; }  /* ↑上と同じく、不要なら削除 */
 }
 
-.free p { margin: 0; line-height: 1.2; }
+/* .free p { margin: 0; line-height: 1.2; } */
