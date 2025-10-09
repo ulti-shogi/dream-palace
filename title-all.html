@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>将棋の殿堂</title>
-    <link rel="stylesheet" href="style.css?v=20251009-1">
+    <link rel="stylesheet" href="style.css?v=20251009-2">
 </head>
 <body>
 <header>
@@ -299,8 +299,8 @@ function renderInitial(data) {
 
   assignRank(arr, "獲得");
 
-  // ✅ 初期表示は常に10件（+同率延長なし＝ピッタリ固定）
-  const limit = 10;
+  // ✅ 初期表示は常に9件（+同率延長なし＝ピッタリ固定）
+  const limit = 9;
   let limitedArr = arr.slice(0, limit);
 
   // ✅ 入力欄にも10をセットしておく
