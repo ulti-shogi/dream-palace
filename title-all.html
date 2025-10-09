@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>将棋の殿堂</title>
-    <link rel="stylesheet" href="style.css?v=20251008-1">
+    <link rel="stylesheet" href="style.css?v=20251009-1">
 </head>
 <body>
 <header>
@@ -281,54 +281,62 @@ function renderKisen(data, sortKey, sortOrder, modeLabel) {
   }
 
   // ✅ 初期表示
-  function renderInitial(data) {
-    const arr = data.map(row => ({
-      ...row,
-      登場: Number(row["登場"]),
-      獲得: Number(row["獲得"]),
-      敗退: Number(row["敗退"]),
-      勝率: Number(row["勝率"]),
-      並順: Number(row["並順"])
-    }));
+function renderInitial(data) {
+  const arr = data.map(row => ({
+    ...row,
+    登場: Number(row["登場"]),
+    獲得: Number(row["獲得"]),
+    敗退: Number(row["敗退"]),
+    勝率: Number(row["勝率"]),
+    並順: Number(row["並順"])
+  }));
 
-    arr.sort((a, b) => {
-      const primary = b["獲得"] - a["獲得"];
-      if (primary !== 0) return primary;
-      return a["並順"] - b["並順"];
-    });
+  arr.sort((a, b) => {
+    const primary = b["獲得"] - a["獲得"]; // 通算獲得数の降順
+    if (primary !== 0) return primary;
+    return a["並順"] - b["並順"];
+  });
 
-    assignRank(arr, "獲得");
+  assignRank(arr, "獲得");
 
-    const limit = getLimit(arr.length);
-    const limitedArr = arr.slice(0, limit);
+  // ✅ 初期表示は常に10件（+同率延長なし＝ピッタリ固定）
+  const limit = 10;
+  let limitedArr = arr.slice(0, limit);
 
-    thead.innerHTML = `
-      <tr>
-        <th>順位</th>
-        <th>棋士名</th>
-        <th>登場</th>
-        <th>獲得</th>
-        <th>敗退</th>
-        <th>勝率</th>
-      </tr>
-    `;
-
-    tbody.innerHTML = "";
-    limitedArr.forEach(row => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${row._rank}</td>
-        <td>${row["棋士名"]}</td>
-        <td>${row["登場"]}</td>
-        <td>${row["獲得"]}</td>
-        <td>${row["敗退"]}</td>
-        <td>${Number(row["勝率"]).toFixed(4)}</td>
-      `;
-      tbody.appendChild(tr);
-    });
-
-    updateFreeText("通算", "獲得", "desc", limitedArr.length, arr.length);
+  // ✅ 入力欄にも10をセットしておく
+  const limitInput = document.querySelector('.limit');
+  if (limitInput) {
+    limitInput.value = limit;
   }
+
+  thead.innerHTML = `
+    <tr>
+      <th>順位</th>
+      <th>棋士名</th>
+      <th>登場</th>
+      <th>獲得</th>
+      <th>敗退</th>
+      <th>勝率</th>
+    </tr>
+  `;
+
+  tbody.innerHTML = "";
+  limitedArr.forEach(row => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${row._rank}</td>
+      <td>${row["棋士名"]}</td>
+      <td>${row["登場"]}</td>
+      <td>${row["獲得"]}</td>
+      <td>${row["敗退"]}</td>
+      <td>${Number(row["勝率"]).toFixed(4)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // ✅ free欄にも状態反映
+  updateFreeText("通算", "獲得", "desc", limitedArr.length, arr.length);
+}
 
   // ✅ 初期表示実行
   loadCSV("title.csv").then(renderInitial);
