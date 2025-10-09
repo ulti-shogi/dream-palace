@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>将棋の殿堂</title>
-    <link rel="stylesheet" href="style.css?v=20251009-6">
+    <link rel="stylesheet" href="style.css?v=20251009-7">
     <style>
   section {
     display: flex;
@@ -74,7 +74,7 @@
   <!-- 4行目：表示件数（初期値9をHTMLでも入れておく） -->
   <div class="row limit">
     <label>表示件数：
-  <input type="number" class="limit" placeholder="例：9" min="1">
+  <input type="number" class="limit-input" placeholder="例：9" min="1">
 </label>
     <button class="limit-all">全件（空欄）</button>
   </div>
@@ -128,7 +128,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ✅ 表示件数取得（0以下なら全件）
   function getLimit(total) {
-    const input = document.querySelector('.limit');
+    const input = document.querySelector('.limit-input');
     if (!input) return total;
     const val = Number(input.value);
     if (!val || val < 1) return total;
