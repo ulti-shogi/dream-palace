@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>将棋の殿堂</title>
-    <link rel="stylesheet" href="style.css?v=20251009-7">
+    <link rel="stylesheet" href="style.css?v=20251010-1">
     <style>
   section {
     display: flex;
@@ -244,17 +244,31 @@ function renderKisen(data, sortKey, sortOrder, modeLabel) {
   const arr = data.map(row => ({
     ...row,
     登場: Number(row["登場"]),
-   獲得: Number(row["獲得"]),
+    獲得: Number(row["獲得"]),
     敗退: Number(row["敗退"]),
     並順: Number(row["並順"]),
-    永世称号: row["永世称号"] || ""
+    永世称号: row["永世称号"] || "",
+    勝率: row["勝率"] !== undefined ? Number(row["勝率"]) : null  // ★ 勝率がある場合のみ数値化
   }));
 
   arr.sort((a, b) => {
-    const primary = sortOrder === "asc" ? a[sortKey] - b[sortKey] : b[sortKey] - a[sortKey];
-    if (primary !== 0) return primary;
-    return a["並順"] - b["並順"];
+    if (sortKey === "勝率") {
+      const rateA = a["勝率"] ?? 0;
+      const rateB = b["勝率"] ?? 0;
+      if (rateA !== rateB) {
+        return sortOrder === "asc" ? rateA - rateB : rateB - rateA;
+      }
+      // 勝率同率なら並順で比較（小さい方を先）
+      return a["並順"] - b["並順"];
+    } else {
+      const primary = sortOrder === "asc" ? a[sortKey] - b[sortKey] : b[sortKey] - a[sortKey];
+      if (primary !== 0) return primary;
+      return a["並順"] - b["並順"];
+    }
   });
+
+  // （この下は元のコードのまま）
+}
 
   assignRank(arr, sortKey);
 
