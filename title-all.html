@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>将棋の殿堂</title>
-    <link rel="stylesheet" href="style.css?v=20251010-b">
+    <link rel="stylesheet" href="style.css?v=20251010-a">
     <style>
   section {
     display: flex;
@@ -244,48 +244,22 @@ function renderKisen(data, sortKey, sortOrder, modeLabel) {
   const arr = data.map(row => ({
     ...row,
     登場: Number(row["登場"]),
-    獲得: Number(row["獲得"]),
+   獲得: Number(row["獲得"]),
     敗退: Number(row["敗退"]),
     並順: Number(row["並順"]),
-    永世称号: row["永世称号"] || "",
-    勝率: row["勝率"] !== undefined ? Number(row["勝率"]) : null  // ★ 勝率列がある場合のみ数値化
+    永世称号: row["永世称号"] || ""
   }));
 
   arr.sort((a, b) => {
-    if (sortKey === "勝率") {
-      const rateA = a["勝率"] ?? 0;
-      const rateB = b["勝率"] ?? 0;
-      if (rateA !== rateB) {
-        return sortOrder === "asc" ? rateA - rateB : rateB - rateA;
-      }
-      // ★ 勝率が同じ場合は並順で比較（小さい方が先）
-      return a["並順"] - b["並順"];
-    } else {
-      const primary = sortOrder === "asc" ? a[sortKey] - b[sortKey] : b[sortKey] - a[sortKey];
-      if (primary !== 0) return primary;
-      return a["並順"] - b["並順"];
-    }
+    const primary = sortOrder === "asc" ? a[sortKey] - b[sortKey] : b[sortKey] - a[sortKey];
+    if (primary !== 0) return primary;
+    return a["並順"] - b["並順"];
   });
 
   assignRank(arr, sortKey);
 
-  const rows = arr.map(item => `
-    <tr>
-      <td>${item["順位"] !== undefined ? item["順位"] : ""}</td>
-      <td>${item["棋士名"]}</td>
-      <td>${item["登場"]}</td>
-      <td>${item["獲得"]}</td>
-      <td>${item["敗退"]}</td>
-      <td>${item["永世称号"]}</td>
-    </tr>
-  `).join("");
-
-  const tbody = document.querySelector("tbody");
-  tbody.innerHTML = rows;
-
-  const free = document.querySelector(".free");
-  free.innerHTML = `${modeLabel} / ${sortKey}（${sortOrder === "asc" ? "昇順" : "降順"}）で表示中`;
-}
+  const limit = getLimit(arr.length);
+  let limitedArr = arr.slice(0, limit);
 
   // ✅ 同率延長処理
   if (limitedArr.length > 0) {
