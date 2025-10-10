@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>将棋の殿堂</title>
-    <link rel="stylesheet" href="style.css?v=20251010-1">
+    <link rel="stylesheet" href="style.css?v=20251010-2">
     <style>
   section {
     display: flex;
@@ -266,6 +266,25 @@ function renderKisen(data, sortKey, sortOrder, modeLabel) {
       return a["並順"] - b["並順"];
     }
   });
+
+  assignRank(arr, sortKey);
+
+  const rows = arr.map(item => `
+    <tr>
+      <td>${item["順位"] !== undefined ? item["順位"] : ""}</td>
+      <td>${item["棋士名"]}</td>
+      <td>${item["登場"]}</td>
+      <td>${item["獲得"]}</td>
+      <td>${item["敗退"]}</td>
+      <td>${item["永世称号"]}</td>
+    </tr>
+  `).join("");
+
+  const tbody = document.querySelector("tbody");
+  tbody.innerHTML = rows;
+
+  const free = document.querySelector(".free");
+  free.innerHTML = `${modeLabel} / ${sortKey}（${sortOrder === "asc" ? "昇順" : "降順"}）で表示中`;
 }
 
   assignRank(arr, sortKey);
