@@ -1,44 +1,94 @@
-    body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      margin: 16px;
-      line-height: 1.6;
-    }
-    main {
-      max-width: 480px;
-      margin: 0 auto;
-    }
-    label {
-      display: block;
-      margin-top: 12px;
-    }
-    select,
-    input[type="number"],
-    button {
-      width: 100%;
-      padding: 8px;
-      box-sizing: border-box;
-      margin-top: 4px;
-      font-size: 16px;
-    }
-    button {
-      margin-top: 16px;
-    }
-    #result {
-      margin-top: 20px;
-      font-weight: bold;
-    }
-    #note {
-      margin-top: 12px;
-      font-size: 0.9em;
-      color: #555;
-    }
+/* --- 共通（スマホ〜タブレット向け：ベーススタイル） --- */
 
-    .area-select {
-    display: flex;
-    gap: 12px;
-    }
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  margin: 16px;
+  line-height: 1.6;
+}
 
-    .area-select label {
-    flex: 1;
-    margin-top: 12px;
-    }
+main {
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+h1 {
+  font-size: 1.8rem;
+  line-height: 1.4;
+}
+
+label {
+  display: block;
+  margin-top: 12px;
+}
+
+select,
+input[type="number"],
+button {
+  width: 100%;
+  padding: 8px;
+  box-sizing: border-box;
+  margin-top: 4px;
+  font-size: 16px;
+}
+
+button {
+  margin-top: 16px;
+}
+
+#result {
+  margin-top: 20px;
+  font-weight: bold;
+}
+
+#note {
+  margin-top: 12px;
+  font-size: 0.9em;
+  color: #555;
+}
+
+/* 地方＋都道府県の横並び */
+.area-select {
+  display: flex;
+  gap: 12px;
+}
+
+.area-select label {
+  flex: 1;
+  margin-top: 12px;
+}
+
+/* --- ここからPC向けレイアウト（レスポンシブ） --- */
+@media (min-width: 768px) {
+  body {
+    margin: 32px auto;
+    max-width: 960px; /* 画面が広いときは全体を少し広げる */
+  }
+
+  main {
+    max-width: 720px; /* フォーム部分を少しワイドに */
+  }
+
+  h1 {
+    font-size: 2.2rem; /* PCでは見出しを少し大きく */
+    line-height: 1.3;
+  }
+
+  p {
+    font-size: 1rem;
+  }
+
+  select,
+  input[type="number"],
+  button {
+    max-width: 320px;     /* 横に伸びすぎないよう上限を付ける */
+    font-size: 15px;
+  }
+
+  .area-select {
+    justify-content: flex-start;
+  }
+
+  #result {
+    font-size: 1rem;
+  }
+}
