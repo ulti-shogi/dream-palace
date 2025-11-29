@@ -21,6 +21,30 @@ label {
   margin-top: 12px;
 }
 
+/* 2カラム用の共通レイアウト（スマホでは縦並び） */
+.layout {
+  margin-top: 12px;
+}
+
+.layout-left {
+  /* 特に指定なしでOK：上から順に縦に並ぶ */
+}
+
+.layout-right {
+  margin-top: 20px; /* スマホで左カラムの下に余白を付ける */
+}
+
+/* すでにあればOK：地方＋都道府県の横並び */
+.area-select {
+  display: flex;
+  gap: 12px;
+}
+
+.area-select label {
+  flex: 1;
+  margin-top: 12px;
+}
+
 select,
 input[type="number"],
 button {
@@ -61,17 +85,38 @@ button {
 @media (min-width: 768px) {
   body {
     margin: 32px auto;
-    max-width: 960px; /* 画面が広いときは全体を少し広げる */
+    max-width: 960px;
   }
 
   main {
-    max-width: 720px; /* フォーム部分を少しワイドに */
+    max-width: 720px;
   }
 
   h1 {
-    font-size: 2.2rem; /* PCでは見出しを少し大きく */
+    font-size: 2.2rem;
     line-height: 1.3;
   }
+
+  /* ★ここから2カラム指定★ */
+  .layout {
+    display: flex;
+    align-items: flex-start;
+    gap: 32px;
+  }
+
+  .layout-left,
+  .layout-right {
+    flex: 1; /* 左右 1:1 の幅にする */
+  }
+
+  .layout-right {
+    margin-top: 0; /* PCでは上下ではなく左右に並ぶので余白を消す */
+  }
+
+  #result {
+    font-size: 1rem;
+  }
+}
 
   p {
     font-size: 1rem;
@@ -86,9 +131,5 @@ button {
 
   .area-select {
     justify-content: flex-start;
-  }
-
-  #result {
-    font-size: 1rem;
   }
 }

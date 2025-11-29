@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>最低賃金との差を計算するツール</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="style.css?v=20251129-res">
+  <link rel="stylesheet" href="style.css?v=20251129-pc2">
 </head>
 <body>
 <main>
@@ -15,33 +15,41 @@
     何％高い（または低い）かを計算します。
   </p>
 
-  <div class="area-select">
-  <label>
-    ①◯◯地方を選択
-    <select id="region">
-      <option value="">選択してください</option>
-    </select>
-  </label>
+  <div class="layout">
+    <!-- 左カラム：①地方 ②都道府県 ③時給 ④ボタン -->
+    <div class="layout-left">
+      <div class="area-select">
+        <label>
+          ①◯◯地方を選択
+          <select id="region">
+            <option value="">未選択</option>
+          </select>
+        </label>
 
-  <label>
-    ②都道府県を選択
-    <select id="pref">
-      <option value="">選択してください</option>
-    </select>
-  </label>
-</div>
+        <label>
+          ②都道府県を選択
+          <select id="pref">
+            <option value="">未選択</option>
+          </select>
+        </label>
+      </div>
 
-  <label>
-    あなたの時給（円）
-    <input id="wage" type="number" min="1" step="1" inputmode="numeric" placeholder="例：1200">
-  </label>
+      <label>
+        あなたの時給（円）
+        <input id="wage" type="number" min="1" step="1" inputmode="numeric" placeholder="例：1200">
+      </label>
 
-  <button id="calcButton" type="button">計算する</button>
+      <button id="calcButton" type="button">計算する</button>
+    </div>
 
-  <div id="result"></div>
-  <div id="note">
-    ※金額は厚生労働省「令和7年度 地域別最低賃金 全国一覧」に基づきます。<br>
-    ※将来改定された場合は、このツールの数値も更新が必要です。
+    <!-- 右カラム：結果＋注意書き -->
+    <div class="layout-right">
+      <div id="result"></div>
+      <div id="note">
+        ※金額は厚生労働省「令和7年度 地域別最低賃金 全国一覧」に基づきます。<br>
+        ※将来改定された場合は、このツールの数値も更新が必要です。
+      </div>
+    </div>
   </div>
 </main>
 <script src="script.js?v=20251129-a"></script>
