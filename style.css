@@ -1,110 +1,44 @@
-/* --- 共通設定 --- */
-*, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 16px;
+      line-height: 1.6;
+    }
+    main {
+      max-width: 480px;
+      margin: 0 auto;
+    }
+    label {
+      display: block;
+      margin-top: 12px;
+    }
+    select,
+    input[type="number"],
+    button {
+      width: 100%;
+      padding: 8px;
+      box-sizing: border-box;
+      margin-top: 4px;
+      font-size: 16px;
+    }
+    button {
+      margin-top: 16px;
+    }
+    #result {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+    #note {
+      margin-top: 12px;
+      font-size: 0.9em;
+      color: #555;
+    }
 
-/* ベース：幅制限なしで流動。PCだけ後で制限する */
-body {
-  margin: 0 auto;
-  padding: 8px; /* ← 元は14px。スマホでも詰めて表示 */
-  
-}
+    .area-select {
+    display: flex;
+    gap: 12px;
+    }
 
-header, main, footer {
-  
-}
-
-h1 { text-align: center; }
-
-section, .free {
-  border: 2px solid #000000;
-  width: 100%;
-  margin: 8px auto;           /* ← 元は12px。上下余白を少し圧縮 */
-  border-radius: 14px;
-  padding: 6px;
-  box-shadow: 0 4px 12px rgba(0,0,0,.25);
-}
-
-table { 
-  width: 100%;
-  border-collapse: collapse; 
-  border: 2px solid #000000;
-  margin: 8px auto;           /* ← auto で中央寄せだが余白も少し圧縮 */
-}
-
-th, td {
-  border: 1px solid #000000;
-  padding: 8px 6px;
-  text-align: center;
-}
-
-/* コンテナの最初の子要素は上マージンをゼロに */
-section > *:first-child,
-.free > *:first-child { margin-top: 0; }
-
-/* 見出し下だけ少し余白 */
-section h1, section h2, section h3, section h4, section h5, section h6,
-.free h1, .free h2, .free h3, .free h4, .free h5, .free h6 {
-  margin-bottom: 0.5em;
-}
-
-/* --- レイアウト切替：PCだけ幅を制限 --- */
-@media (min-width: 600px) {
-  body {
-    max-width: 480px; /* ← ここで初めて幅制限をかける */
-    padding: 14px;    /* ← PCではゆったり余白 */
-  }
-}
-
-/* --- スマホ用微調整 --- */
-@media (max-width: 599px) {
-  section, .free {
-    border-radius: 8px;   /* ← スマホでは角丸少し小さく */
-    box-shadow: none;     /* ← 影を外してフラットに（好みで） */
-    padding: 4px;         /* ← さらに詰める */
-  }
-  table {
-    font-size: 0.85em;    /* ← 表を少し小さく */
-    border-width: 1px;    /* ← 枠線細く */
-  }
-  th, td {
-    padding: 4px;         /* ← セル内余白半分に */
-    border-width: 1px;
-  }
-}
-
-/* PCだけ幅を制限して中央寄せ（スマホは全幅のまま） */
-@media (min-width: 600px) {
-  body {
-    max-width: 480px;
-    margin: 0 auto;
-    padding: 14px;
-  }
-}
-
-/* --- 将棋盤スタイル（最小差分パッチ） --- */
-
-/* 角丸をやめて四角に、背景を木肌色に */
-section, .free {
-  border-radius: 0;
-  border: 2px solid #000;        /* セクション枠の太さを明示 */
-  background-color: #F6E7B2;     /* 将棋盤っぽい薄い木肌色 */
-}
-
-/* table も同じ木肌色＆枠線太さを section と揃える */
-table {
-  /* background-color: #F6E7B2; */
-  border: 2px solid #000;        /* ← セクションと同じ太さに統一 */
-}
-
-/* 内側のグリッド線まで同じ太さにしたい場合は有効（不要ならこのブロックは削除可） */
-th, td {
-  border-width: 1px;             /* ← セクション/テーブル外枠と統一 */
-}
-
-/* モバイル側の過去指定（border-width:1px 等）を確実に打ち消す */
-@media (max-width: 599px) {
-  section, .free { border-radius: 0; }
-  table { border-width: 2px; }
-  th, td { border-width: 2px; }  /* ↑上と同じく、不要なら削除 */
-}
-
-/* .free p { margin: 0; line-height: 1.2; } */
+    .area-select label {
+    flex: 1;
+    margin-top: 12px;
+    }

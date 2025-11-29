@@ -2,60 +2,48 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>将棋の殿堂</title>
-    <link rel="stylesheet" href="style.css">
+  <title>最低賃金との差を計算するツール</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="style.css?v=20251129-1">
 </head>
 <body>
-<header>
-<h1>将棋の殿堂</h1>
-</header>
-  <main>
-      <section>
-  <h2>このサイトについて</h2>
-  <p>将棋に関するあらゆる情報を検索できるサイトを目指して、ただいま鋭意制作中です</p>
-      </section>
-  
+<main>
+  <h1>自分の時給と最低賃金の差を計算</h1>
 
-<table>
-  <tr>
-    <th>番号</th>
-    <th>検索ページ</th>
-    
-  </tr>
-  <tr>
-    <td>1</td>
-    <td><a href="https://ulti-shogi.github.io/dream-palace/age.html">平均年齢・中央値</a></td>
-    
-  </tr>
-  <tr>
-    <td>2</td>
-    <td><a href="https://ulti-shogi.github.io/dream-palace/waste-reborn.html">賞金ランキング</a></td>
-    
-  </tr>
-     <tr>
-    <td>3</td>
-    <td><a href="https://ulti-shogi.github.io/dream-palace/title-all.html">通算・棋戦別タイトル獲得</a></td>
-   
-  </tr>
-  <tr>
-    <td>4</td>
-    <td><a href="https://ulti-shogi.github.io/dream-palace/kishi-2.html">プロフィール検索</a></td>
-    
-  </tr>
-  <tr>
-    <td>5</td>
-    <td><a href="https://ulti-shogi.github.io/dream-palace/rate.html">歴代勝率8割達成</a></td>
-    
-  </tr>
-</table>
-<div class="free">
-  <h3>自由欄</h3>
-  <p>補足情報など自由に書き込む。</p>
-      </div>
-  
-  </main>
-  <footer>著作権情報</footer>
+  <p>
+    都道府県と自分の時給を入力すると、その都道府県の最低賃金より
+    何％高い（または低い）かを計算します。
+  </p>
+
+  <div class="area-select">
+  <label>
+    ①◯◯地方を選択
+    <select id="region">
+      <option value="">選択してください</option>
+    </select>
+  </label>
+
+  <label>
+    ②都道府県を選択
+    <select id="pref">
+      <option value="">選択してください</option>
+    </select>
+  </label>
+</div>
+
+  <label>
+    あなたの時給（円）
+    <input id="wage" type="number" min="1" step="1" inputmode="numeric" placeholder="例：1200">
+  </label>
+
+  <button id="calcButton" type="button">計算する</button>
+
+  <div id="result"></div>
+  <div id="note">
+    ※金額は厚生労働省「令和7年度 地域別最低賃金 全国一覧」に基づきます。<br>
+    ※将来改定された場合は、このツールの数値も更新が必要です。
+  </div>
+</main>
+<script src="script.js?v=20251129-a"></script>
 </body>
 </html>
-
