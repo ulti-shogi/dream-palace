@@ -34,7 +34,7 @@ label {
   margin-top: 20px; /* スマホで左カラムの下に余白を付ける */
 }
 
-/* すでにあればOK：地方＋都道府県の横並び */
+/* 地方＋都道府県の横並び（一時的に消してみる）
 .area-select {
   display: flex;
   gap: 12px;
@@ -43,7 +43,7 @@ label {
 .area-select label {
   flex: 1;
   margin-top: 12px;
-}
+} */
 
 select,
 input[type="number"],
@@ -68,17 +68,6 @@ button {
   margin-top: 12px;
   font-size: 0.9em;
   color: #555;
-}
-
-/* 地方＋都道府県の横並び 
-.area-select {
-  display: flex;
-  gap: 12px;
-} */
-
-.area-select label {
-  flex: 1;
-  margin-top: 12px;
 }
 
 /* --- ここからPC向けレイアウト（レスポンシブ） --- */
