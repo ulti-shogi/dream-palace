@@ -70,11 +70,11 @@ button {
   color: #555;
 }
 
-/* 地方＋都道府県の横並び */
+/* 地方＋都道府県の横並び 
 .area-select {
   display: flex;
   gap: 12px;
-}
+} */
 
 .area-select label {
   flex: 1;
