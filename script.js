@@ -113,12 +113,10 @@ document.getElementById("calcButton").addEventListener("click", () => {
     return;
   }
 
-  // 事実表示（時給が上、最低賃金が下）
+  // 事実表示（pタグで淡々と）
   const factsHtml =
-    `<ul>` +
-      `<li>入力された時給：${myWage}円</li>` +
-      `<li>選択された都道府県の最低賃金（${pref}）：${base}円</li>` +
-    `</ul>`;
+    `<p>入力された時給：${myWage}円</p>` +
+    `<p>${pref}の最低賃金：${base}円</p>`;
 
   // 判定（下回り時は％表現を出さない）
   if (myWage >= base) {
