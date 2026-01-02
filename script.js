@@ -122,7 +122,7 @@ document.getElementById("calcButton").addEventListener("click", () => {
   if (myWage >= base) {
     const percentUp = ((myWage - base) / base) * 100;
     const conclusion =
-      `<p>あなたの時給は、${pref}の最低賃金を<strong>${percentUp.toFixed(2)}％</strong>増しの金額です。</p>`;
+      `<p>あなたの時給は、${pref}の最低賃金の<strong>${percentUp.toFixed(2)}％</strong>増しの金額です。</p>`;
 
     const note =
       `<p style="margin-top:12px;font-size:0.9em;color:#555;">` +
