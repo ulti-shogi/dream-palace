@@ -10,24 +10,21 @@
 <main>
   <h1>最低賃金計算ツール</h1>
 
-  <p>
-    都道府県と自分の時給を入力すると、その都道府県の最低賃金より
-    何％高い（または低い）かを計算します。
-  </p>
+  <p>①都道府県と②時給を入力すると、その都道府県の最低賃金より何％高いかを計算します。</p>
 
   <div class="layout">
     <!-- 左カラム：①地方 ②都道府県 ③時給 ④ボタン -->
     <div class="layout-left">
       <label>
-  都道府県を選択（地方別）
-  <select id="pref">
+    ①都道府県を選択（地方別）
+    <select id="pref">
     <option value="">選択してください</option>
     <!-- JSで optgroup + option を自動追加 -->
     </select>
     </label>
 
       <label>
-        ③時給を入力する（半角数字）
+        ②時給を入力する（半角数字）
         <input id="wage" type="number" min="1" step="1" inputmode="numeric" placeholder="例：1200">
       </label>
 
