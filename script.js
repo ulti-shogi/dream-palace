@@ -49,7 +49,7 @@ const minWage = {
   "沖縄県": 1023
 };
 
-// 地方 → 都道府県（optgroup用）
+// optgroup用：地方 → 都道府県
 const regions = {
   "北海道・東北": ["北海道", "青森県", "岩手県", "宮城県", "秋田県", "山形県", "福島県"],
   "関東": ["茨城県", "栃木県", "群馬県", "埼玉県", "千葉県", "東京都", "神奈川県"],
@@ -63,8 +63,7 @@ const regions = {
 window.addEventListener("DOMContentLoaded", () => {
   const prefSelect = document.getElementById("pref");
 
-  // 既存の<option value="">選択してください</option> は残し、optgroupだけ追加
-  // （index.html側で<option>を入れていない場合は、ここで追加してもOK）
+  // 先頭の「選択してください」が無い場合は追加
   const hasDefault = Array.from(prefSelect.options).some(opt => opt.value === "");
   if (!hasDefault) {
     const defaultOpt = document.createElement("option");
@@ -94,40 +93,58 @@ document.getElementById("calcButton").addEventListener("click", () => {
   const myWage = Number(document.getElementById("wage").value);
   const result = document.getElementById("result");
 
+  // 初期化
+  result.style.color = "";
+  result.innerHTML = "";
+
   if (!pref) {
     result.textContent = "都道府県を選択してください。";
-    result.style.color = "";
     return;
   }
 
   if (!myWage || myWage <= 0) {
     result.textContent = "有効な時給を入力してください。";
-    result.style.color = "";
     return;
   }
 
   const base = minWage[pref];
   if (!base) {
     result.textContent = "この都道府県の最低賃金データが見つかりません。";
-    result.style.color = "";
     return;
   }
 
-  const diff = myWage - base;
-  const percent = (diff / base) * 100;
-  const perMinute = myWage / 60;
+  // 事実表示（時給が上、最低賃金が下）
+  const factsHtml =
+    `<ul>` +
+      `<li>入力された時給：${myWage}円</li>` +
+      `<li>選択された都道府県の最低賃金（${pref}）：${base}円</li>` +
+    `</ul>`;
 
-  if (diff >= 0) {
-    result.style.color = "";
-    result.textContent =
-      `【結果】${pref}の最低賃金${base}円に対して、` +
-      `あなたの時給${myWage}円は約${percent.toFixed(2)}％高いです。` +
-      `（分給 約${perMinute.toFixed(1)}円）`;
+  // 判定（下回り時は％表現を出さない）
+  if (myWage >= base) {
+    const percentUp = ((myWage - base) / base) * 100;
+    const conclusion =
+      `<p>あなたの時給は、${pref}の最低賃金を<strong>${percentUp.toFixed(2)}％</strong>増しの金額です。</p>`;
+
+    const note =
+      `<p style="margin-top:12px;font-size:0.9em;color:#555;">` +
+      `※金額は厚生労働省「令和7年度 地域別最低賃金 全国一覧」に基づきます。<br>` +
+      `※将来改定された場合は、このツールの数値も更新が必要です。` +
+      `</p>`;
+
+    result.innerHTML = `<p><strong>【結果】</strong></p>` + factsHtml + conclusion + note;
   } else {
     result.style.color = "red";
-    result.textContent =
-      `【結果】${pref}の最低賃金${base}円に対して、` +
-      `あなたの時給${myWage}円は約${Math.abs(percent).toFixed(2)}％低いです。` +
-      `（分給 約${perMinute.toFixed(1)}円）`;
+
+    const conclusion =
+      `<p>あなたの時給は、${pref}の最低賃金を下回っています。</p>`;
+
+    const note =
+      `<p style="margin-top:12px;font-size:0.9em;color:#555;">` +
+      `※金額は厚生労働省「令和7年度 地域別最低賃金 全国一覧」に基づきます。<br>` +
+      `※将来改定された場合は、このツールの数値も更新が必要です。` +
+      `</p>`;
+
+    result.innerHTML = `<p><strong>【結果】</strong></p>` + factsHtml + conclusion + note;
   }
 });
