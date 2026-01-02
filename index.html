@@ -8,7 +8,7 @@
 </head>
 <body>
 <main>
-  <h1>自分の時給と最低賃金の差を計算</h1>
+  <h1>最低賃金計算ツール</h1>
 
   <p>
     都道府県と自分の時給を入力すると、その都道府県の最低賃金より
@@ -18,21 +18,13 @@
   <div class="layout">
     <!-- 左カラム：①地方 ②都道府県 ③時給 ④ボタン -->
     <div class="layout-left">
-      <div class="area-select">
-        <label>
-          ①◯◯地方を選択する
-          <select id="region">
-            <option value="">未選択</option>
-          </select>
-        </label>
-
-        <label>
-          ②都道府県を選択する
-          <select id="pref">
-            <option value="">未選択</option>
-          </select>
-        </label>
-      </div>
+      <label>
+  都道府県を選択（地方別）
+  <select id="pref">
+    <option value="">選択してください</option>
+    <!-- JSで optgroup + option を自動追加 -->
+    </select>
+    </label>
 
       <label>
         ③時給を入力する（半角数字）
@@ -46,12 +38,12 @@
     <div class="layout-right">
       <div id="result"></div>
       <div id="note">
-        ※金額は厚生労働省「令和7年度 地域別最低賃金 全国一覧」に基づきます。<br>
-        ※将来改定された場合は、このツールの数値も更新が必要です。
+        ※金額は厚生労働省「令和7年度 地域別最低賃金 全国一覧」に基づきます。
+       
       </div>
     </div>
   </div>
 </main>
-<script src="script.js?v=20251129-a"></script>
+<script src="script.js?v=20260103-a"></script>
 </body>
 </html>
