@@ -1,111 +1,162 @@
-/* --- 共通（スマホ〜タブレット向け：ベーススタイル） --- */
+:root{
+      --max: 960px;
+      --pad: 16px;
+      --radius: 14px;
+      --border: 1px solid rgba(0,0,0,.12);
+      --shadow: 0 6px 18px rgba(0,0,0,.08);
+    }
 
-body {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  margin: 16px;
-  line-height: 1.6;
-}
+    *{ box-sizing: border-box; }
+    body{
+      margin: 0;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Noto Sans JP", "Yu Gothic", "Meiryo", sans-serif;
+      line-height: 1.6;
+      color: #111;
+      background: #fafafa;
+    }
 
-main {
-  max-width: 480px;
-  margin: 0 auto;
-}
+    a{ color: inherit; }
 
-h1 {
-  font-size: 1.8rem;
-  line-height: 1.4;
-    text-align: center;
-}
+    header{
+      padding: 28px var(--pad) 18px;
+    }
 
-label {
-  display: block;
-  margin-top: 12px;
-}
+    .wrap{
+      width: min(var(--max), 100% - (var(--pad) * 2));
+      margin: 0 auto;
+    }
 
-/* 2カラム用の共通レイアウト（スマホでは縦並び） */
-.layout {
-  margin-top: 12px;
-}
+    h1{
+      margin: 0;
+      text-align: center; /* 条件：真ん中に寄せる */
+      font-size: clamp(26px, 4vw, 40px);
+      letter-spacing: .03em;
+    }
 
-.layout-left {
-  /* 特に指定なしでOK：上から順に縦に並ぶ */
-}
-
-.layout-right {
-  margin-top: 20px; /* スマホで左カラムの下に余白を付ける */
-}
-
-/* 入力パーツ */
-select,
-input[type="number"],
-button {
-  width: 100%;
-  padding: 8px;
-  box-sizing: border-box;
-  margin-top: 4px;
-  font-size: 16px;
-}
-
-button {
-  margin-top: 16px;
-}
-
-#result {
-  margin-top: 20px;
-  font-weight: bold;
-}
-
-#note {
-  margin-top: 12px;
-  font-size: 0.9em;
-  color: #555;
-}
-
-/* --- ここからPC向けレイアウト（レスポンシブ） --- */
-@media (min-width: 768px) {
-  body {
-    margin: 32px auto;
-    max-width: 960px;
-  }
-
-  main {
-    max-width: 720px;
-  }
-
-  h1 {
-    font-size: 2.2rem;
-    line-height: 1.3;
+    .lead{
+      margin: 10px auto 0;
+      /* max-width: 54ch; */
       text-align: center;
-  }
+      opacity: .9;
+    }
 
-  p {
-    font-size: 1rem;
-  }
+    main{
+      padding: 0 var(--pad) 28px;
+    }
 
-  select,
-  input[type="number"],
-  button {
-    max-width: 320px;     /* 横に伸びすぎないよう上限を付ける */
-    font-size: 15px;
-  }
+    .panel{
+      background: #fff;
+      border: var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
 
-  /* ★ここから2カラム指定★ */
-  .layout {
-    display: flex;
-    align-items: flex-start;
-    gap: 32px;
-  }
+    .primary{
+      margin-top: 16px;
+      display: flex;
+      justify-content: center;
+    }
 
-  .layout-left,
-  .layout-right {
-    flex: 1; /* 左右 1:1 の幅にする */
-  }
+    .btn{
+      display: inline-block;
+      text-decoration: none;
+      padding: 12px 16px;
+      border-radius: 999px;
+      border: var(--border);
+      background: #111;
+      color: #fff;
+      font-weight: 700;
+      letter-spacing: .02em;
+    }
+    .btn:active{ transform: translateY(1px); }
 
-  .layout-right {
-    margin-top: 0; /* PCでは上下ではなく左右に並ぶので余白を消す */
-  }
+    .sections{
+      margin-top: 18px;
+      display: flex;
+      flex-wrap: wrap; /* 列数を固定しない（必要に応じて折り返す） */
+      gap: 12px;
+    }
 
-  #result {
-    font-size: 1rem;
-  }
-}
+    section{
+      flex: 1 1 260px; /* 画面幅に応じて自動で並ぶ（列数を決め打ちしない） */
+      min-width: 240px;
+      background: #fff;
+      border: var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+    }
+
+    section h2{
+      margin: 0 0 10px;
+      font-size: 18px;
+    }
+
+    .links{
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 10px;
+    }
+
+    .cardlink{
+      display: block;
+      text-decoration: none;
+      padding: 12px;
+      border-radius: 12px;
+      border: var(--border);
+      background: #fff;
+    }
+
+    .cardlink strong{
+      display: block;
+      font-size: 15px;
+    }
+
+    .cardlink span{
+      display: block;
+      margin-top: 4px;
+      font-size: 13px;
+      opacity: .85;
+    }
+
+    .cardlink:hover{
+      box-shadow: 0 6px 16px rgba(0,0,0,.08);
+    }
+
+    .disabled{
+      opacity: .55;
+      cursor: not-allowed;
+      pointer-events: none;
+      background: #f2f2f2;
+    }
+
+    footer{
+      padding: 10px var(--pad) 26px;
+      color: rgba(0,0,0,.7);
+      font-size: 12px;
+    }
+
+    footer .wrap{
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .note{
+      margin: 0;
+    }
+
+    .mini{
+      margin: 0;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .mini a{
+      text-decoration: none;
+      border-bottom: 1px dashed rgba(0,0,0,.35);
+    }

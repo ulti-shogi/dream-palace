@@ -1,43 +1,114 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>最低賃金との差を計算するツール</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="style.css?v=2026-0103-1">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>将棋の殿堂</title>
+  <meta name="description" content="将棋に関するありとあらゆる情報を検索できるサイトを目指す『将棋の殿堂』。" />
+  <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-<main>
-  <h1>最低賃金計算ツール</h1>
+  <header>
+    <div class="wrap">
+      <h1>将棋の殿堂</h1>
+      <p class="lead">
+        将棋に関するありとあらゆる情報を検索できる「夢のサイト」を目指して構築中です。<br/ >
+        まずは棋士プロフィール検索から公開して、少しずつ検索ページを増やしていきます。
+      </p>
 
-  <p>あなたの時給は最低賃金よりも何％高い？</p>
-
-  <div class="layout">
-    <!-- 左カラム：①地方 ②都道府県 ③時給 ④ボタン -->
-    <div class="layout-left">
-      <label>
-    ①都道府県を選択（地方別）
-    <select id="pref">
-    <option value="">選択してください</option>
-    <!-- JSで optgroup + option を自動追加 -->
-    </select>
-    </label>
-
-      <label>
-        ②時給を入力する（半角数字）
-        <input id="wage" type="number" min="1" step="1" inputmode="numeric" placeholder="例：1200">
-      </label>
-
-      <button id="calcButton" type="button">計算する</button>
+      <div class="primary">
+        <a class="btn" href="profile.html" aria-label="棋士プロフィール検索へ">棋士プロフィール検索へ</a>
+      </div>
     </div>
+  </header>
 
-    <!-- 右カラム：結果＋注意書き -->
-    <div class="layout-right">
-      <div id="result"></div>
-      
+  <main>
+    <div class="wrap">
+      <div class="panel">
+        <p style="margin:0;">
+          ここから各種検索ページへ移動できます。未公開のページは「準備中」です。
+        </p>
+      </div>
+
+      <div class="sections" aria-label="検索ページ一覧">
+        <section>
+          <h2>棋士</h2>
+          <ul class="links">
+            <li>
+              <a class="cardlink" href="profile.html">
+                <strong>棋士プロフィール検索</strong>
+                <span>生年月日・昇段日などから平均年齢、最年少記録を検索</span>
+              </a>
+            </li>
+            <li>
+              <a class="cardlink disabled" href="#" aria-disabled="true">
+                <strong>棋士データ一覧（準備中）</strong>
+                <span>所属・段位・注目指標などの一覧</span>
+              </a>
+            </li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>タイトル</h2>
+          <ul class="links">
+            <li>
+              <a class="cardlink disabled" href="#" aria-disabled="true">
+                <strong>タイトル獲得ランキング（準備中）</strong>
+                <span>通算・年度別・棋戦別などで絞り込み</span>
+              </a>
+            </li>
+            <li>
+              <a class="cardlink disabled" href="#" aria-disabled="true">
+                <strong>タイトル戦結果（準備中）</strong>
+                <span>期・年度・挑戦者・スコアなどを検索</span>
+              </a>
+            </li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>賞金</h2>
+          <ul class="links">
+            <li>
+              <a class="cardlink disabled" href="#" aria-disabled="true">
+                <strong>賞金ランキング（準備中）</strong>
+                <span>年度別のランキングと推移を検索</span>
+              </a>
+            </li>
+          </ul>
+        </section>
+
+        <section>
+          <h2>棋戦結果・記録</h2>
+          <ul class="links">
+            <li>
+              <a class="cardlink disabled" href="#" aria-disabled="true">
+                <strong>一般棋戦結果（準備中）</strong>
+                <span>棋戦ごとの優勝・準優勝などを検索</span>
+              </a>
+            </li>
+            <li>
+              <a class="cardlink disabled" href="#" aria-disabled="true">
+                <strong>最年少・最年長記録（準備中）</strong>
+                <span>年齢記録を横断的に検索</span>
+              </a>
+            </li>
+          </ul>
+        </section>
+      </div>
     </div>
-  </div>
-</main>
-<script src="script.js?v=20260103-d"></script>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      <p class="note">© 将棋の殿堂 / Data-driven (CSV) / Built step by step.</p>
+      <p class="mini">
+        <a href="profile.html">棋士プロフィール検索</a>
+        <a href="#" class="disabled" aria-disabled="true">更新履歴（準備中）</a>
+      </p>
+    </div>
+  </footer>
 </body>
 </html>

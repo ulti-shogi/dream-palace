@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>棋士プロフィール検索｜将棋の殿堂</title>
+  <meta name="description" content="将棋に関するありとあらゆる情報を検索できるサイトを目指す『将棋の殿堂』。" />
+    <link rel="stylesheet" href="style.css?v=20260104-a">
+    <link rel="stylesheet" href="profile.css">
+    <script src="profile.js" defer></script>
+</head>
+
+<body>
+  <header>
+  <div class="wrap">
+    <h1><a href="index.html">将棋の殿堂</a></h1>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <h2>棋士プロフィール検索</h2>
+    <!-- 検索UI -->
+<section>
+  <h3>検索条件</h3>
+  <p>対象：現役棋士（公開版）</p>
+
+  <div>
+    <label for="q-name">棋士名</label><br>
+    <input id="q-name" name="q-name" type="text" inputmode="text" autocomplete="off" placeholder="例：藤井">
+  </div>
+
+  <div>
+    <label for="q-num">棋士番号</label><br>
+    <input id="q-num" name="q-num" type="number" inputmode="numeric" min="1" step="1" placeholder="例：307">
+  </div>
+
+  <div>
+    <label for="q-dan">段位</label><br>
+    <select id="q-dan" name="q-dan">
+      <option value="">指定なし</option>
+      <option value="不明">不明</option>
+      <option value="四段">四段</option>
+      <option value="五段">五段</option>
+      <option value="六段">六段</option>
+      <option value="七段">七段</option>
+      <option value="八段">八段</option>
+      <option value="九段">九段</option>
+    </select>
+  </div>
+
+  <div>
+    <label>年齢（今日時点）</label><br>
+    <label for="q-age-min">最小</label>
+    <input id="q-age-min" name="q-age-min" type="number" inputmode="numeric" min="0" step="1" placeholder="例：10">
+    <label for="q-age-max">最大</label>
+    <input id="q-age-max" name="q-age-max" type="number" inputmode="numeric" min="0" step="1" placeholder="例：80">
+  </div>
+
+  <div>
+    <button type="button" id="btn-search">検索</button>
+    <button type="button" id="btn-reset">リセット</button>
+  </div>
+</section>
+
+      <!-- 結果表示（集計） -->
+<section>
+  <h3>集計</h3>
+  <p id="summary">
+    対象：現役棋士（公開版） / 件数：— / 四段昇段平均年齢：—
+  </p>
+</section>
+      
+    <!-- 結果表示（一覧） -->
+<table>
+  <thead>
+    <tr>
+      <th>棋士番号</th>
+      <th>棋士名</th>
+      <th>段位</th>
+      <th>年齢</th>
+      <th>四段昇段年齢</th>
+      <th>現役期間</th>
+    </tr>
+  </thead>
+  <tbody id="result-body">
+    <!-- JSで行を生成 -->
+  </tbody>
+</table>
+  </div>
+</main>
+
+  <footer>
+    <div class="wrap">
+      <p class="note">© 将棋の殿堂 / Data-driven (CSV) / Built step by step.</p>
+      <p class="mini">
+        <a href="profile.html">棋士プロフィール検索</a>
+        <a href="#" class="disabled" aria-disabled="true">更新履歴（準備中）</a>
+      </p>
+    </div>
+  </footer>
+</body>
+</html>
