@@ -13,7 +13,7 @@
   // ===== 設定 =====
   const CSV_PATH = "profile.csv";
 
-  // CSV列名（ハイフン入りなので必ず bracket 参照）
+  // CSV列名（ハイフン入りなので bracket 参照）
   const COL = {
     num: "num",
     name: "name",
@@ -46,7 +46,6 @@
 
   // ===== ユーティリティ =====
   function toDateOrNull(ymd) {
-    // ymd: "YYYY-MM-DD"
     if (!ymd || typeof ymd !== "string") return null;
     const s = ymd.trim();
     if (!s) return null;
@@ -58,29 +57,18 @@
     const mo = Number(m[2]);
     const d = Number(m[3]);
 
-    // JS Date: month is 0-based
     const dt = new Date(y, mo - 1, d);
-    // 不正日付（例：2026-02-30）対策
     if (dt.getFullYear() !== y || dt.getMonth() !== mo - 1 || dt.getDate() !== d) return null;
 
     dt.setHours(0, 0, 0, 0);
     return dt;
   }
 
-  function toYmdString(dt) {
+  function formatYmd(dt) {
     const y = dt.getFullYear();
     const m = String(dt.getMonth() + 1).padStart(2, "0");
     const d = String(dt.getDate()).padStart(2, "0");
     return `${y}-${m}-${d}`;
-  }
-
-  function escapeHtml(s) {
-    return String(s)
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#39;");
   }
 
   // CSVパーサ（ダブルクォート対応の最小実装）
@@ -95,7 +83,6 @@
 
       if (inQuotes) {
         if (c === '"') {
-          // "" -> "
           if (text[i + 1] === '"') {
             field += '"';
             i++;
@@ -119,10 +106,7 @@
         continue;
       }
 
-      if (c === "\r") {
-        // ignore
-        continue;
-      }
+      if (c === "\r") continue;
 
       if (c === "\n") {
         row.push(field);
@@ -135,7 +119,6 @@
       field += c;
     }
 
-    // 最後の行
     if (field.length > 0 || row.length > 0) {
       row.push(field);
       rows.push(row);
@@ -165,7 +148,6 @@
 
   // ===== 年月日差分（○歳○ヶ月○日） =====
   function diffYMD(start, end) {
-    // start/end: Date, start <= end を想定（逆の場合は入れ替え）
     if (!(start instanceof Date) || !(end instanceof Date)) return null;
 
     let a = new Date(start.getTime());
@@ -179,7 +161,6 @@
       b = tmp;
     }
 
-    // 年を加算
     let years = 0;
     while (true) {
       const next = new Date(a.getFullYear() + 1, a.getMonth(), a.getDate());
@@ -187,25 +168,18 @@
       if (next.getTime() <= b.getTime()) {
         a = next;
         years++;
-      } else {
-        break;
-      }
+      } else break;
     }
 
-    // 月を加算
     let months = 0;
     while (true) {
       const next = new Date(a.getFullYear(), a.getMonth() + 1, a.getDate());
       next.setHours(0, 0, 0, 0);
 
-      // 月末調整で日付がズレた場合（例：1/31 + 1ヶ月 -> 3/2）を避ける
-      // “同じ日付で翌月が存在しない”場合は、その月の末日扱いにする
-      // ここでは「aの日付を保ったまま月を進められない」ケースを、末日に寄せる。
+      // 月末ずれ対策：同日が存在しない場合は翌月末日へ寄せる
       if (next.getDate() !== a.getDate()) {
-        // 翌月の末日へ
         const lastDay = new Date(a.getFullYear(), a.getMonth() + 2, 0);
         lastDay.setHours(0, 0, 0, 0);
-        // ただし lastDay が b を超えるなら加算しない
         if (lastDay.getTime() <= b.getTime()) {
           a = lastDay;
           months++;
@@ -217,12 +191,9 @@
       if (next.getTime() <= b.getTime()) {
         a = next;
         months++;
-      } else {
-        break;
-      }
+      } else break;
     }
 
-    // 残り日数
     const msPerDay = 24 * 60 * 60 * 1000;
     const days = Math.floor((b.getTime() - a.getTime()) / msPerDay);
 
@@ -234,21 +205,21 @@
     return `${ymd.years}歳${ymd.months}ヶ月${ymd.days}日`;
   }
 
-  // 平均用：差分ミリ秒の平均を「○歳○ヶ月○日」に変換
-  // 基準日(=今日)から平均差分を引いた仮想日付を作り、diffYMDで表示化する
+  // 平均用：差分ms平均を「○歳○ヶ月○日」に変換
   function avgMsToYmdString(avgMs, today) {
     if (!Number.isFinite(avgMs) || avgMs < 0) return "—";
     const base = new Date(today.getTime());
     base.setHours(0, 0, 0, 0);
+
     const virtualBirth = new Date(base.getTime() - avgMs);
     virtualBirth.setHours(0, 0, 0, 0);
+
     const ymd = diffYMD(virtualBirth, base);
     return ymd ? ymdToString(ymd) : "—";
   }
 
   // ===== 派生値 =====
   function isActive(row) {
-    // retire/passing/withdraw が空なら現役
     const r = (row[COL.retire] || "").trim();
     const p = (row[COL.passing] || "").trim();
     const w = (row[COL.withdraw] || "").trim();
@@ -280,10 +251,9 @@
 
     return {
       ageStr: age ? ymdToString(age) : "不明",
-      ageYears: age ? age.years : null, // フィルタ用（年）
+      ageYears: age ? age.years : null, // 年齢フィルタ用（年）
       fourAgeStr: fourAge ? ymdToString(fourAge) : "不明",
       activeSpanStr: activeSpan ? ymdToString(activeSpan) : "不明",
-      // 平均計算用（ms差分）
       fourAgeMs: birth && four ? (four.getTime() - birth.getTime()) : null,
     };
   }
@@ -291,18 +261,19 @@
   // ===== 検索 =====
   function readFilters() {
     const name = (el.qName?.value ?? "").trim();
-    const num = (el.qNum?.value ?? "").trim();
+    const numRaw = (el.qNum?.value ?? "").trim();
     const dan = (el.qDan?.value ?? "").trim();
 
     const ageMinRaw = (el.qAgeMin?.value ?? "").trim();
     const ageMaxRaw = (el.qAgeMax?.value ?? "").trim();
 
+    const num = numRaw === "" ? null : Number(numRaw);
     const ageMin = ageMinRaw === "" ? null : Number(ageMinRaw);
     const ageMax = ageMaxRaw === "" ? null : Number(ageMaxRaw);
 
     return {
       name,
-      num: num === "" ? null : Number(num),
+      num: Number.isFinite(num) ? num : null,
       dan: dan === "" ? null : dan,
       ageMin: Number.isFinite(ageMin) ? ageMin : null,
       ageMax: Number.isFinite(ageMax) ? ageMax : null,
@@ -311,23 +282,19 @@
 
   function applyFilters(records, filters) {
     return records.filter((r) => {
-      // 棋士名（部分一致）
       if (filters.name) {
         const n = (r.name || "").toLowerCase();
         if (!n.includes(filters.name.toLowerCase())) return false;
       }
 
-      // 棋士番号（一致）
       if (filters.num !== null) {
         if (r.num !== filters.num) return false;
       }
 
-      // 段位（一致）
       if (filters.dan) {
         if (r.dan !== filters.dan) return false;
       }
 
-      // 年齢（年の範囲）
       if (filters.ageMin !== null) {
         if (r.ageYears === null || r.ageYears < filters.ageMin) return false;
       }
@@ -344,27 +311,17 @@
     if (!el.tbody) return;
 
     el.tbody.innerHTML = "";
-
     const frag = document.createDocumentFragment();
 
     for (const r of records) {
       const tr = document.createElement("tr");
-
-      const cells = [
-        r.numStr,
-        r.name,
-        r.dan,
-        r.ageStr,
-        r.fourAgeStr,
-        r.activeSpanStr,
-      ];
+      const cells = [r.numStr, r.name, r.dan, r.ageStr, r.fourAgeStr, r.activeSpanStr];
 
       for (const c of cells) {
         const td = document.createElement("td");
         td.textContent = c;
         tr.appendChild(td);
       }
-
       frag.appendChild(tr);
     }
 
@@ -376,7 +333,6 @@
 
     const total = records.length;
 
-    // 四段昇段平均年齢：birthday と four-day が揃う人のみ
     const msList = records
       .map((r) => r.fourAgeMs)
       .filter((v) => Number.isFinite(v) && v >= 0);
@@ -388,50 +344,14 @@
       avgStr = avgMsToYmdString(avgMs, today);
     }
 
-    const todayStr = toYmdString(today);
+    const todayStr = formatYmd(today);
 
-    // 表示文言はシンプルに固定（後で増やせる）
     el.summary.textContent =
       `対象：現役棋士（公開版） / 今日：${todayStr} / 件数：${total} / 四段昇段平均年齢：${avgStr}（算出対象：${nAvg}名）`;
   }
 
-  function toYmdString(dt) {
-    // 今日表示用（YYYY-MM-DD）
-    return toYmdStringFallback(dt);
-  }
-  function toYmdStringFallback(dt) {
-    return toYmdString2(dt);
-  }
-  function toYmdString2(dt) {
-    return toYmdString3(dt);
-  }
-  function toYmdString3(dt) {
-    // 最終
-    return toYmdStringReal(dt);
-  }
-  function toYmdStringReal(dt) {
-    return toYmdStringLocal(dt);
-  }
-  function toYmdStringLocal(dt) {
-    // YYYY-MM-DD
-    return toYmdStringSimple(dt);
-  }
-  function toYmdStringSimple(dt) {
-    return toYmdString(dt); // ここで循環しないように下の関数を使う
-  }
-
-  // ↑の循環を避けるため、今日文字列化は別名で
-  function todayToYmd(dt) {
-    return toYmdString(dt);
-  }
-
-  // ここは循環が起きないように、上の todayToYmd は使わず直接呼ぶ
-  function formatTodayYmd(dt) {
-    return toYmdString(dt);
-  }
-
   // ===== 初期化 =====
-  let ALL_ACTIVE = []; // 正規化＋派生済み（現役のみ）
+  let ALL_ACTIVE = [];
   let TODAY = null;
 
   async function loadData(today) {
@@ -442,7 +362,6 @@
     const rows = parseCSV(text);
     const objs = rowsToObjects(rows);
 
-    // 正規化＋現役フィルタ＋派生
     const active = objs
       .filter(isActive)
       .map((row) => {
@@ -451,7 +370,6 @@
 
         const name = (row[COL.name] || "").trim();
         const dan = deriveDan(row);
-
         const ages = deriveAges(row, today);
 
         return {
@@ -468,7 +386,6 @@
         };
       });
 
-    // 既定ソート：棋士番号昇順（無いものは末尾）
     active.sort((a, b) => {
       if (a.num === null && b.num === null) return 0;
       if (a.num === null) return 1;
@@ -502,7 +419,6 @@
       runSearch();
     });
 
-    // Enterキーで検索（フォームではないので手動）
     ["q-name", "q-num", "q-age-min", "q-age-max"].forEach((id) => {
       const input = document.getElementById(id);
       if (!input) return;
@@ -518,7 +434,7 @@
   }
 
   async function init() {
-    // 「今日」＝アクセス日（ページを開いた日）
+    // 「今日」＝アクセス日
     TODAY = new Date();
     TODAY.setHours(0, 0, 0, 0);
 
@@ -527,10 +443,9 @@
       bindEvents();
       runSearch();
     } catch (err) {
-      // fetchが失敗（file:// など）した場合にもここに来る
       if (el.summary) {
         const msg =
-          "データ読み込みに失敗しました。GitHub Pages上で開くか、ローカルサーバで開いてください。";
+          "データ読み込みに失敗しました。GitHub Pages上で開くか、profile.csv のパス/ファイル名を確認してください。";
         el.summary.textContent = `${msg}（詳細：${String(err?.message ?? err)}）`;
       }
       if (el.tbody) el.tbody.innerHTML = "";
@@ -538,7 +453,6 @@
     }
   }
 
-  // defer読み込み前提でも安全に
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);
   } else {
