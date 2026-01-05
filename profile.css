@@ -12,9 +12,7 @@ section{
   margin-bottom: 12px;
 }
 
-/* ===============================
-   テーブル基本
-================================ */
+/* テーブル基本 */
 table{
   width: 100%;
   border-collapse: collapse;
@@ -28,38 +26,27 @@ th, td{
   white-space: nowrap;
 }
 
-th{
-  font-weight: 700;
-}
+th{ font-weight: 700; }
 
-/* ===============================
-   列の出し分け
-   スマホ：4列
-================================ */
-/* デフォルト（スマホ）：5列目以降を非表示 */
+/* スマホ（デフォルト）：1〜4列（順/名/段/指標）だけ */
 table th:nth-child(n+5),
 table td:nth-child(n+5){
   display: none;
 }
 
-/* ===============================
-   タブレット：6列
-================================ */
+/* タブレット：1〜6列（変動列まで表示） */
 @media (min-width: 600px){
   table th:nth-child(n+5),
   table td:nth-child(n+5){
     display: table-cell;
   }
-
   table th:nth-child(n+7),
   table td:nth-child(n+7){
     display: none;
   }
 }
 
-/* ===============================
-   PC：8列
-================================ */
+/* PC：1〜8列すべて表示（番号/区分まで表示） */
 @media (min-width: 900px){
   table th:nth-child(n+7),
   table td:nth-child(n+7){

@@ -1,22 +1,24 @@
 /* profile.js
-   将棋の殿堂：棋士プロフィール検索（公開版：現役棋士のみ明記）
+   将棋の殿堂：棋士プロフィール検索（公開版）
 
-   前提（HTML側）：
-   - 入力ID：
-     q-name, q-num, q-dan, q-age-min, q-age-max,
-     q-metric（age / fourAge / activeSpan）, q-order（asc / desc）
-     btn-search, btn-reset
-   - 集計：#summary
-   - 結果：#result-body
-   - 指標列見出し：#th-metric（<th id="th-metric">指標</th>）
+   列仕様（8列固定でJSが出力、CSSで 4/6/8 列を表示切替）
+   1: 順番（1,2,3...）固定
+   2: 棋士名 固定
+   3: 段位 固定（四〜九段 / 不明）
+   4: 指標 固定（選択で内容変化）
+   5: 変動列A（指標に応じて変化）
+   6: 変動列B（指標に応じて変化）
+   7: 棋士番号 固定
+   8: 区分 固定（現役/引退/物故/退会）※現状は現役のみ表示
 
-   仕様：
-   - CSV: profile.csv（同階層）
-   - 現役判定：retire/passing/withdraw が空
-   - 段位：nine-day〜four-day から導出（漢数字）／全空は「不明」
-   - 年齢/期間：○歳○ヶ月○日（「ヶ月」表記）
-   - 「今日」＝アクセス日（ページを開いた日）
-   - 並べ替え：選択した指標のみ（昇順/降順）
+   指標と列割当
+   - age:        4=年齢        5=生年月日    6=現役期間
+   - fourAge:    4=四段昇段年齢 5=生年月日    6=四段昇段日
+   - activeSpan: 4=現役期間     5=四段昇段日  6=四段昇段年齢
+
+   並べ替え：指標（4列目）だけを昇順/降順
+
+   CSV: profile.csv（同階層）
 */
 
 (() => {
@@ -39,6 +41,9 @@
     withdraw: "withdraw",
   };
 
+  // 現状は「現役棋士のみ表示」。将来拡張するなら false にする。
+  const SHOW_ONLY_ACTIVE = true;
+
   const $ = (sel) => document.querySelector(sel);
 
   const el = {
@@ -47,16 +52,18 @@
     qDan: $("#q-dan"),
     qAgeMin: $("#q-age-min"),
     qAgeMax: $("#q-age-max"),
-    qMetric: $("#q-metric"),
-    qOrder: $("#q-order"),
+    qMetric: $("#q-metric"), // age / fourAge / activeSpan
+    qOrder: $("#q-order"),   // asc / desc
     btnSearch: $("#btn-search"),
     btnReset: $("#btn-reset"),
     summary: $("#summary"),
     tbody: $("#result-body"),
     thMetric: $("#th-metric"),
+    thVar5: $("#th-var5"),
+    thVar6: $("#th-var6"),
   };
 
-  // ===== Date helpers =====
+  // ===== 日付 =====
   function toDateOrNull(ymd) {
     if (!ymd || typeof ymd !== "string") return null;
     const s = ymd.trim();
@@ -83,7 +90,7 @@
     return `${y}-${m}-${d}`;
   }
 
-  // ===== CSV parse =====
+  // ===== CSV =====
   function parseCSV(text) {
     const rows = [];
     let row = [];
@@ -155,11 +162,10 @@
       }
       out.push(obj);
     }
-
     return out;
   }
 
-  // ===== diff (Y/M/D) =====
+  // ===== 年月日差分 =====
   function diffYMD(start, end) {
     if (!(start instanceof Date) || !(end instanceof Date)) return null;
 
@@ -218,7 +224,6 @@
     return `${ymd.years}歳${ymd.months}ヶ月${ymd.days}日`;
   }
 
-  // 平均用：差分ms平均を「○歳○ヶ月○日」に変換
   function avgMsToYmdString(avgMs, today) {
     if (!Number.isFinite(avgMs) || avgMs < 0) return "—";
     const base = new Date(today.getTime());
@@ -231,14 +236,23 @@
     return ymd ? ymdToString(ymd) : "—";
   }
 
-  // ===== derive =====
-  function isActive(row) {
+  // ===== 区分 =====
+  function classify(row) {
     const r = (row[COL.retire] || "").trim();
     const p = (row[COL.passing] || "").trim();
     const w = (row[COL.withdraw] || "").trim();
-    return r === "" && p === "" && w === "";
+
+    if (p !== "") return "物故";
+    if (r !== "") return "引退";
+    if (w !== "") return "退会";
+    return "現役";
   }
 
+  function isActive(row) {
+    return classify(row) === "現役";
+  }
+
+  // ===== 段位 =====
   function deriveDan(row) {
     const map = [
       { col: COL.nine, label: "九段" },
@@ -254,6 +268,7 @@
     return "不明";
   }
 
+  // ===== 派生 =====
   function deriveAges(row, today) {
     const birth = toDateOrNull(row[COL.birthday]);
     const four = toDateOrNull(row[COL.four]);
@@ -269,38 +284,53 @@
       fourAgeStr: fourAge ? ymdToString(fourAge) : "不明",
       activeSpanStr: activeSpan ? ymdToString(activeSpan) : "不明",
 
-      // ソート・平均用(ms)
+      // 並べ替え/平均用（ms）
       ageMs: birth ? (today.getTime() - birth.getTime()) : null,
       fourAgeMs: birth && four ? (four.getTime() - birth.getTime()) : null,
       activeSpanMs: four ? (today.getTime() - four.getTime()) : null,
     };
   }
 
-  // ===== UI (metric) =====
-  function metricLabel(metric) {
-    if (metric === "fourAge") return "四段昇段年齢";
-    if (metric === "activeSpan") return "現役期間";
-    return "年齢";
+  // ===== 指標→列定義（対応表：ここが設計の核） =====
+  const METRIC_DEF = {
+    age: {
+      th4: "年齢",
+      th5: "生年月日",
+      th6: "現役期間",
+      v4: (r) => r.ageStr,
+      v5: (r) => r.birthdayStr,
+      v6: (r) => r.activeSpanStr,
+      key: (r) => r.ageMs,
+    },
+    fourAge: {
+      th4: "四段昇段年齢",
+      th5: "生年月日",
+      th6: "四段昇段日",
+      v4: (r) => r.fourAgeStr,
+      v5: (r) => r.birthdayStr,
+      v6: (r) => r.fourDayStr,
+      key: (r) => r.fourAgeMs,
+    },
+    activeSpan: {
+      th4: "現役期間",
+      th5: "四段昇段日",
+      th6: "四段昇段年齢",
+      v4: (r) => r.activeSpanStr,
+      v5: (r) => r.fourDayStr,
+      v6: (r) => r.fourAgeStr,
+      key: (r) => r.activeSpanMs,
+    },
+  };
+
+  function getMetricDef(metric) {
+    return METRIC_DEF[metric] ?? METRIC_DEF.age;
   }
 
-  function metricText(r, metric) {
-    if (metric === "fourAge") return r.fourAgeStr;
-    if (metric === "activeSpan") return r.activeSpanStr;
-    return r.ageStr;
-  }
-
-  function metricMs(r, metric) {
-    if (metric === "fourAge") return r.fourAgeMs;
-    if (metric === "activeSpan") return r.activeSpanMs;
-    return r.ageMs;
-  }
-
-  // ===== filters =====
+  // ===== フィルタ =====
   function readFilters() {
     const name = (el.qName?.value ?? "").trim();
     const numRaw = (el.qNum?.value ?? "").trim();
     const dan = (el.qDan?.value ?? "").trim();
-
     const ageMinRaw = (el.qAgeMin?.value ?? "").trim();
     const ageMaxRaw = (el.qAgeMax?.value ?? "").trim();
 
@@ -324,23 +354,19 @@
 
   function applyFilters(records, filters) {
     return records.filter((r) => {
-      // 棋士名（部分一致）
       if (filters.name) {
         const n = (r.name || "").toLowerCase();
         if (!n.includes(filters.name.toLowerCase())) return false;
       }
 
-      // 棋士番号（一致）
       if (filters.num !== null) {
         if (r.num !== filters.num) return false;
       }
 
-      // 段位（一致）
       if (filters.dan) {
         if (r.dan !== filters.dan) return false;
       }
 
-      // 年齢（年の範囲）
       if (filters.ageMin !== null) {
         if (r.ageYears === null || r.ageYears < filters.ageMin) return false;
       }
@@ -352,12 +378,14 @@
     });
   }
 
+  // ===== 並べ替え（指標のみ） =====
   function sortByMetric(records, metric, order) {
+    const def = getMetricDef(metric);
     const dir = order === "desc" ? -1 : 1;
 
     return records.slice().sort((a, b) => {
-      const va = metricMs(a, metric);
-      const vb = metricMs(b, metric);
+      const va = def.key(a);
+      const vb = def.key(b);
 
       const na = va === null || va === undefined || !Number.isFinite(va);
       const nb = vb === null || vb === undefined || !Number.isFinite(vb);
@@ -369,12 +397,19 @@
 
       if (va !== vb) return (va - vb) * dir;
 
-      // 同値なら棋士番号で安定化
+      // 同値のときは棋士番号で安定化
       return (a.num ?? 1e18) - (b.num ?? 1e18);
     });
   }
 
-  // ===== render =====
+  // ===== 描画 =====
+  function renderHeaders(metric) {
+    const def = getMetricDef(metric);
+    if (el.thMetric) el.thMetric.textContent = def.th4;
+    if (el.thVar5) el.thVar5.textContent = def.th5;
+    if (el.thVar6) el.thVar6.textContent = def.th6;
+  }
+
   function renderSummary(records, today) {
     if (!el.summary) return;
 
@@ -399,26 +434,25 @@
   function renderTable(records, metric) {
     if (!el.tbody) return;
 
-    // 指標列の見出しを差し替え
-    if (el.thMetric) el.thMetric.textContent = metricLabel(metric);
+    const def = getMetricDef(metric);
+    renderHeaders(metric);
 
     el.tbody.innerHTML = "";
     const frag = document.createDocumentFragment();
 
-    for (const r of records) {
+    records.forEach((r, idx) => {
       const tr = document.createElement("tr");
 
       // 列順（8列固定）
-      // 1 num / 2 name / 3 dan / 4 metric / 5 age / 6 fourAge / 7 activeSpan / 8 birthday
       const cells = [
-        r.numStr,
-        r.name,
-        r.dan,
-        metricText(r, metric),
-        r.ageStr,
-        r.fourAgeStr,
-        r.activeSpanStr,
-        r.birthdayStr,
+        String(idx + 1),       // 1 順番
+        r.name,                // 2 棋士名
+        r.dan,                 // 3 段位
+        def.v4(r),             // 4 指標
+        def.v5(r),             // 5 変動A
+        def.v6(r),             // 6 変動B
+        r.numStr,              // 7 棋士番号
+        r.status,              // 8 区分
       ];
 
       for (const c of cells) {
@@ -428,13 +462,13 @@
       }
 
       frag.appendChild(tr);
-    }
+    });
 
     el.tbody.appendChild(frag);
   }
 
-  // ===== init / events =====
-  let ALL_ACTIVE = [];
+  // ===== 初期化 =====
+  let ALL = [];
   let TODAY = null;
 
   async function loadData(today) {
@@ -445,53 +479,63 @@
     const rows = parseCSV(text);
     const objs = rowsToObjects(rows);
 
-    const active = objs
-      .filter(isActive)
-      .map((row) => {
-        const numRaw = (row[COL.num] || "").trim();
-        const num = numRaw === "" ? NaN : Number(numRaw);
+    const filtered = objs.filter((row) => (SHOW_ONLY_ACTIVE ? isActive(row) : true));
 
-        const name = (row[COL.name] || "").trim();
-        const dan = deriveDan(row);
+    const records = filtered.map((row) => {
+      const numRaw = (row[COL.num] || "").trim();
+      const num = numRaw === "" ? NaN : Number(numRaw);
 
-        const birthdayStr = (row[COL.birthday] || "").trim() || "不明";
-        const ages = deriveAges(row, today);
+      const name = (row[COL.name] || "").trim() || "—";
+      const dan = deriveDan(row);
 
-        return {
-          raw: row,
+      const status = classify(row);
 
-          num: Number.isFinite(num) ? num : null,
-          numStr: Number.isFinite(num) ? String(num) : "—",
-          name: name || "—",
-          dan,
+      const birthdayStr = (row[COL.birthday] || "").trim() || "不明";
+      const fourDayStr = (row[COL.four] || "").trim() || "不明";
 
-          birthdayStr,
+      const ages = deriveAges(row, today);
 
-          ageStr: ages.ageStr,
-          ageYears: ages.ageYears,
-          fourAgeStr: ages.fourAgeStr,
-          activeSpanStr: ages.activeSpanStr,
+      return {
+        raw: row,
 
-          ageMs: ages.ageMs,
-          fourAgeMs: ages.fourAgeMs,
-          activeSpanMs: ages.activeSpanMs,
-        };
-      });
+        num: Number.isFinite(num) ? num : null,
+        numStr: Number.isFinite(num) ? String(num) : "—",
 
-    // 既定順：棋士番号昇順（番号なしは末尾）
-    active.sort((a, b) => {
-      if (a.num === null && b.num === null) return 0;
-      if (a.num === null) return 1;
-      if (b.num === null) return -1;
-      return a.num - b.num;
+        name,
+        dan,
+        status,
+
+        birthdayStr,
+        fourDayStr,
+
+        ageStr: ages.ageStr,
+        ageYears: ages.ageYears,
+
+        fourAgeStr: ages.fourAgeStr,
+        activeSpanStr: ages.activeSpanStr,
+
+        ageMs: ages.ageMs,
+        fourAgeMs: ages.fourAgeMs,
+        activeSpanMs: ages.activeSpanMs,
+      };
     });
 
-    return active;
+    // 既定ソート：棋士名→棋士番号（安定目的）
+    records.sort((a, b) => {
+      const an = a.name ?? "";
+      const bn = b.name ?? "";
+      if (an !== bn) return an.localeCompare(bn, "ja");
+      const na = a.num ?? 1e18;
+      const nb = b.num ?? 1e18;
+      return na - nb;
+    });
+
+    return records;
   }
 
   function runSearch() {
     const filters = readFilters();
-    const filtered = applyFilters(ALL_ACTIVE, filters);
+    const filtered = applyFilters(ALL, filters);
     const sorted = sortByMetric(filtered, filters.metric, filters.order);
 
     renderSummary(sorted, TODAY);
@@ -516,7 +560,7 @@
       runSearch();
     });
 
-    // Enterで検索（フォームタグなし想定）
+    // Enterで検索
     ["q-name", "q-num", "q-age-min", "q-age-max"].forEach((id) => {
       const input = document.getElementById(id);
       if (!input) return;
@@ -539,7 +583,7 @@
     TODAY.setHours(0, 0, 0, 0);
 
     try {
-      ALL_ACTIVE = await loadData(TODAY);
+      ALL = await loadData(TODAY);
       bindEvents();
       runSearch();
     } catch (err) {
