@@ -224,6 +224,11 @@
     return `${ymd.years}歳${ymd.months}ヶ月${ymd.days}日`;
   }
 
+  function ymdToYearString(ymd) {
+  if (!ymd) return "不明";
+  return `${ymd.years}年${ymd.months}ヶ月${ymd.days}日`;
+  }
+
   function avgMsToYmdString(avgMs, today) {
     if (!Number.isFinite(avgMs) || avgMs < 0) return "—";
     const base = new Date(today.getTime());
@@ -282,9 +287,9 @@
       ageYears: age ? age.years : null,
 
       fourAgeStr: fourAge ? ymdToString(fourAge) : "不明",
-      activeSpanStr: activeSpan ? ymdToString(activeSpan) : "不明",
+      activeSpanStr: activeSpan ? ymdToYearString(activeSpan) : "不明",
 
-      // 並べ替え/平均用（ms）
+    // 並べ替え/平均用（ms）
       ageMs: birth ? (today.getTime() - birth.getTime()) : null,
       fourAgeMs: birth && four ? (four.getTime() - birth.getTime()) : null,
       activeSpanMs: four ? (today.getTime() - four.getTime()) : null,
