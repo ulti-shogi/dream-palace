@@ -1,0 +1,12 @@
+/* profile.css：profile.html（検索ページ）専用 */
+
+/* 余白が二重になりやすいので、main 側の左右paddingを消して .wrap に一本化 */
+main{
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* table は横幅を最大まで使う */
+table{
+  width: 100%;
+}
