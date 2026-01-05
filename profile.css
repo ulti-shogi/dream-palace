@@ -12,33 +12,39 @@ section{
   margin-bottom: 12px;
 }
 
-/* ===== テーブル見た目 ===== */
+/* ===============================
+   テーブル基本
+================================ */
 table{
   width: 100%;
   border-collapse: collapse;
 }
 
 th, td{
-  border: 1px solid rgba(0,0,0,.2);
+  border: 1px solid rgba(0,0,0,.25);
   text-align: center;
   vertical-align: middle;
-  padding: 8px 6px;
+  padding: 6px 6px;
+  white-space: nowrap;
 }
 
-/* ヘッダは少し強調（任意） */
 th{
   font-weight: 700;
-  background: #fff;
 }
 
-/* ===== 列の出し分け：スマホ4列 / タブレット6列 / PC8列 ===== */
-/* まずはモバイル（デフォルト）：5列目以降を隠す（= 1〜4列だけ表示） */
+/* ===============================
+   列の出し分け
+   スマホ：4列
+================================ */
+/* デフォルト（スマホ）：5列目以降を非表示 */
 table th:nth-child(n+5),
 table td:nth-child(n+5){
   display: none;
 }
 
-/* タブレット：1〜6列表示（7〜8列を隠す） */
+/* ===============================
+   タブレット：6列
+================================ */
 @media (min-width: 600px){
   table th:nth-child(n+5),
   table td:nth-child(n+5){
@@ -51,7 +57,9 @@ table td:nth-child(n+5){
   }
 }
 
-/* PC：1〜8列すべて表示 */
+/* ===============================
+   PC：8列
+================================ */
 @media (min-width: 900px){
   table th:nth-child(n+7),
   table td:nth-child(n+7){
