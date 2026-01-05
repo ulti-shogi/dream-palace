@@ -12,7 +12,49 @@ section{
   margin-bottom: 12px;
 }
 
-/* table は横幅を最大まで使う */
+/* ===== テーブル見た目 ===== */
 table{
   width: 100%;
+  border-collapse: collapse;
+}
+
+th, td{
+  border: 1px solid rgba(0,0,0,.2);
+  text-align: center;
+  vertical-align: middle;
+  padding: 8px 6px;
+}
+
+/* ヘッダは少し強調（任意） */
+th{
+  font-weight: 700;
+  background: #fff;
+}
+
+/* ===== 列の出し分け：スマホ4列 / タブレット6列 / PC8列 ===== */
+/* まずはモバイル（デフォルト）：5列目以降を隠す（= 1〜4列だけ表示） */
+table th:nth-child(n+5),
+table td:nth-child(n+5){
+  display: none;
+}
+
+/* タブレット：1〜6列表示（7〜8列を隠す） */
+@media (min-width: 700px){
+  table th:nth-child(n+5),
+  table td:nth-child(n+5){
+    display: table-cell;
+  }
+
+  table th:nth-child(n+7),
+  table td:nth-child(n+7){
+    display: none;
+  }
+}
+
+/* PC：1〜8列すべて表示 */
+@media (min-width: 1000px){
+  table th:nth-child(n+7),
+  table td:nth-child(n+7){
+    display: table-cell;
+  }
 }

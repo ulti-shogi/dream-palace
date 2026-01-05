@@ -315,7 +315,16 @@
 
     for (const r of records) {
       const tr = document.createElement("tr");
-      const cells = [r.numStr, r.name, r.dan, r.ageStr, r.fourAgeStr, r.activeSpanStr];
+      const cells = [
+  r.numStr,
+  r.name,
+  r.dan,
+  r.ageStr,
+  r.birthdayStr,
+  r.fourDayStr,
+  r.fourAgeStr,
+  r.activeSpanStr,
+];
 
       for (const c of cells) {
         const td = document.createElement("td");
@@ -373,17 +382,22 @@
         const ages = deriveAges(row, today);
 
         return {
-          raw: row,
-          num: Number.isFinite(num) ? num : null,
-          numStr: Number.isFinite(num) ? String(num) : "—",
-          name: name || "—",
-          dan,
-          ageStr: ages.ageStr,
-          ageYears: ages.ageYears,
-          fourAgeStr: ages.fourAgeStr,
-          activeSpanStr: ages.activeSpanStr,
-          fourAgeMs: ages.fourAgeMs,
-        };
+  raw: row,
+  num: Number.isFinite(num) ? num : null,
+  numStr: Number.isFinite(num) ? String(num) : "—",
+  name: name || "—",
+  dan,
+
+  ageStr: ages.ageStr,
+  ageYears: ages.ageYears,
+
+  birthdayStr: (row[COL.birthday] || "").trim() || "不明",
+  fourDayStr: (row[COL.four] || "").trim() || "不明",
+
+  fourAgeStr: ages.fourAgeStr,
+  activeSpanStr: ages.activeSpanStr,
+  fourAgeMs: ages.fourAgeMs,
+};
       });
 
     active.sort((a, b) => {
