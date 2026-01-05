@@ -57,6 +57,23 @@
     <input id="q-age-max" name="q-age-max" type="number" inputmode="numeric" min="0" step="1" placeholder="例：80">
   </div>
 
+    <div>
+  <label for="q-metric">スマホ表示の指標（4列目）</label><br>
+  <select id="q-metric" name="q-metric">
+    <option value="age">年齢</option>
+    <option value="fourAge">四段昇段年齢</option>
+    <option value="activeSpan">現役期間</option>
+  </select>
+    </div>
+
+<div>
+  <label for="q-order">並べ替え（指標）</label><br>
+  <select id="q-order" name="q-order">
+    <option value="asc">昇順</option>
+    <option value="desc">降順</option>
+  </select>
+</div>
+    
   <div>
     <button type="button" id="btn-search">検索</button>
     <button type="button" id="btn-reset">リセット</button>
@@ -75,7 +92,7 @@
 <table>
   <thead>
   <tr>
-    <th>棋士番号</th>
+    <th>No.</th>
     <th>棋士名</th>
     <th>段位</th>
     <th id="th-metric">指標</th>

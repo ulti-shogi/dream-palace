@@ -1,19 +1,29 @@
 /* profile.js
    将棋の殿堂：棋士プロフィール検索（公開版：現役棋士のみ明記）
-   - profile.csv を読み込み
-   - 現役棋士のみ対象（retire/passing/withdraw が空）
-   - 段位：四〜九段（漢数字）/ 不明
+
+   前提（HTML側）：
+   - 入力ID：
+     q-name, q-num, q-dan, q-age-min, q-age-max,
+     q-metric（age / fourAge / activeSpan）, q-order（asc / desc）
+     btn-search, btn-reset
+   - 集計：#summary
+   - 結果：#result-body
+   - 指標列見出し：#th-metric（<th id="th-metric">指標</th>）
+
+   仕様：
+   - CSV: profile.csv（同階層）
+   - 現役判定：retire/passing/withdraw が空
+   - 段位：nine-day〜four-day から導出（漢数字）／全空は「不明」
    - 年齢/期間：○歳○ヶ月○日（「ヶ月」表記）
-   - 検索：棋士名（部分一致）/ 棋士番号（一致）/ 段位 / 年齢（年の範囲）
+   - 「今日」＝アクセス日（ページを開いた日）
+   - 並べ替え：選択した指標のみ（昇順/降順）
 */
 
 (() => {
   "use strict";
 
-  // ===== 設定 =====
   const CSV_PATH = "profile.csv";
 
-  // CSV列名（ハイフン入りなので bracket 参照）
   const COL = {
     num: "num",
     name: "name",
@@ -29,7 +39,6 @@
     withdraw: "withdraw",
   };
 
-  // ===== DOM参照 =====
   const $ = (sel) => document.querySelector(sel);
 
   const el = {
@@ -38,13 +47,16 @@
     qDan: $("#q-dan"),
     qAgeMin: $("#q-age-min"),
     qAgeMax: $("#q-age-max"),
+    qMetric: $("#q-metric"),
+    qOrder: $("#q-order"),
     btnSearch: $("#btn-search"),
     btnReset: $("#btn-reset"),
     summary: $("#summary"),
     tbody: $("#result-body"),
+    thMetric: $("#th-metric"),
   };
 
-  // ===== ユーティリティ =====
+  // ===== Date helpers =====
   function toDateOrNull(ymd) {
     if (!ymd || typeof ymd !== "string") return null;
     const s = ymd.trim();
@@ -71,7 +83,7 @@
     return `${y}-${m}-${d}`;
   }
 
-  // CSVパーサ（ダブルクォート対応の最小実装）
+  // ===== CSV parse =====
   function parseCSV(text) {
     const rows = [];
     let row = [];
@@ -143,10 +155,11 @@
       }
       out.push(obj);
     }
+
     return out;
   }
 
-  // ===== 年月日差分（○歳○ヶ月○日） =====
+  // ===== diff (Y/M/D) =====
   function diffYMD(start, end) {
     if (!(start instanceof Date) || !(end instanceof Date)) return null;
 
@@ -218,7 +231,7 @@
     return ymd ? ymdToString(ymd) : "—";
   }
 
-  // ===== 派生値 =====
+  // ===== derive =====
   function isActive(row) {
     const r = (row[COL.retire] || "").trim();
     const p = (row[COL.passing] || "").trim();
@@ -251,14 +264,38 @@
 
     return {
       ageStr: age ? ymdToString(age) : "不明",
-      ageYears: age ? age.years : null, // 年齢フィルタ用（年）
+      ageYears: age ? age.years : null,
+
       fourAgeStr: fourAge ? ymdToString(fourAge) : "不明",
       activeSpanStr: activeSpan ? ymdToString(activeSpan) : "不明",
+
+      // ソート・平均用(ms)
+      ageMs: birth ? (today.getTime() - birth.getTime()) : null,
       fourAgeMs: birth && four ? (four.getTime() - birth.getTime()) : null,
+      activeSpanMs: four ? (today.getTime() - four.getTime()) : null,
     };
   }
 
-  // ===== 検索 =====
+  // ===== UI (metric) =====
+  function metricLabel(metric) {
+    if (metric === "fourAge") return "四段昇段年齢";
+    if (metric === "activeSpan") return "現役期間";
+    return "年齢";
+  }
+
+  function metricText(r, metric) {
+    if (metric === "fourAge") return r.fourAgeStr;
+    if (metric === "activeSpan") return r.activeSpanStr;
+    return r.ageStr;
+  }
+
+  function metricMs(r, metric) {
+    if (metric === "fourAge") return r.fourAgeMs;
+    if (metric === "activeSpan") return r.activeSpanMs;
+    return r.ageMs;
+  }
+
+  // ===== filters =====
   function readFilters() {
     const name = (el.qName?.value ?? "").trim();
     const numRaw = (el.qNum?.value ?? "").trim();
@@ -266,6 +303,9 @@
 
     const ageMinRaw = (el.qAgeMin?.value ?? "").trim();
     const ageMaxRaw = (el.qAgeMax?.value ?? "").trim();
+
+    const metric = (el.qMetric?.value ?? "age").trim() || "age";
+    const order = (el.qOrder?.value ?? "asc").trim() || "asc";
 
     const num = numRaw === "" ? null : Number(numRaw);
     const ageMin = ageMinRaw === "" ? null : Number(ageMinRaw);
@@ -277,24 +317,30 @@
       dan: dan === "" ? null : dan,
       ageMin: Number.isFinite(ageMin) ? ageMin : null,
       ageMax: Number.isFinite(ageMax) ? ageMax : null,
+      metric,
+      order,
     };
   }
 
   function applyFilters(records, filters) {
     return records.filter((r) => {
+      // 棋士名（部分一致）
       if (filters.name) {
         const n = (r.name || "").toLowerCase();
         if (!n.includes(filters.name.toLowerCase())) return false;
       }
 
+      // 棋士番号（一致）
       if (filters.num !== null) {
         if (r.num !== filters.num) return false;
       }
 
+      // 段位（一致）
       if (filters.dan) {
         if (r.dan !== filters.dan) return false;
       }
 
+      // 年齢（年の範囲）
       if (filters.ageMin !== null) {
         if (r.ageYears === null || r.ageYears < filters.ageMin) return false;
       }
@@ -306,42 +352,35 @@
     });
   }
 
-  // ===== 描画 =====
-  function renderTable(records) {
-    if (!el.tbody) return;
+  function sortByMetric(records, metric, order) {
+    const dir = order === "desc" ? -1 : 1;
 
-    el.tbody.innerHTML = "";
-    const frag = document.createDocumentFragment();
+    return records.slice().sort((a, b) => {
+      const va = metricMs(a, metric);
+      const vb = metricMs(b, metric);
 
-    for (const r of records) {
-      const tr = document.createElement("tr");
-      const cells = [
-  r.numStr,
-  r.name,
-  r.dan,
-  r.ageStr,
-  r.birthdayStr,
-  r.fourDayStr,
-  r.fourAgeStr,
-  r.activeSpanStr,
-];
+      const na = va === null || va === undefined || !Number.isFinite(va);
+      const nb = vb === null || vb === undefined || !Number.isFinite(vb);
 
-      for (const c of cells) {
-        const td = document.createElement("td");
-        td.textContent = c;
-        tr.appendChild(td);
-      }
-      frag.appendChild(tr);
-    }
+      // 不明は末尾
+      if (na && nb) return (a.num ?? 1e18) - (b.num ?? 1e18);
+      if (na) return 1;
+      if (nb) return -1;
 
-    el.tbody.appendChild(frag);
+      if (va !== vb) return (va - vb) * dir;
+
+      // 同値なら棋士番号で安定化
+      return (a.num ?? 1e18) - (b.num ?? 1e18);
+    });
   }
 
+  // ===== render =====
   function renderSummary(records, today) {
     if (!el.summary) return;
 
     const total = records.length;
 
+    // 四段昇段平均年齢：birthday と four-day が揃う人のみ
     const msList = records
       .map((r) => r.fourAgeMs)
       .filter((v) => Number.isFinite(v) && v >= 0);
@@ -353,13 +392,48 @@
       avgStr = avgMsToYmdString(avgMs, today);
     }
 
-    const todayStr = formatYmd(today);
-
     el.summary.textContent =
-      `対象：現役棋士（公開版） / 今日：${todayStr} / 件数：${total} / 四段昇段平均年齢：${avgStr}（算出対象：${nAvg}名）`;
+      `対象：現役棋士（公開版） / 今日：${formatYmd(today)} / 件数：${total} / 四段昇段平均年齢：${avgStr}（算出対象：${nAvg}名）`;
   }
 
-  // ===== 初期化 =====
+  function renderTable(records, metric) {
+    if (!el.tbody) return;
+
+    // 指標列の見出しを差し替え
+    if (el.thMetric) el.thMetric.textContent = metricLabel(metric);
+
+    el.tbody.innerHTML = "";
+    const frag = document.createDocumentFragment();
+
+    for (const r of records) {
+      const tr = document.createElement("tr");
+
+      // 列順（8列固定）
+      // 1 num / 2 name / 3 dan / 4 metric / 5 age / 6 fourAge / 7 activeSpan / 8 birthday
+      const cells = [
+        r.numStr,
+        r.name,
+        r.dan,
+        metricText(r, metric),
+        r.ageStr,
+        r.fourAgeStr,
+        r.activeSpanStr,
+        r.birthdayStr,
+      ];
+
+      for (const c of cells) {
+        const td = document.createElement("td");
+        td.textContent = c;
+        tr.appendChild(td);
+      }
+
+      frag.appendChild(tr);
+    }
+
+    el.tbody.appendChild(frag);
+  }
+
+  // ===== init / events =====
   let ALL_ACTIVE = [];
   let TODAY = null;
 
@@ -379,27 +453,32 @@
 
         const name = (row[COL.name] || "").trim();
         const dan = deriveDan(row);
+
+        const birthdayStr = (row[COL.birthday] || "").trim() || "不明";
         const ages = deriveAges(row, today);
 
         return {
-  raw: row,
-  num: Number.isFinite(num) ? num : null,
-  numStr: Number.isFinite(num) ? String(num) : "—",
-  name: name || "—",
-  dan,
+          raw: row,
 
-  ageStr: ages.ageStr,
-  ageYears: ages.ageYears,
+          num: Number.isFinite(num) ? num : null,
+          numStr: Number.isFinite(num) ? String(num) : "—",
+          name: name || "—",
+          dan,
 
-  birthdayStr: (row[COL.birthday] || "").trim() || "不明",
-  fourDayStr: (row[COL.four] || "").trim() || "不明",
+          birthdayStr,
 
-  fourAgeStr: ages.fourAgeStr,
-  activeSpanStr: ages.activeSpanStr,
-  fourAgeMs: ages.fourAgeMs,
-};
+          ageStr: ages.ageStr,
+          ageYears: ages.ageYears,
+          fourAgeStr: ages.fourAgeStr,
+          activeSpanStr: ages.activeSpanStr,
+
+          ageMs: ages.ageMs,
+          fourAgeMs: ages.fourAgeMs,
+          activeSpanMs: ages.activeSpanMs,
+        };
       });
 
+    // 既定順：棋士番号昇順（番号なしは末尾）
     active.sort((a, b) => {
       if (a.num === null && b.num === null) return 0;
       if (a.num === null) return 1;
@@ -413,8 +492,10 @@
   function runSearch() {
     const filters = readFilters();
     const filtered = applyFilters(ALL_ACTIVE, filters);
-    renderSummary(filtered, TODAY);
-    renderTable(filtered);
+    const sorted = sortByMetric(filtered, filters.metric, filters.order);
+
+    renderSummary(sorted, TODAY);
+    renderTable(sorted, filters.metric);
   }
 
   function resetForm() {
@@ -423,6 +504,8 @@
     if (el.qDan) el.qDan.value = "";
     if (el.qAgeMin) el.qAgeMin.value = "";
     if (el.qAgeMax) el.qAgeMax.value = "";
+    if (el.qMetric) el.qMetric.value = "age";
+    if (el.qOrder) el.qOrder.value = "asc";
   }
 
   function bindEvents() {
@@ -433,6 +516,7 @@
       runSearch();
     });
 
+    // Enterで検索（フォームタグなし想定）
     ["q-name", "q-num", "q-age-min", "q-age-max"].forEach((id) => {
       const input = document.getElementById(id);
       if (!input) return;
@@ -445,6 +529,8 @@
     });
 
     el.qDan?.addEventListener("change", runSearch);
+    el.qMetric?.addEventListener("change", runSearch);
+    el.qOrder?.addEventListener("change", runSearch);
   }
 
   async function init() {
