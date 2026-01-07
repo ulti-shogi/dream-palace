@@ -1,21 +1,31 @@
 /* profile.js（rules.js 前提・貼り替え用）
-   プルリストに変更しようとしたらテーブルの表示が消えるバグが起きた。
+   将棋の殿堂：棋士プロフィール検索（公開版）
 
    前提：
    - rules.js を先に読み込む（defer 推奨）
      <script src="rules.js" defer></script>
-     <script src="profile.js?v=20260107" defer></script>
+     <script src="profile.js?v=20260108" defer></script>
 
    UI前提（HTML側）：
    - 入力ID：
-     q-name, q-num, q-dan, q-age-min, q-age-max,
-     q-metric（age / fourAge / activeSpan）, q-order（seki / asc / desc）
+     q-name（select想定：フルリスト）
+     q-dan
+     q-age-min, q-age-max
+     q-num-min, q-num-max   ← 今回追加（まだ無くても落ちない）
+     q-rank-min, q-rank-max ← 今回追加（まだ無くても落ちない）
+     q-metric（age / fourAge / activeSpan）
+     q-order（seki / asc / desc）
      btn-search, btn-reset
    - 集計：#summary
    - 結果：#result-body
    - 見出し：#th-metric #th-var5 #th-var6
 
    CSV: profile.csv（同階層）
+
+   定義（重要）：
+   1) 並び替え
+   2) 順を振る（rank = 1..n）
+   3) 順で範囲検索（rankMin/rankMax）
 */
 
 (() => {
@@ -28,23 +38,37 @@
   if (!window.ProfileRules) {
     console.error("ProfileRules が見つかりません。rules.js を profile.js より先に読み込んでください。");
   }
-
   const R = window.ProfileRules;
 
   const $ = (sel) => document.querySelector(sel);
 
   const el = {
     qName: $("#q-name"),
+
+    // 互換（旧：単一入力）。今後UIから消してもOK。残っていても動く。
     qNum: $("#q-num"),
+
+    // 新：棋士番号 範囲
+    qNumMin: $("#q-num-min"),
+    qNumMax: $("#q-num-max"),
+
     qDan: $("#q-dan"),
     qAgeMin: $("#q-age-min"),
     qAgeMax: $("#q-age-max"),
+
+    // 新：「順」 範囲（並び替え後の順位）
+    qRankMin: $("#q-rank-min"),
+    qRankMax: $("#q-rank-max"),
+
     qMetric: $("#q-metric"), // age / fourAge / activeSpan
     qOrder: $("#q-order"),   // seki / asc / desc
+
     btnSearch: $("#btn-search"),
     btnReset: $("#btn-reset"),
+
     summary: $("#summary"),
     tbody: $("#result-body"),
+
     thMetric: $("#th-metric"),
     thVar5: $("#th-var5"),
     thVar6: $("#th-var6"),
@@ -269,24 +293,52 @@
   // ===== フィルタ =====
   function readFilters() {
     const name = (el.qName?.value ?? "").trim();
+
+    // 棋士番号：新UI（min/max）を優先、無ければ旧UI（単一）を互換として読む
+    const numMinRaw = (el.qNumMin?.value ?? "").trim();
+    const numMaxRaw = (el.qNumMax?.value ?? "").trim();
     const numRaw = (el.qNum?.value ?? "").trim();
+
     const dan = (el.qDan?.value ?? "").trim();
+
     const ageMinRaw = (el.qAgeMin?.value ?? "").trim();
     const ageMaxRaw = (el.qAgeMax?.value ?? "").trim();
+
+    // 「順」範囲（並び替え後の順位で評価）
+    const rankMinRaw = (el.qRankMin?.value ?? "").trim();
+    const rankMaxRaw = (el.qRankMax?.value ?? "").trim();
 
     const metric = (el.qMetric?.value ?? "age").trim() || "age";
     const order = (el.qOrder?.value ?? "seki").trim() || "seki";
 
-    const num = numRaw === "" ? null : Number(numRaw);
+    const numMin = numMinRaw === "" ? null : Number(numMinRaw);
+    const numMax = numMaxRaw === "" ? null : Number(numMaxRaw);
+
+    // 旧UI：単一入力が残っている場合は「その番号だけ」にする
+    const numExact = numRaw === "" ? null : Number(numRaw);
+
     const ageMin = ageMinRaw === "" ? null : Number(ageMinRaw);
     const ageMax = ageMaxRaw === "" ? null : Number(ageMaxRaw);
 
+    const rankMin = rankMinRaw === "" ? null : Number(rankMinRaw);
+    const rankMax = rankMaxRaw === "" ? null : Number(rankMaxRaw);
+
     return {
       name,
-      num: Number.isFinite(num) ? num : null,
+
+      numMin: Number.isFinite(numMin) ? numMin : null,
+      numMax: Number.isFinite(numMax) ? numMax : null,
+      numExact: Number.isFinite(numExact) ? numExact : null,
+
       dan: dan === "" ? null : dan,
+
       ageMin: Number.isFinite(ageMin) ? ageMin : null,
       ageMax: Number.isFinite(ageMax) ? ageMax : null,
+
+      // 「順」＝並び替え後に付与する順位（1始まり）
+      rankMin: Number.isFinite(rankMin) ? rankMin : null,
+      rankMax: Number.isFinite(rankMax) ? rankMax : null,
+
       metric,
       order,
     };
@@ -294,22 +346,39 @@
 
   function applyFilters(records, filters) {
     return records.filter((r) => {
+      // 棋士名：select化している場合は完全一致でもOKだが、互換のため includes のまま
       if (filters.name) {
         const n = (r.name || "").toLowerCase();
         if (!n.includes(filters.name.toLowerCase())) return false;
       }
-      if (filters.num !== null) {
-        if (r.num !== filters.num) return false;
-      }
+
+      // 段位
       if (filters.dan) {
         if (r.dan !== filters.dan) return false;
       }
+
+      // 年齢（年単位）
       if (filters.ageMin !== null) {
         if (r.ageYears === null || r.ageYears < filters.ageMin) return false;
       }
       if (filters.ageMax !== null) {
         if (r.ageYears === null || r.ageYears > filters.ageMax) return false;
       }
+
+      // 棋士番号：旧UIの単一入力が残っている場合は完全一致
+      if (filters.numExact !== null) {
+        if (r.num !== filters.numExact) return false;
+        return true; // 単一一致があれば min/max は無視
+      }
+
+      // 棋士番号：範囲（min/max）
+      if (filters.numMin !== null) {
+        if (r.num === null || r.num < filters.numMin) return false;
+      }
+      if (filters.numMax !== null) {
+        if (r.num === null || r.num > filters.numMax) return false;
+      }
+
       return true;
     });
   }
@@ -382,14 +451,14 @@
       const tr = document.createElement("tr");
 
       const cells = [
-        String(idx + 1), // 1 順番
-        r.name,          // 2 棋士名
-        r.dan,           // 3 段位
-        def.v4(r),       // 4 指標
-        def.v5(r),       // 5 変動A
-        def.v6(r),       // 6 変動B
-        r.numStr,        // 7 棋士番号
-        r.status,        // 8 区分
+        String(r.rank ?? (idx + 1)), // 1 順番（rankがあればそれを使う）
+        r.name,                      // 2 棋士名
+        r.dan,                       // 3 段位
+        def.v4(r),                   // 4 指標
+        def.v5(r),                   // 5 変動A
+        def.v6(r),                   // 6 変動B
+        r.numStr,                    // 7 棋士番号
+        r.status,                    // 8 区分
       ];
 
       for (const c of cells) {
@@ -402,6 +471,19 @@
     });
 
     el.tbody.appendChild(frag);
+  }
+
+  // ===== ここが今回の肝：順の扱い =====
+  function applyRankRange(sortedWithRank, rankMin, rankMax) {
+    if (rankMin === null && rankMax === null) return sortedWithRank;
+
+    return sortedWithRank.filter((r) => {
+      const rk = r.rank;
+      if (!Number.isFinite(rk)) return false;
+      if (rankMin !== null && rk < rankMin) return false;
+      if (rankMax !== null && rk > rankMax) return false;
+      return true;
+    });
   }
 
   // ===== 初期化 =====
@@ -471,19 +553,33 @@
 
   function runSearch() {
     const filters = readFilters();
+
+    // 1) 先に「データに元からある条件」で絞る（年齢・棋士番号など）
     const filtered = applyFilters(ALL, filters);
+
+    // 2) 並び替え（席次 or 指標）
     const sorted = sortRecords(filtered, filters.metric, filters.order);
 
-    renderSummary(sorted, TODAY);
-    renderTable(sorted, filters.metric);
+    // 3) 順を振る（並び替え後の順位。1始まり）
+    const sortedWithRank = sorted.map((r, i) => ({ ...r, rank: i + 1 }));
+
+    // 4) 「順」で範囲検索（定義：並び替え → 順付与 → 順で絞る）
+    const finalList = applyRankRange(sortedWithRank, filters.rankMin, filters.rankMax);
+
+    renderSummary(finalList, TODAY);
+    renderTable(finalList, filters.metric);
   }
 
   function resetForm() {
     if (el.qName) el.qName.value = "";
-    if (el.qNum) el.qNum.value = "";
+    if (el.qNum) el.qNum.value = "";        // 互換
+    if (el.qNumMin) el.qNumMin.value = "";
+    if (el.qNumMax) el.qNumMax.value = "";
     if (el.qDan) el.qDan.value = "";
     if (el.qAgeMin) el.qAgeMin.value = "";
     if (el.qAgeMax) el.qAgeMax.value = "";
+    if (el.qRankMin) el.qRankMin.value = "";
+    if (el.qRankMax) el.qRankMax.value = "";
     if (el.qMetric) el.qMetric.value = "age";
     if (el.qOrder) el.qOrder.value = "seki";
   }
@@ -496,8 +592,12 @@
       runSearch();
     });
 
-    // Enterで検索
-    ["q-name", "q-num", "q-age-min", "q-age-max"].forEach((id) => {
+    // Enterで検索（数値入力はここで確定）
+    [
+      "q-age-min", "q-age-max",
+      "q-num", "q-num-min", "q-num-max",
+      "q-rank-min", "q-rank-max"
+    ].forEach((id) => {
       const input = document.getElementById(id);
       if (!input) return;
       input.addEventListener("keydown", (e) => {
@@ -507,7 +607,8 @@
         }
       });
     });
-    
+
+    // select系：変更した時点で反映
     el.qName?.addEventListener("change", runSearch);
     el.qDan?.addEventListener("change", runSearch);
     el.qMetric?.addEventListener("change", runSearch);
@@ -519,10 +620,10 @@
     TODAY.setHours(0, 0, 0, 0);
 
     try {
-    ALL = await loadData(TODAY);
-    buildNameSelect(ALL);
-    bindEvents();
-    runSearch();
+      ALL = await loadData(TODAY);
+      buildNameSelect(ALL);
+      bindEvents();
+      runSearch();
     } catch (err) {
       if (el.summary) {
         const msg =
@@ -539,27 +640,23 @@
   } else {
     init();
   }
-})();
 
-function buildNameSelect(records) {
-  const sel = document.getElementById("q-name");
-  if (!sel) return;
+  // ===== 棋士名フルリスト（席次順） =====
+  function buildNameSelect(records) {
+    const sel = document.getElementById("q-name");
+    if (!sel) return;
+    if (sel.tagName !== "SELECT") return;
 
-  // inputのままなら何もしない（将来戻したくなった時の保険）
-  if (sel.tagName !== "SELECT") return;
+    // 先頭の「（全員）」以外を作り直す
+    while (sel.options.length > 1) sel.remove(1);
 
-  // 先頭の「（全員）」以外を作り直す
-  while (sel.options.length > 1) sel.remove(1);
-
-  const frag = document.createDocumentFragment();
-
-  for (const r of records) {
-    const opt = document.createElement("option");
-    opt.value = r.name;            // フル一致
-    opt.textContent = r.name;      // 表示
-    frag.appendChild(opt);
+    const frag = document.createDocumentFragment();
+    for (const r of records) {
+      const opt = document.createElement("option");
+      opt.value = r.name;
+      opt.textContent = r.name;
+      frag.appendChild(opt);
+    }
+    sel.appendChild(frag);
   }
-
-  sel.appendChild(frag);
-}
-
+})();

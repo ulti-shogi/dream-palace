@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="style.css?v=20260104-b">
     <link rel="stylesheet" href="profile.css?v=20260104-1">
     <script src="rules.js" defer></script>
-    <script src="profile.js?v=20260107-c" defer></script>
+    <script src="profile.js?v=20260108-a" defer></script>
 </head>
 
 <body>
@@ -23,64 +23,78 @@
     <h2>棋士プロフィール検索</h2>
     <!-- 検索UI -->
 <section>
-  <h3>検索条件</h3>
-  <p>対象：現役棋士（公開版）</p>
-
+  <!-- 棋士名（フルリスト・席次順） -->
   <div>
-    <label for="q-name">棋士名</label><br>
+    <label for="q-name">棋士名</label>
     <select id="q-name" name="q-name">
-  <option value="">（全員）</option>
+      <option value="">（全員）</option>
     </select>
   </div>
 
+  <!-- 段位 -->
   <div>
-    <label for="q-num">棋士番号</label><br>
-    <input id="q-num" name="q-num" type="number" inputmode="numeric" min="1" step="1" placeholder="例：307">
-  </div>
-
-  <div>
-    <label for="q-dan">段位</label><br>
+    <label for="q-dan">段位</label>
     <select id="q-dan" name="q-dan">
-      <option value="">指定なし</option>
-      <option value="不明">不明</option>
-      <option value="四段">四段</option>
-      <option value="五段">五段</option>
-      <option value="六段">六段</option>
-      <option value="七段">七段</option>
-      <option value="八段">八段</option>
+      <option value="">（指定なし）</option>
       <option value="九段">九段</option>
+      <option value="八段">八段</option>
+      <option value="七段">七段</option>
+      <option value="六段">六段</option>
+      <option value="五段">五段</option>
+      <option value="四段">四段</option>
+      <option value="不明">不明</option>
     </select>
   </div>
 
+  <!-- 年齢（範囲） -->
   <div>
-    <label>年齢（今日時点）</label><br>
-    <label for="q-age-min">最小</label>
-    <input id="q-age-min" name="q-age-min" type="number" inputmode="numeric" min="0" step="1" placeholder="例：10">
-    <label for="q-age-max">最大</label>
-    <input id="q-age-max" name="q-age-max" type="number" inputmode="numeric" min="0" step="1" placeholder="例：80">
+    <label>年齢</label>
+    <input type="number" id="q-age-min" placeholder="最小">
+    〜
+    <input type="number" id="q-age-max" placeholder="最大">
+    <span>歳</span>
   </div>
 
-    <div>
-  <label for="q-metric">スマホ表示の指標（4列目）</label><br>
-  <select id="q-metric" name="q-metric">
-    <option value="age">年齢</option>
-    <option value="fourAge">四段昇段年齢</option>
-    <option value="activeSpan">現役期間</option>
-  </select>
-    </div>
-
-<div>
-  <label for="q-order">並べ替え（指標）</label><br>
-  <select id="q-order" name="q-order">
-  <option value="seki" selected>席次</option>
-  <option value="asc">昇順</option>
-  <option value="desc">降順</option>
-</select>
-</div>
-    
+  <!-- 棋士番号（範囲） -->
   <div>
-    <button type="button" id="btn-search">検索</button>
-    <button type="button" id="btn-reset">リセット</button>
+    <label>棋士番号</label>
+    <input type="number" id="q-num-min" placeholder="最小">
+    〜
+    <input type="number" id="q-num-max" placeholder="最大">
+  </div>
+
+  <!-- 指標 -->
+  <div>
+    <label for="q-metric">指標</label>
+    <select id="q-metric" name="q-metric">
+      <option value="age">年齢</option>
+      <option value="fourAge">四段昇段年齢</option>
+      <option value="activeSpan">現役期間</option>
+    </select>
+  </div>
+
+  <!-- 並び順 -->
+  <div>
+    <label for="q-order">並び順</label>
+    <select id="q-order" name="q-order">
+      <option value="seki">席次</option>
+      <option value="asc">昇順</option>
+      <option value="desc">降順</option>
+    </select>
+  </div>
+
+  <!-- 順（範囲：並び替え後の順位） -->
+  <div>
+    <label>順（順位）</label>
+    <input type="number" id="q-rank-min" placeholder="最小">
+    〜
+    <input type="number" id="q-rank-max" placeholder="最大">
+  </div>
+
+  <!-- 操作 -->
+  <div>
+    <button id="btn-search" type="button">検索</button>
+    <button id="btn-reset" type="button">リセット</button>
   </div>
 </section>
 
