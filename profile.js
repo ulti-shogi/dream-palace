@@ -538,3 +538,30 @@
     init();
   }
 })();
+
+function buildNameSelect(records) {
+  const sel = document.getElementById("q-name");
+  if (!sel) return;
+
+  // inputのままなら何もしない（将来戻したくなった時の保険）
+  if (sel.tagName !== "SELECT") return;
+
+  // 先頭の「（全員）」以外を作り直す
+  while (sel.options.length > 1) sel.remove(1);
+
+  const frag = document.createDocumentFragment();
+
+  for (const r of records) {
+    const opt = document.createElement("option");
+    opt.value = r.name;            // フル一致
+    opt.textContent = r.name;      // 表示
+    frag.appendChild(opt);
+  }
+
+  sel.appendChild(frag);
+}
+
+ALL = await loadData(TODAY);
+buildNameSelect(ALL);
+bindEvents();
+runSearch();
