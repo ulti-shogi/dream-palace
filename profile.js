@@ -1,5 +1,5 @@
 /* profile.js（rules.js 前提・貼り替え用）
-   将棋の殿堂：棋士プロフィール検索（公開版）
+   プルリストに変更しようとしたらテーブルの表示が消えるバグが起きた。
 
    前提：
    - rules.js を先に読み込む（defer 推奨）
@@ -507,7 +507,8 @@
         }
       });
     });
-
+    
+    el.qName?.addEventListener("change", runSearch);
     el.qDan?.addEventListener("change", runSearch);
     el.qMetric?.addEventListener("change", runSearch);
     el.qOrder?.addEventListener("change", runSearch);
@@ -518,9 +519,10 @@
     TODAY.setHours(0, 0, 0, 0);
 
     try {
-      ALL = await loadData(TODAY);
-      bindEvents();
-      runSearch();
+    ALL = await loadData(TODAY);
+    buildNameSelect(ALL);
+    bindEvents();
+    runSearch();
     } catch (err) {
       if (el.summary) {
         const msg =
@@ -561,7 +563,3 @@ function buildNameSelect(records) {
   sel.appendChild(frag);
 }
 
-ALL = await loadData(TODAY);
-buildNameSelect(ALL);
-bindEvents();
-runSearch();
