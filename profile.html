@@ -20,14 +20,15 @@
 
 <main>
   <div class="wrap">
-    <h2>棋士プロフィール検索</h2>
+    
     <!-- 検索UI -->
 <section>
+    <h2>棋士プロフィール検索</h2>
   <!-- 棋士名（フルリスト・席次順） -->
   <div>
     <label for="q-name">棋士名</label>
     <select id="q-name" name="q-name">
-      <option value="">（全員）</option>
+      <option value="">指定なし</option>
     </select>
   </div>
 
@@ -35,7 +36,7 @@
   <div>
     <label for="q-dan">段位</label>
     <select id="q-dan" name="q-dan">
-      <option value="">（指定なし）</option>
+      <option value="">指定なし</option>
       <option value="九段">九段</option>
       <option value="八段">八段</option>
       <option value="七段">七段</option>
@@ -43,6 +44,26 @@
       <option value="五段">五段</option>
       <option value="四段">四段</option>
       <option value="不明">不明</option>
+    </select>
+  </div>
+
+<!-- 指標 -->
+  <div>
+    <label for="q-metric">指標</label>
+    <select id="q-metric" name="q-metric">
+      <option value="age">年齢</option>
+      <option value="fourAge">四段昇段年齢</option>
+      <option value="activeSpan">現役期間</option>
+    </select>
+  </div>
+
+  <!-- 並び順 -->
+  <div>
+    <label for="q-order">並び順</label>
+    <select id="q-order" name="q-order">
+      <option value="seki">席次</option>
+      <option value="asc">昇順</option>
+      <option value="desc">降順</option>
     </select>
   </div>
 
@@ -63,26 +84,6 @@
     <input type="number" id="q-num-max" placeholder="最大">
   </div>
 
-  <!-- 指標 -->
-  <div>
-    <label for="q-metric">指標</label>
-    <select id="q-metric" name="q-metric">
-      <option value="age">年齢</option>
-      <option value="fourAge">四段昇段年齢</option>
-      <option value="activeSpan">現役期間</option>
-    </select>
-  </div>
-
-  <!-- 並び順 -->
-  <div>
-    <label for="q-order">並び順</label>
-    <select id="q-order" name="q-order">
-      <option value="seki">席次</option>
-      <option value="asc">昇順</option>
-      <option value="desc">降順</option>
-    </select>
-  </div>
-
   <!-- 順（範囲：並び替え後の順位） -->
   <div>
     <label>順（順位）</label>
@@ -93,7 +94,7 @@
 
   <!-- 操作 -->
   <div>
-    <button id="btn-search" type="button">検索</button>
+    <button id="btn-search" type="button">表示範囲を絞り込む</button>
     <button id="btn-reset" type="button">リセット</button>
   </div>
 </section>

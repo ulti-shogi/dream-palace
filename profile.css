@@ -34,6 +34,23 @@ th, td{
 
 th{ font-weight: 700; }
 
+section {
+  padding-top: 0.8rem;
+  padding-bottom: 0.8rem;
+}
+
+section > h2 {
+  margin-bottom: 0.5rem;
+}
+
+section > div {
+  margin-bottom: 0.4rem;
+}
+
+section input[type="number"] {
+  max-width: 6em;
+}
+
 /* スマホ（デフォルト）：1〜4列（順/名/段/指標）だけ */
 table th:nth-child(n+5),
 table td:nth-child(n+5){
