@@ -26,7 +26,7 @@
     <h2>棋士プロフィール検索</h2>
   <!-- 棋士名（フルリスト・席次順） -->
   <div>
-    <label for="q-name">棋士名</label>
+    <label for="q-name">氏名</label>
     <select id="q-name" name="q-name">
       <option value="">指定なし</option>
     </select>
@@ -59,12 +59,20 @@
 
   <!-- 並び順 -->
   <div>
-    <label for="q-order">並び順</label>
+    <label for="q-order">並順</label>
     <select id="q-order" name="q-order">
       <option value="seki">席次</option>
       <option value="asc">昇順</option>
       <option value="desc">降順</option>
     </select>
+  </div>
+
+　<!-- 順（範囲：並び替え後の順位） -->
+  <div>
+    <label>順番</label>
+    <input type="number" id="q-rank-min" placeholder="最小">
+    〜
+    <input type="number" id="q-rank-max" placeholder="最大">
   </div>
 
   <!-- 年齢（範囲） -->
@@ -84,14 +92,6 @@
     <input type="number" id="q-num-max" placeholder="最大">
   </div>
 
-  <!-- 順（範囲：並び替え後の順位） -->
-  <div>
-    <label>順（順位）</label>
-    <input type="number" id="q-rank-min" placeholder="最小">
-    〜
-    <input type="number" id="q-rank-max" placeholder="最大">
-  </div>
-
   <!-- 操作 -->
   <div>
     <button id="btn-search" type="button">表示範囲を絞り込む</button>
@@ -99,10 +99,12 @@
   </div>
 </section>
 
-      <!-- 結果表示（集計） -->
+      <!-- 表示条件 -->
 <section>
-  <h2>表示条件</h2>
-  <p id="summary"></p>
+  <details>
+    <summary>表示条件</summary>
+    <p id="summary"></p>
+  </details>
 </section>
       
     <!-- 結果表示（一覧） -->

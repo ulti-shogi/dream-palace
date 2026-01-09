@@ -437,11 +437,11 @@
   })();
 
   const partsMain = [];
-  partsMain.push(`対象：現役棋士（公開版）`);
+  partsMain.push(`対象：現役棋士のみ`);
   partsMain.push(`今日：${formatYmd(today)}`);
   partsMain.push(`件数：${total}`);
   partsMain.push(`指標：${metricLabel}`);
-  partsMain.push(`並び順：${orderLabel}`);
+  partsMain.push(`並順：${orderLabel}`);
 
   // 「順（順位）」は並び替え後に付与される値
   const rankMin = filters.rankMin;
@@ -449,7 +449,7 @@
   if (rankMin !== null || rankMax !== null) {
     const a = rankMin !== null ? rankMin : "—";
     const b = rankMax !== null ? rankMax : "—";
-    partsMain.push(`順：${a}〜${b}`);
+    partsMain.push(`順番：${a}〜${b}`);
   }
 
   // 条件（指定があるものだけ出す）
