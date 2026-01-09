@@ -417,26 +417,72 @@
     if (el.thVar6) el.thVar6.textContent = def.th6;
   }
 
-  function renderSummary(records, today) {
-    if (!el.summary) return;
+  function renderSummary(filters, records, today) {
+  if (!el.summary) return;
 
-    const total = records.length;
+  const total = records.length;
 
-    // 四段昇段平均年齢：birthday と four-day が揃う人のみ
-    const msList = records
-      .map((r) => r.fourAgeMs)
-      .filter((v) => Number.isFinite(v) && v >= 0);
+  // 指標名
+  const metricLabel = (() => {
+    if (filters.metric === "fourAge") return "四段昇段年齢";
+    if (filters.metric === "activeSpan") return "現役期間";
+    return "年齢";
+  })();
 
-    const nAvg = msList.length;
-    let avgStr = "—";
-    if (nAvg > 0) {
-      const avgMs = msList.reduce((a, b) => a + b, 0) / nAvg;
-      avgStr = avgMsToAgeString(avgMs, today);
-    }
+  // 並び順
+  const orderLabel = (() => {
+    if (filters.order === "seki") return "席次";
+    if (filters.order === "desc") return `指標（${metricLabel}）の降順`;
+    return `指標（${metricLabel}）の昇順`;
+  })();
 
-    el.summary.textContent =
-      `対象：現役棋士（公開版） / 今日：${formatYmd(today)} / 件数：${total} / 四段昇段平均年齢：${avgStr}（算出対象：${nAvg}名）`;
+  const partsMain = [];
+  partsMain.push(`対象：現役棋士（公開版）`);
+  partsMain.push(`今日：${formatYmd(today)}`);
+  partsMain.push(`件数：${total}`);
+  partsMain.push(`指標：${metricLabel}`);
+  partsMain.push(`並び順：${orderLabel}`);
+
+  // 「順（順位）」は並び替え後に付与される値
+  const rankMin = filters.rankMin;
+  const rankMax = filters.rankMax;
+  if (rankMin !== null || rankMax !== null) {
+    const a = rankMin !== null ? rankMin : "—";
+    const b = rankMax !== null ? rankMax : "—";
+    partsMain.push(`順：${a}〜${b}`);
   }
+
+  // 条件（指定があるものだけ出す）
+  const cond = [];
+
+  // 棋士名（select化後は完全一致想定だが、ここでは表示だけ）
+  if (filters.name) cond.push(`棋士名=${filters.name}`);
+
+  if (filters.dan) cond.push(`段位=${filters.dan}`);
+
+  // 年齢（年）
+  if (filters.ageMin !== null || filters.ageMax !== null) {
+    const a = filters.ageMin !== null ? filters.ageMin : "—";
+    const b = filters.ageMax !== null ? filters.ageMax : "—";
+    cond.push(`年齢=${a}〜${b}歳`);
+  }
+
+  // 棋士番号（互換：単一入力が残っている場合）
+  if (filters.numExact !== null) {
+    cond.push(`棋士番号=${filters.numExact}`);
+  } else if (filters.numMin !== null || filters.numMax !== null) {
+    const a = filters.numMin !== null ? filters.numMin : "—";
+    const b = filters.numMax !== null ? filters.numMax : "—";
+    cond.push(`棋士番号=${a}〜${b}`);
+  }
+
+  const line1 = partsMain.join(" / ");
+  const line2 = cond.length ? `条件：${cond.join(" / ")}` : `条件：指定なし`;
+  const note = `※「順」は現在の並び順に基づく順位です`;
+
+  // まとめて表示（改行はCSSの white-space で制御してもOK）
+  el.summary.textContent = `${line1}\n${line2}\n${note}`;
+}
 
   function renderTable(records, metric) {
     if (!el.tbody) return;
@@ -566,7 +612,7 @@
     // 4) 「順」で範囲検索（定義：並び替え → 順付与 → 順で絞る）
     const finalList = applyRankRange(sortedWithRank, filters.rankMin, filters.rankMax);
 
-    renderSummary(finalList, TODAY);
+    renderSummary(filters, finalList, TODAY);
     renderTable(finalList, filters.metric);
   }
 
