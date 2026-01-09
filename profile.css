@@ -39,13 +39,15 @@ section {
   padding-bottom: 0.8rem;
 }
 
-section > h2 {
-  margin-bottom: 0.5rem;
+/* 検索欄専用の開閉セクション */
+details.search > div {
+  margin-top: 0.2rem;
+  margin-bottom: 0.2rem;
 }
 
-details > div {
-    margin-top: 0.2rem;
-  margin-bottom: 0.2rem;
+/* summary の下に少し間を空けてフォームを詰めすぎないように */
+details.search > summary {
+  margin-bottom: 0.4rem;
 }
 
 section input[type="number"] {

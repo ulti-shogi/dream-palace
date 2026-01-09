@@ -6,7 +6,7 @@
   <title>棋士プロフィール検索｜将棋の殿堂</title>
   <meta name="description" content="将棋に関するありとあらゆる情報を検索できるサイトを目指す『将棋の殿堂』。" />
     <link rel="stylesheet" href="style.css?v=20260104-b">
-    <link rel="stylesheet" href="profile.css?v=20260110-b">
+    <link rel="stylesheet" href="profile.css?v=20260110-c">
     <script src="rules.js" defer></script>
     <script src="profile.js?v=20260110-1" defer></script>
 </head>
@@ -23,7 +23,7 @@
     
     <!-- 検索UI -->
 <section>
-    <details open>
+    <details class="search" open>
     <summary>現役棋士プロフィール検索</summary>
   <!-- 棋士名（フルリスト・席次順） -->
   <div>
@@ -52,7 +52,7 @@
   <div>
     <label for="q-metric">指標</label>
     <select id="q-metric" name="q-metric">
-      <option value="age">年齢</option>
+      <option value="age">現在の年齢</option>
       <option value="fourAge">四段昇段年齢</option>
       <option value="activeSpan">現役期間</option>
     </select>
