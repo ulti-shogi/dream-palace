@@ -1,13 +1,5 @@
 /* profile.css：profile.html（検索ページ）専用 */
 
-/* 上下の余白は残し、左右だけ狭める（余白二重を解消） */
-main{
-  padding-top: 0;
-  padding-bottom: 28px;  /* style.css の下余白を維持したいので残す */
-  padding-left: 0;
-  padding-right: 0;
-}
-
 section{
   margin-bottom: 12px;
 }
