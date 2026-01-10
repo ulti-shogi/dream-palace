@@ -41,8 +41,8 @@ section {
 
 /* 検索欄専用の開閉セクション */
 details.search > div {
-  margin-top: 0.2rem;
-  margin-bottom: 0.2rem;
+  margin-top: 0.3rem;
+  margin-bottom: 0.1rem;
 }
 
 /* summary の下に少し間を空けてフォームを詰めすぎないように 
@@ -77,7 +77,7 @@ details[open] > summary::before {
 }
 
 button {
-    margin-top: 0.2rem;
+    margin-top: 0.3rem;
 }
 
 /* スマホ（デフォルト）：1〜4列（順/名/段/指標）だけ */
