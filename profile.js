@@ -220,18 +220,6 @@
     return `${ymd.years}年${ymd.months}ヶ月${ymd.days}日`;
   }
 
-  function avgMsToAgeString(avgMs, today) {
-    if (!Number.isFinite(avgMs) || avgMs < 0) return "—";
-    const base = new Date(today.getTime());
-    base.setHours(0, 0, 0, 0);
-
-    const virtualBirth = new Date(base.getTime() - avgMs);
-    virtualBirth.setHours(0, 0, 0, 0);
-
-    const ymd = diffYMD(virtualBirth, base);
-    return ymd ? ymdToAgeString(ymd) : "—";
-  }
-
   // ===== 派生（年齢等） =====
   function deriveAges(row, today) {
     const birth = R.toDateOrNull(row[R.COL.birthday]);
