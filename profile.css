@@ -4,28 +4,6 @@ section{
   margin-bottom: 12px;
 }
 
-/* テーブル基本 */
-table{
-  width: 100%;
-  border-collapse: collapse;
-}
-
-/* 指標列（4列目）を強調表示 */
-table th:nth-child(4),
-table td:nth-child(4){
-  background-color: #fff1f1; /* 薄い赤 */
-}
-
-th, td{
-  border: 1px solid rgba(0,0,0,.25);
-  text-align: center;
-  vertical-align: middle;
-  padding: 6px 6px;
-  white-space: nowrap;
-}
-
-th{ font-weight: 700; }
-
 section {
   padding-top: 0.8rem;
   padding-bottom: 0.8rem;
@@ -72,28 +50,8 @@ button {
     margin-top: 0.3rem;
 }
 
-/* スマホ（デフォルト）：1〜4列（順/名/段/指標）だけ */
-table th:nth-child(n+5),
-table td:nth-child(n+5){
-  display: none;
-}
-
-/* タブレット：1〜6列（変動列まで表示） */
-@media (min-width: 600px){
-  table th:nth-child(n+5),
-  table td:nth-child(n+5){
-    display: table-cell;
-  }
-  table th:nth-child(n+7),
-  table td:nth-child(n+7){
-    display: none;
-  }
-}
-
-/* PC：1〜8列すべて表示（番号/区分まで表示） */
-@media (min-width: 900px){
-  table th:nth-child(n+7),
-  table td:nth-child(n+7){
-    display: table-cell;
-  }
+/* 指標列（4列目）を強調表示 */
+table th:nth-child(4),
+table td:nth-child(4){
+  background-color: #fff1f1; /* 薄い赤 */
 }
