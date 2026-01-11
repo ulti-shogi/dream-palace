@@ -311,7 +311,7 @@
       const num = Number.isFinite(numVal) ? numVal : null;
 
       const birth = parseDateYMD(row[R.COL.birthday]);
-      const four = parseDateYMD(row[R.COL.fourDay]);
+      const four = parseDateYMD(row[R.COL.four]);
 
       let note = "";
       if (!birth) note = "生年月日不明";
@@ -339,7 +339,7 @@
 
     for (const row of target) {
       const birth = parseDateYMD(row[R.COL.birthday]);
-      const four = parseDateYMD(row[R.COL.fourDay]);
+      const four = parseDateYMD(row[R.COL.four]);
 
       if (birth) births.push(birth);
       if (four) fours.push(four);
