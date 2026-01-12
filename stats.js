@@ -182,3 +182,112 @@
     });
   });
 })();
+
+/* ===== テーブル表示（棋士番号184以降） ===== */
+
+// テーブル描画用エントリ
+renderTable184();
+
+/**
+ * テーブル全体の制御
+ */
+function renderTable184() {
+  const tbody = document.getElementById("rows");
+  if (!tbody) return;
+
+  // profile.csv はすでに fetch / parse 済み前提
+  // （平均年齢を出している処理と同じ data を使う）
+  const data184 = csvData
+    .filter(r => Number(r["num"]) >= 184)
+    .map(r => buildRowData(r));
+
+  // 中央値判定用（年齢が若い順）
+  const byAge = [...data184].sort((a, b) => a.ageDays - b.ageDays);
+  const midIndex = Math.floor((byAge.length - 1) / 2);
+  const medianKey = byAge[midIndex].num;
+
+  // 初期表示：棋士番号が小さい順
+  data184.sort((a, b) => a.num - b.num);
+
+  drawRows(tbody, data184, medianKey);
+
+  // ヘッダクリックで並び替え
+  setupSortHandlers(tbody, data184, medianKey);
+}
+
+/**
+ * 1棋士分のデータ整形
+ */
+function buildRowData(row) {
+  const num = Number(row["num"]);
+  const name = row["name"];
+
+  const birth = parseYMD(row["birthday"]);
+  const four  = parseYMD(row["four-day"]);
+
+  const ageObj  = diffYMD(birth, four);
+  const ageText = `${ageObj.y}歳${ageObj.m}ヶ月${ageObj.d}日`;
+  const ageDays = daysBetween(birth, four);
+
+  return { num, name, ageText, ageDays };
+}
+
+/**
+ * tbody 描画
+ */
+function drawRows(tbody, rows, medianNum) {
+  tbody.innerHTML = "";
+
+  rows.forEach((r, i) => {
+    const tr = document.createElement("tr");
+
+    if (r.num === medianNum) {
+      tr.style.backgroundColor = "#fbeaea"; // 薄赤
+    }
+
+    tr.appendChild(td(i + 1));       // 順位
+    tr.appendChild(td(r.name));      // 棋士名
+    tr.appendChild(td(r.ageText));   // 四段昇段年齢
+    tr.appendChild(td(r.num));       // 棋士番号
+
+    tbody.appendChild(tr);
+  });
+}
+
+/**
+ * ソート切替
+ */
+function setupSortHandlers(tbody, baseRows, medianNum) {
+  const ths = document.querySelectorAll("table thead th");
+
+  // 四段昇段年齢
+  ths[2].style.cursor = "pointer";
+  ths[2].addEventListener("click", () => {
+    const sorted = [...baseRows].sort((a, b) => a.ageDays - b.ageDays);
+    drawRows(tbody, sorted, medianNum);
+  });
+
+  // 棋士番号
+  ths[3].style.cursor = "pointer";
+  ths[3].addEventListener("click", () => {
+    const sorted = [...baseRows].sort((a, b) => a.num - b.num);
+    drawRows(tbody, sorted, medianNum);
+  });
+}
+
+/* ===== ユーティリティ ===== */
+
+function td(val) {
+  const td = document.createElement("td");
+  td.textContent = val;
+  return td;
+}
+
+function parseYMD(str) {
+  const [y, m, d] = str.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d));
+}
+
+function daysBetween(a, b) {
+  return Math.floor((b - a) / 86400000);
+}
