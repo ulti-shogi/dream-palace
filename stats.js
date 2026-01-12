@@ -1,70 +1,152 @@
 /* stats.js
-   対象：棋士番号184以降（区分問わず）
-   表示：avg-age に「棋士番号184以降の棋士の四段昇段平均年齢」を出す（最小実装）
+   対象：棋士番号184以降
+   - #avg-age に「棋士番号184以降の棋士の四段昇段平均年齢」を表示（平均生年月日→平均四段日）
+   - table tbody#rows に 4列（順/棋士名/四段昇段年齢/棋士番号）を表示
+   - 並び替え：棋士番号の小さい順 / 四段昇段年齢が若い順（ヘッダクリック）
+   - 中央値：四段昇段年齢を若い順に並べたときの中央値（同値は全行ハイライト）
+   ※ #summary / #median-age には触りません
 */
 (() => {
   "use strict";
 
-  const R = window.ProfileRules; // rules.js（ProfileRules）を参照
+  const CSV_PATH = "profile.csv";
+  const NUM_MIN = 184;
+  const MS_DAY = 24 * 60 * 60 * 1000;
 
-  // ===== CSV 読み込み =====
-  async function fetchText(url) {
-    const res = await fetch(url, { cache: "no-store" });
-    if (!res.ok) throw new Error(`fetch failed: ${res.status} ${url}`);
-    return await res.text();
-  }
+  document.addEventListener("DOMContentLoaded", () => {
+    main().catch((err) => {
+      console.error(err);
+      const avgEl = document.getElementById("avg-age");
+      if (avgEl) avgEl.textContent = "（計算エラー）";
+      const tbody = document.getElementById("rows");
+      if (tbody) tbody.innerHTML = `<tr><td colspan="4">（エラー）</td></tr>`;
+    });
+  });
 
-  // profile.js と同系統の軽量CSVパーサ（引用符にも一応対応）
-  function csvToRows(csvText) {
-    const lines = csvText.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
-    const rows = [];
-    for (const line of lines) {
-      if (!line) continue;
-      const row = [];
-      let cur = "";
-      let inQuotes = false;
-      for (let i = 0; i < line.length; i++) {
-        const ch = line[i];
-        if (ch === '"') {
-          if (inQuotes && line[i + 1] === '"') {
-            cur += '"';
-            i++;
-          } else {
-            inQuotes = !inQuotes;
-          }
-        } else if (ch === "," && !inQuotes) {
-          row.push(cur);
-          cur = "";
-        } else {
-          cur += ch;
-        }
+  async function main() {
+    const avgEl = document.getElementById("avg-age");
+    const tbody = document.getElementById("rows");
+    if (!avgEl) throw new Error("#avg-age が見つかりません");
+    if (!tbody) throw new Error("#rows（tbody）が見つかりません");
+
+    // CSV 読み込み
+    const text = await fetchText(CSV_PATH);
+    const rows = csvToObjects(text);
+
+    // 対象抽出＋整形（列名は厳密にそのまま）
+    const items = rows
+      .map((r) => normalize(r))
+      .filter((x) => Number.isFinite(x.num) && x.num >= NUM_MIN);
+
+    if (items.length === 0) throw new Error("対象データが0件です（棋士番号184以降が見つかりません）");
+
+    // 平均年齢（平均生年月日→平均四段日）
+    const avgBirth = meanDate(items.map((x) => x.birth));
+    const avgFour = meanDate(items.map((x) => x.four));
+    const avgYmd = diffYmdUTC(toUTCDate(avgBirth), toUTCDate(avgFour));
+    avgEl.textContent = `棋士番号184以降の棋士の四段昇段平均年齢：${fmtAge(avgYmd)}`;
+
+    // 中央値（若い順の中央）
+    const byAge = [...items].sort((a, b) => a.ageDays - b.ageDays);
+    const midIndex = Math.floor((byAge.length - 1) / 2);
+    const medianAgeDays = byAge[midIndex].ageDays;
+
+    // 初期表示：棋士番号の小さい順
+    let sortMode = "num"; // "num" or "age"
+    renderTable(tbody, [...items].sort((a, b) => a.num - b.num), medianAgeDays);
+
+    // ヘッダクリックで切替（thの位置：0順/1棋士名/2四段昇段年齢/3棋士番号）
+    const ths = Array.from(document.querySelectorAll("table thead th"));
+    if (ths.length >= 4) {
+      // クリック対象にする
+      ths[2].style.cursor = "pointer";
+      ths[3].style.cursor = "pointer";
+
+      // 二重バインド防止
+      if (!ths[2].dataset.bound) {
+        ths[2].dataset.bound = "1";
+        ths[2].addEventListener("click", () => {
+          sortMode = "age";
+          const sorted = [...items].sort((a, b) => a.ageDays - b.ageDays);
+          renderTable(tbody, sorted, medianAgeDays);
+        });
       }
-      row.push(cur);
-      rows.push(row);
-    }
-    return rows;
-  }
 
-  function csvToObjects(csvText) {
-    const rows = csvToRows(csvText);
-    if (rows.length === 0) return [];
-    const headers = rows[0].map((h) => (h ?? "").trim());
-    const out = [];
-    for (let i = 1; i < rows.length; i++) {
-      const r = rows[i];
-      if (!r || r.length === 0) continue;
-      const obj = {};
-      for (let j = 0; j < headers.length; j++) {
-        obj[headers[j]] = (r[j] ?? "").trim();
+      if (!ths[3].dataset.bound) {
+        ths[3].dataset.bound = "1";
+        ths[3].addEventListener("click", () => {
+          sortMode = "num";
+          const sorted = [...items].sort((a, b) => a.num - b.num);
+          renderTable(tbody, sorted, medianAgeDays);
+        });
       }
-      out.push(obj);
     }
-    return out;
   }
 
-  // ===== 日付ユーティリティ（UTCベースで差分を年/月/日へ） =====
+  // ===== テーブル描画 =====
+  function renderTable(tbody, list, medianAgeDays) {
+    tbody.innerHTML = "";
+
+    for (let i = 0; i < list.length; i++) {
+      const p = list[i];
+      const tr = document.createElement("tr");
+
+      // 中央値（同じ ageDays の人は全員薄赤に）
+      if (p.ageDays === medianAgeDays) {
+        tr.style.backgroundColor = "#fbeaea";
+      }
+
+      tr.appendChild(td(String(i + 1)));      // 順
+      tr.appendChild(td(p.name));             // 棋士名
+      tr.appendChild(td(p.ageText));          // 四段昇段年齢
+      tr.appendChild(td(String(p.num)));      // 棋士番号
+
+      tbody.appendChild(tr);
+    }
+  }
+
+  function td(text) {
+    const el = document.createElement("td");
+    el.textContent = text;
+    return el;
+  }
+
+  // ===== データ整形（CSV列名厳密） =====
+  function normalize(r) {
+    const num = Number((r["num"] ?? "").trim());
+    const name = (r["name"] ?? "").trim();
+    const birth = parseYMDStrict(r["birthday"]);
+    const four = parseYMDStrict(r["four-day"]);
+
+    // 個別の四段昇段年齢（表示＋並び替え用）
+    const bUTC = toUTCDate(birth);
+    const fUTC = toUTCDate(four);
+    const ymd = diffYmdUTC(bUTC, fUTC);
+    const ageDays = Math.round((fUTC.getTime() - bUTC.getTime()) / MS_DAY);
+    const ageText = fmtAge(ymd);
+
+    return { num, name, birth, four, ageDays, ageText };
+  }
+
+  // ===== 平均 =====
+  function meanDate(dates) {
+    const sum = dates.reduce((acc, d) => acc + d.getTime(), 0);
+    return new Date(Math.round(sum / dates.length));
+  }
+
+  // ===== 日付・差分（UTC） =====
+  function parseYMDStrict(s) {
+    const t = (s ?? "").trim();
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(t);
+    if (!m) throw new Error(`日付形式が不正です: ${t}`);
+    const y = Number(m[1]), mo = Number(m[2]), d = Number(m[3]);
+    // UTCで固定
+    const dt = new Date(Date.UTC(y, mo - 1, d));
+    return dt;
+  }
+
   function toUTCDate(d) {
-    return new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
   }
 
   function daysInMonthUTC(y, m) {
@@ -117,177 +199,88 @@
       } else break;
     }
 
-    const msDay = 24 * 60 * 60 * 1000;
-    const days = Math.floor((endUTC.getTime() - cur.getTime()) / msDay);
-
-    return { years, months, days };
+    const days = Math.floor((endUTC.getTime() - cur.getTime()) / MS_DAY);
+    return { y: years, m: months, d: days };
   }
 
-  function formatAgeYmd({ years, months, days }) {
-    return `${years}歳${months}ヶ月${days}日`;
+  function fmtAge(ymd) {
+    return `${ymd.y}歳${ymd.m}ヶ月${ymd.d}日`;
   }
 
-  function meanDate(dates) {
-    let sum = 0;
-    for (const d of dates) sum += d.getTime();
-    return new Date(Math.round(sum / dates.length));
+  // ===== CSV =====
+  async function fetchText(url) {
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) throw new Error(`fetch failed: ${res.status} ${url}`);
+    return await res.text();
   }
 
-  // ===== メイン処理 =====
-  async function main() {
-    if (!R || !R.COL) {
-      throw new Error("rules.js（ProfileRules）が見つかりません。stats.htmlで rules.js を先に読み込んでください。");
+  function csvToObjects(csvText) {
+    const rows = parseCSV(csvText);
+    if (rows.length === 0) return [];
+    const header = rows[0].map((h) => (h ?? "").trim());
+    const out = [];
+
+    for (let i = 1; i < rows.length; i++) {
+      const r = rows[i];
+      if (!r || r.length === 0) continue;
+
+      const obj = {};
+      for (let j = 0; j < header.length; j++) {
+        obj[header[j]] = (r[j] ?? "").trim();
+      }
+
+      // 完全空行を除外
+      if (Object.values(obj).some((v) => v !== "")) out.push(obj);
+    }
+    return out;
+  }
+
+  function parseCSV(text) {
+    const rows = [];
+    let row = [];
+    let field = "";
+    let inQuotes = false;
+
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+
+      if (inQuotes) {
+        if (c === '"') {
+          if (text[i + 1] === '"') {
+            field += '"';
+            i++;
+          } else {
+            inQuotes = false;
+          }
+        } else {
+          field += c;
+        }
+        continue;
+      }
+
+      if (c === '"') {
+        inQuotes = true;
+        continue;
+      }
+      if (c === ",") {
+        row.push(field);
+        field = "";
+        continue;
+      }
+      if (c === "\n") {
+        row.push(field);
+        rows.push(row);
+        row = [];
+        field = "";
+        continue;
+      }
+      if (c === "\r") continue;
+
+      field += c;
     }
 
-    const avgEl = document.getElementById("avg-age");
-    if (!avgEl) throw new Error("#avg-age が見つかりません（stats.htmlを確認してください）");
-
-    // profile.csv を読む（profile.html と同じ想定）
-    const csvText = await fetchText("profile.csv");
-    const data = csvToObjects(csvText);
-
-    // 対象：棋士番号184以降
-    const targets = data.filter((row) => {
-      const n = Number(row[R.COL.num]);
-      return Number.isFinite(n) && n >= 184;
-    });
-
-    // 生年月日・四段昇段日（不明処理なし：全部ある前提）
-    const births = targets.map((row) => R.toDateOrNull(row[R.COL.birthday]));
-    const fours  = targets.map((row) => R.toDateOrNull(row[R.COL.four]));
-
-    // nullが混ざると落ちるので、念のため（ただし「不明処理は不要」という方針なのでエラーにする）
-    if (births.some((d) => !(d instanceof Date)) || fours.some((d) => !(d instanceof Date))) {
-      throw new Error("生年月日または四段昇段日が Date として解釈できないデータが含まれています。CSVの値を確認してください。");
-    }
-
-    const avgBirth = meanDate(births);
-    const avgFour  = meanDate(fours);
-
-    const startUTC = toUTCDate(avgBirth);
-    const endUTC   = toUTCDate(avgFour);
-
-    const ymd = diffYmdUTC(startUTC, endUTC);
-    const avgAgeStr = formatAgeYmd(ymd);
-
-    // 表示（id=avg-age に「棋士番号184以降の棋士の四段昇段平均年齢」を表示）
-    avgEl.textContent = `棋士番号184以降の棋士の四段昇段平均年齢：${avgAgeStr}`;
+    row.push(field);
+    rows.push(row);
+    return rows;
   }
-
-  document.addEventListener("DOMContentLoaded", () => {
-    main().catch((err) => {
-      console.error(err);
-      const avgEl = document.getElementById("avg-age");
-      if (avgEl) avgEl.textContent = "（未計算）";
-    });
-  });
 })();
-
-/* ===== テーブル表示（棋士番号184以降） ===== */
-
-// テーブル描画用エントリ
-renderTable184();
-
-/**
- * テーブル全体の制御
- */
-function renderTable184() {
-  const tbody = document.getElementById("rows");
-  if (!tbody) return;
-
-  // profile.csv はすでに fetch / parse 済み前提
-  // （平均年齢を出している処理と同じ data を使う）
-  const data184 = csvData
-    .filter(r => Number(r["num"]) >= 184)
-    .map(r => buildRowData(r));
-
-  // 中央値判定用（年齢が若い順）
-  const byAge = [...data184].sort((a, b) => a.ageDays - b.ageDays);
-  const midIndex = Math.floor((byAge.length - 1) / 2);
-  const medianKey = byAge[midIndex].num;
-
-  // 初期表示：棋士番号が小さい順
-  data184.sort((a, b) => a.num - b.num);
-
-  drawRows(tbody, data184, medianKey);
-
-  // ヘッダクリックで並び替え
-  setupSortHandlers(tbody, data184, medianKey);
-}
-
-/**
- * 1棋士分のデータ整形
- */
-function buildRowData(row) {
-  const num = Number(row["num"]);
-  const name = row["name"];
-
-  const birth = parseYMD(row["birthday"]);
-  const four  = parseYMD(row["four-day"]);
-
-  const ageObj  = diffYMD(birth, four);
-  const ageText = `${ageObj.y}歳${ageObj.m}ヶ月${ageObj.d}日`;
-  const ageDays = daysBetween(birth, four);
-
-  return { num, name, ageText, ageDays };
-}
-
-/**
- * tbody 描画
- */
-function drawRows(tbody, rows, medianNum) {
-  tbody.innerHTML = "";
-
-  rows.forEach((r, i) => {
-    const tr = document.createElement("tr");
-
-    if (r.num === medianNum) {
-      tr.style.backgroundColor = "#fbeaea"; // 薄赤
-    }
-
-    tr.appendChild(td(i + 1));       // 順位
-    tr.appendChild(td(r.name));      // 棋士名
-    tr.appendChild(td(r.ageText));   // 四段昇段年齢
-    tr.appendChild(td(r.num));       // 棋士番号
-
-    tbody.appendChild(tr);
-  });
-}
-
-/**
- * ソート切替
- */
-function setupSortHandlers(tbody, baseRows, medianNum) {
-  const ths = document.querySelectorAll("table thead th");
-
-  // 四段昇段年齢
-  ths[2].style.cursor = "pointer";
-  ths[2].addEventListener("click", () => {
-    const sorted = [...baseRows].sort((a, b) => a.ageDays - b.ageDays);
-    drawRows(tbody, sorted, medianNum);
-  });
-
-  // 棋士番号
-  ths[3].style.cursor = "pointer";
-  ths[3].addEventListener("click", () => {
-    const sorted = [...baseRows].sort((a, b) => a.num - b.num);
-    drawRows(tbody, sorted, medianNum);
-  });
-}
-
-/* ===== ユーティリティ ===== */
-
-function td(val) {
-  const td = document.createElement("td");
-  td.textContent = val;
-  return td;
-}
-
-function parseYMD(str) {
-  const [y, m, d] = str.split("-").map(Number);
-  return new Date(Date.UTC(y, m - 1, d));
-}
-
-function daysBetween(a, b) {
-  return Math.floor((b - a) / 86400000);
-}
