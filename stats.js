@@ -1,315 +1,352 @@
-// stats.js（丸ごと置き換え）
-// 対象：棋士番号184以降の棋士
-// テーブル：順位 / 棋士名 / 四段昇段年齢 / 棋士番号
-// 並び替え：棋士番号が小さい順 / 四段昇段年齢が若い順（ヘッダクリックで切替）
-// 中央値：四段昇段年齢の「若い順」で真ん中の棋士をハイライト
+// stats.js
+// 目的：棋士番号184以降の棋士について
+// - 四段昇段平均年齢（平均生年月日→平均四段日 の差）を表示
+// - テーブル（順位/棋士名/四段昇段年齢/棋士番号）を表示
+// - 並び替え（棋士番号昇順 / 四段昇段年齢の若い順）をヘッダクリックで切替
+// - 四段昇段年齢の中央値の行を薄赤で強調
 
-document.addEventListener("DOMContentLoaded", init);
+(() => {
+  "use strict";
 
-const CSV_URL = "profile.csv"; // stats.html と同じ階層にある想定
+  const CSV_PATH = "profile.csv"; // 配置に合わせて必要なら変更
 
-let allRows = [];      // 対象データ（棋士番号184以降）
-let viewRows = [];     // 表示順（ソート反映）
-let medianNum = null;  // 中央値の棋士番号（ハイライト用）
+  // stats.html にある想定のID
+  const elAvg = document.getElementById("avg-age");
+  const elSummary = document.getElementById("summary");
+  const elTbody = document.getElementById("rows");
 
-let sortKey = "num";   // "num" or "fourAge"
-let sortDir = "asc";   // "asc" or "desc"（基本はascのみ運用でもOK）
+  // scope：stats.html は name="scope"
+  const scopeRadios = Array.from(document.querySelectorAll('input[name="scope"]'));
 
-function init() {
-  loadAndRender().catch((err) => {
-    console.error(err);
-    setText("avg-age", "（計算エラー）");
-    setText("summary", "読込エラーが発生しました。コンソールをご確認ください。");
-  });
-}
+  // ソート状態
+  // mode: "num" | "age"
+  let sortMode = "num";
 
-async function loadAndRender() {
-  const csvText = await fetchText(CSV_URL);
-  const data = csvToObjects(csvText);
+  // 解析済みデータ保持
+  let allRows = [];
+  let filteredRows = [];
+  let medianKey = null; // 中央値の棋士を一意に識別するキー（num|name）
 
-  // 棋士番号184以降で絞る
-  allRows = data
-    .map(normalizeRow)
-    .filter((r) => Number.isFinite(r.num) && r.num >= 184);
+  // ---------- 日付/差分ユーティリティ ----------
 
-  // 中央値（四段昇段年齢の若い順で真ん中）
-  const byAge = [...allRows].sort((a, b) => a.fourAgeDays - b.fourAgeDays);
-  const midIndex = Math.floor((byAge.length - 1) / 2);
-  medianNum = byAge[midIndex]?.num ?? null;
-
-  // まずは平均年齢（あなたの方式：平均生年月日と平均四段昇段日の差）
-  renderAverageAge(allRows);
-
-  // ソート初期：棋士番号が小さい順
-  applySortAndRenderTable();
-
-  // ヘッダクリックでソート切替（HTML側を増やさずに実現）
-  setupHeaderSort();
-}
-
-function setupHeaderSort() {
-  const table = document.querySelector("table");
-  if (!table) return;
-
-  const ths = table.querySelectorAll("thead th");
-  if (!ths || ths.length < 4) return;
-
-  // 期待する見出しに合わせて（既に修正済みならそのままでもOK）
-  ths[0].textContent = "順位";
-  ths[1].textContent = "棋士名";
-  ths[2].textContent = "四段昇段年齢";
-  ths[3].textContent = "棋士番号";
-
-  // クリックできるのは 2列目(四段昇段年齢) と 3列目(棋士番号)
-  ths[2].style.cursor = "pointer";
-  ths[3].style.cursor = "pointer";
-
-  ths[2].addEventListener("click", () => {
-    // 四段昇段年齢：若い順（asc）を基本。連打で昇降切替も可能にしておく
-    if (sortKey === "fourAge") sortDir = (sortDir === "asc" ? "desc" : "asc");
-    sortKey = "fourAge";
-    applySortAndRenderTable();
-  });
-
-  ths[3].addEventListener("click", () => {
-    if (sortKey === "num") sortDir = (sortDir === "asc" ? "desc" : "asc");
-    sortKey = "num";
-    applySortAndRenderTable();
-  });
-}
-
-function applySortAndRenderTable() {
-  viewRows = [...allRows];
-
-  if (sortKey === "num") {
-    viewRows.sort((a, b) => (a.num - b.num) * (sortDir === "asc" ? 1 : -1));
-  } else if (sortKey === "fourAge") {
-    viewRows.sort((a, b) => (a.fourAgeDays - b.fourAgeDays) * (sortDir === "asc" ? 1 : -1));
+  function parseDate(ymd) {
+    // ymd: "YYYY-MM-DD"
+    if (!ymd || typeof ymd !== "string") return null;
+    const m = ymd.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) return null;
+    const y = Number(m[1]), mo = Number(m[2]), d = Number(m[3]);
+    const dt = new Date(y, mo - 1, d);
+    // 不正日付弾き
+    if (dt.getFullYear() !== y || dt.getMonth() !== mo - 1 || dt.getDate() !== d) return null;
+    return dt;
   }
 
-  renderSummary();
-  renderTable(viewRows);
-}
+  function fmtYMD(dt) {
+    const y = dt.getFullYear();
+    const m = String(dt.getMonth() + 1).padStart(2, "0");
+    const d = String(dt.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
 
-function renderAverageAge(rows) {
-  // 平均生年月日・平均四段昇段日を出して、その差を年/月/日にする
-  const birthMsAvg = avgMs(rows.map(r => r.birthDate.getTime()));
-  const fourMsAvg  = avgMs(rows.map(r => r.fourDate.getTime()));
+  // end >= start 前提（今回はデータが揃っている想定）
+  function diffYMD(start, end) {
+    let y = end.getFullYear() - start.getFullYear();
+    let m = end.getMonth() - start.getMonth();
+    let d = end.getDate() - start.getDate();
 
-  const birthAvg = new Date(birthMsAvg);
-  const fourAvg  = new Date(fourMsAvg);
-
-  const ymd = diffYMD(birthAvg, fourAvg);
-  const text = `棋士番号184以降の棋士の四段昇段平均年齢：${ymd.y}歳${ymd.m}ヶ月${ymd.d}日`;
-
-  setText("avg-age", text);
-}
-
-function renderSummary() {
-  // #summary が stats.html にある前提
-  const sortLabel =
-    sortKey === "num"
-      ? `棋士番号の${sortDir === "asc" ? "小さい順" : "大きい順"}`
-      : `四段昇段年齢の${sortDir === "asc" ? "若い順" : "年長順"}`;
-
-  const n = allRows.length;
-  const mid = medianNum != null ? viewRows.find(r => r.num === medianNum) : null;
-  const medianText = mid
-    ? `中央値（四段昇段年齢の若い順で真ん中）：${mid.name}（${mid.fourAgeText}）`
-    : "中央値：不明";
-
-  setText(
-    "summary",
-    `対象：棋士番号184以降 / 人数：${n}名 / 並び替え：${sortLabel} / ${medianText}`
-  );
-}
-
-function renderTable(rows) {
-  const tbody = document.getElementById("rows");
-  if (!tbody) return;
-
-  tbody.innerHTML = "";
-
-  rows.forEach((r, idx) => {
-    const tr = document.createElement("tr");
-
-    // 中央値の棋士（固定：年齢若い順での中央値）を薄赤に
-    if (medianNum != null && r.num === medianNum) {
-      tr.style.backgroundColor = "#ffecec";
+    if (d < 0) {
+      // 前月末日を借りる
+      const prevMonthEnd = new Date(end.getFullYear(), end.getMonth(), 0).getDate();
+      d += prevMonthEnd;
+      m -= 1;
     }
-
-    tr.appendChild(td(String(idx + 1)));         // 順位
-    tr.appendChild(td(r.name));                  // 棋士名
-    tr.appendChild(td(r.fourAgeText));           // 四段昇段年齢
-    tr.appendChild(td(String(r.num)));           // 棋士番号
-
-    tbody.appendChild(tr);
-  });
-}
-
-function normalizeRow(row) {
-  // ここで「列名」を確定させます
-  // 必須：num / name / birth / four-day（または four）
-  const num = toInt(row["num"] ?? row["no"] ?? row["id"]);
-  const name = (row["name"] ?? row["氏名"] ?? "").trim();
-
-  const birthStr = (row["birth"] ?? row["birth-day"] ?? row["birthday"] ?? "").trim();
-  const fourStr  = (row["four-day"] ?? row["four"] ?? "").trim();
-
-  const birthDate = parseYMD(birthStr);
-  const fourDate  = parseYMD(fourStr);
-
-  // 個別の四段昇段年齢（表示用 + ソート用のday差）
-  const ymd = diffYMD(birthDate, fourDate);
-  const fourAgeText = `${ymd.y}歳${ymd.m}ヶ月${ymd.d}日`;
-  const fourAgeDays = daysBetween(birthDate, fourDate);
-
-  return { num, name, birthDate, fourDate, fourAgeText, fourAgeDays };
-}
-
-/* ===== ユーティリティ ===== */
-
-function setText(id, text) {
-  const el = document.getElementById(id);
-  if (el) el.textContent = text;
-}
-
-function td(text) {
-  const el = document.createElement("td");
-  el.textContent = text;
-  return el;
-}
-
-async function fetchText(url) {
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) throw new Error(`fetch failed: ${res.status} ${res.statusText}`);
-  return await res.text();
-}
-
-function toInt(v) {
-  const n = parseInt(String(v ?? "").trim(), 10);
-  return Number.isFinite(n) ? n : NaN;
-}
-
-function avgMs(list) {
-  const sum = list.reduce((a, b) => a + b, 0);
-  return sum / list.length;
-}
-
-function parseYMD(s) {
-  // "YYYY-MM-DD" 前提（UTCで固定）
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
-  if (!m) throw new Error(`日付形式が不正です: ${s}`);
-  const y = Number(m[1]), mo = Number(m[2]), d = Number(m[3]);
-  return new Date(Date.UTC(y, mo - 1, d));
-}
-
-function daysBetween(a, b) {
-  const ms = b.getTime() - a.getTime();
-  return Math.round(ms / 86400000);
-}
-
-function diffYMD(start, end) {
-  // カレンダー差分（年→月→日）
-  let y = end.getUTCFullYear() - start.getUTCFullYear();
-  let tmp = addUTCYears(start, y);
-  if (tmp > end) {
-    y -= 1;
-    tmp = addUTCYears(start, y);
+    if (m < 0) {
+      m += 12;
+      y -= 1;
+    }
+    return { y, m, d };
   }
 
-  let m = end.getUTCMonth() - tmp.getUTCMonth();
-  if (m < 0) m += 12;
-
-  let tmp2 = addUTCMonths(tmp, m);
-  if (tmp2 > end) {
-    m -= 1;
-    tmp2 = addUTCMonths(tmp, m);
+  function ymdToDays(start, end) {
+    // 並べ替え用：単純差分（日）
+    const ms = end.getTime() - start.getTime();
+    return Math.round(ms / 86400000);
   }
 
-  const d = daysBetween(tmp2, end);
-  return { y, m, d };
-}
+  function fmtAgeYMD(age) {
+    return `${age.y}歳${age.m}ヶ月${age.d}日`;
+  }
 
-function addUTCYears(date, years) {
-  return new Date(Date.UTC(date.getUTCFullYear() + years, date.getUTCMonth(), date.getUTCDate()));
-}
+  function meanDate(dates) {
+    // dates: Date[]
+    const sum = dates.reduce((acc, dt) => acc + dt.getTime(), 0);
+    return new Date(Math.round(sum / dates.length));
+  }
 
-function addUTCMonths(date, months) {
-  const y = date.getUTCFullYear();
-  const m = date.getUTCMonth() + months;
-  return new Date(Date.UTC(y, m, date.getUTCDate()));
-}
+  // ---------- CSV ----------
 
-/* ===== CSV ===== */
+  function parseCSV(text) {
+    // ダブルクオート対応の最小CSVパーサ
+    const rows = [];
+    let i = 0, field = "", row = [];
+    let inQuotes = false;
 
-function parseCSV(text) {
-  const rows = [];
-  let row = [];
-  let field = "";
-  let inQuotes = false;
+    while (i < text.length) {
+      const c = text[i];
 
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-
-    if (inQuotes) {
-      if (c === '"') {
-        if (text[i + 1] === '"') {
-          field += '"';
-          i++;
+      if (inQuotes) {
+        if (c === '"') {
+          if (text[i + 1] === '"') {
+            field += '"';
+            i += 2;
+            continue;
+          } else {
+            inQuotes = false;
+            i += 1;
+            continue;
+          }
         } else {
-          inQuotes = false;
+          field += c;
+          i += 1;
+          continue;
         }
       } else {
+        if (c === '"') {
+          inQuotes = true;
+          i += 1;
+          continue;
+        }
+        if (c === ",") {
+          row.push(field);
+          field = "";
+          i += 1;
+          continue;
+        }
+        if (c === "\n") {
+          row.push(field);
+          rows.push(row);
+          row = [];
+          field = "";
+          i += 1;
+          continue;
+        }
+        if (c === "\r") {
+          i += 1;
+          continue;
+        }
         field += c;
+        i += 1;
       }
-      continue;
     }
+    row.push(field);
+    rows.push(row);
 
-    if (c === '"') {
-      inQuotes = true;
-      continue;
-    }
-
-    if (c === ",") {
-      row.push(field);
-      field = "";
-      continue;
-    }
-
-    if (c === "\n") {
-      row.push(field);
-      rows.push(row);
-      row = [];
-      field = "";
-      continue;
-    }
-
-    if (c === "\r") continue;
-
-    field += c;
+    const headers = rows.shift().map(h => h.trim());
+    return rows
+      .filter(r => r.length && r.some(v => String(v).trim() !== ""))
+      .map(r => {
+        const obj = {};
+        headers.forEach((h, idx) => obj[h] = (r[idx] ?? "").trim());
+        return obj;
+      });
   }
 
-  row.push(field);
-  rows.push(row);
-  return rows;
-}
+  // profile.csv 側の列名
+  // ※あなたの質問への答え：列名が "four-day" なら、"four" では読めません。
+  // ここは "four-day" を正として実装します。
+  const COL = {
+    name: "name",        // 棋士名
+    num: "num",          // 棋士番号
+    birth: "birth",      // 生年月日
+    fourDay: "four-day", // 四段昇段日
+  };
 
-function csvToObjects(csvText) {
-  const rows = parseCSV(csvText);
-  const header = rows[0].map(h => h.trim());
-  const out = [];
+  // ---------- 集計＆描画 ----------
 
-  for (let i = 1; i < rows.length; i++) {
-    const r = rows[i];
-    if (!r || r.length === 0) continue;
-    const obj = {};
-    header.forEach((h, idx) => {
-      obj[h] = (r[idx] ?? "").trim();
+  function getScopeValue() {
+    // 現在のstats.htmlだと active / num184 の2択が残っているので対応しておく
+    const checked = scopeRadios.find(r => r.checked);
+    return checked ? checked.value : "active";
+  }
+
+  function applyFilter(scopeValue) {
+    // あなたの方針：まずは棋士番号184以降だけで進める
+    // ただし stats.html にラジオが残っているので、
+    // num184 を選んだら184以降、activeは「現役」判定が無いので一旦184以降に寄せる（落ちないため）
+    // ※現役判定を後でrules.js参照に戻すならここを差し替えればOK
+    if (scopeValue === "num184") {
+      filteredRows = allRows.filter(r => r.num >= 184);
+    } else {
+      // active選択でも今は落とさない（暫定）
+      filteredRows = allRows.filter(r => r.num >= 184);
+    }
+  }
+
+  function computeMedianKeyByAgeYoungest(rows) {
+    // 四段昇段年齢が若い順で中央値（行の色付け用）
+    const arr = rows.slice().sort((a, b) => a.ageDays - b.ageDays);
+    const mid = Math.floor(arr.length / 2);
+    const p = arr[mid];
+    return p ? `${p.num}|${p.name}` : null;
+  }
+
+  function render() {
+    const scope = getScopeValue();
+    applyFilter(scope);
+
+    // 平均（平均生年月日/平均四段日）
+    const meanBirth = meanDate(filteredRows.map(r => r.birthDt));
+    const meanFour = meanDate(filteredRows.map(r => r.fourDt));
+    const avgAge = diffYMD(meanBirth, meanFour);
+
+    // 中央値キー（色付け）
+    medianKey = computeMedianKeyByAgeYoungest(filteredRows);
+
+    // 表示（平均）
+    if (elAvg) {
+      elAvg.textContent =
+        `棋士番号184以降の棋士の四段昇段平均年齢：${fmtAgeYMD(avgAge)}`;
+    }
+
+    // 表示条件（1行にasl）
+    if (elSummary) {
+      elSummary.textContent =
+        `対象：棋士番号184以降の棋士 / 対象人数：${filteredRows.length}名 / ` +
+        `平均生年月日：${fmtYMD(meanBirth)} / 平均四段昇段日：${fmtYMD(meanFour)} / ` +
+        `平均年齢：${fmtAgeYMD(avgAge)} / 中央値（若い順の中央）：${getMedianLabel()} `;
+    }
+
+    // テーブルヘッダを「棋士番号」に寄せる（stats.htmlがまだ「備考」なので）
+    const ths = Array.from(document.querySelectorAll("table thead th"));
+    if (ths[3]) ths[3].textContent = "棋士番号";
+
+    // ヘッダクリックで並べ替え
+    // th[2]=四段昇段年齢 / th[3]=棋士番号
+    if (ths[2] && !ths[2].dataset.bound) {
+      ths[2].dataset.bound = "1";
+      ths[2].style.cursor = "pointer";
+      ths[2].addEventListener("click", () => {
+        sortMode = "age";
+        renderTable();
+      });
+    }
+    if (ths[3] && !ths[3].dataset.bound) {
+      ths[3].dataset.bound = "1";
+      ths[3].style.cursor = "pointer";
+      ths[3].addEventListener("click", () => {
+        sortMode = "num";
+        renderTable();
+      });
+    }
+
+    renderTable();
+  }
+
+  function getMedianLabel() {
+    if (!medianKey) return "不明";
+    const [numStr, name] = medianKey.split("|");
+    const p = filteredRows.find(r => `${r.num}|${r.name}` === medianKey);
+    if (!p) return "不明";
+    return `${fmtAgeYMD(diffYMD(p.birthDt, p.fourDt))}（${name}）`;
+  }
+
+  function renderTable() {
+    if (!elTbody) return;
+
+    // 並べ替え
+    const arr = filteredRows.slice();
+    if (sortMode === "age") {
+      arr.sort((a, b) => a.ageDays - b.ageDays);
+    } else {
+      arr.sort((a, b) => a.num - b.num);
+    }
+
+    // tbodyクリア
+    elTbody.innerHTML = "";
+
+    // 中央値の薄赤（classなし運用。既存ルールに合わせ、インラインで最小限）
+    const medianBg = "#fdeaea";
+
+    arr.forEach((p, idx) => {
+      const tr = document.createElement("tr");
+
+      // 中央値行の強調
+      const key = `${p.num}|${p.name}`;
+      if (key === medianKey) {
+        tr.style.background = medianBg;
+      }
+
+      const tdRank = document.createElement("td");
+      tdRank.textContent = String(idx + 1);
+
+      const tdName = document.createElement("td");
+      tdName.textContent = p.name;
+
+      const tdAge = document.createElement("td");
+      tdAge.textContent = fmtAgeYMD(diffYMD(p.birthDt, p.fourDt));
+
+      const tdNum = document.createElement("td");
+      tdNum.textContent = String(p.num);
+
+      tr.append(tdRank, tdName, tdAge, tdNum);
+      elTbody.appendChild(tr);
     });
-    // 空行除外
-    const hasAny = Object.values(obj).some(v => v !== "");
-    if (hasAny) out.push(obj);
   }
-  return out;
-}
+
+  // ---------- 初期化 ----------
+
+  async function init() {
+    try {
+      if (elAvg) elAvg.textContent = "（計算中）";
+      if (elSummary) elSummary.textContent = "（計算中）";
+
+      const res = await fetch(CSV_PATH, { cache: "no-store" });
+      if (!res.ok) throw new Error(`fetch failed: ${res.status}`);
+      const text = await res.text();
+      const data = parseCSV(text);
+
+      // 必要カラムを Date化
+      allRows = data.map(row => {
+        const name = row[COL.name];
+        const num = Number(row[COL.num]);
+        const birthDt = parseDate(row[COL.birth]);
+        const fourDt = parseDate(row[COL.fourDay]);
+
+        if (!name || !Number.isFinite(num) || !birthDt || !fourDt) {
+          // 今回は「不明処理不要」の方針なので、欠損は除外（落ちないようにだけする）
+          return null;
+        }
+
+        return {
+          name,
+          num,
+          birthDt,
+          fourDt,
+          ageDays: ymdToDays(birthDt, fourDt),
+        };
+      }).filter(Boolean);
+
+      // ラジオ変更で再描画
+      if (scopeRadios.length) {
+        scopeRadios.forEach(r => {
+          r.addEventListener("change", () => render());
+        });
+      }
+
+      render();
+    } catch (e) {
+      console.error(e);
+      if (elAvg) elAvg.textContent = "（計算エラー）";
+      if (elSummary) elSummary.textContent = "読込エラーが発生しました。コンソールをご確認ください。";
+      if (elTbody) {
+        elTbody.innerHTML = `<tr><td colspan="4">（エラー）</td></tr>`;
+      }
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
+})();
