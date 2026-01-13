@@ -24,7 +24,7 @@ async function main() {
   const records = parseCsvToObjects(csvText);
 
   // 対象：棋士番号184以降（birthday と four-day は全て埋まっている前提）
-    const targets = records
+      const targets = records
     .filter((r) => Number(r["num"]) >= 184)
     .map((r) => {
       const birthday = parseYmd(r["birthday"]);
@@ -38,7 +38,6 @@ async function main() {
         ageDays: ymdToDayCount(fourDay) - ymdToDayCount(birthday),
       };
     });
-    .sort((a, b) => a.num - b.num); // 順位基準：棋士番号順
 
   // 平均日付方式：
   // 1) birthday の平均日付 2) four-day の平均日付 3) その差を◯年◯ヶ月◯日で表示
@@ -104,8 +103,9 @@ async function main() {
       .join("");
 
     rowsEl.innerHTML = html || `<tr><td colspan="4">（対象者なし）</td></tr>`;
-  }
+    } // renderRows 終了
 
+} // ←これを追加：main() を閉じる
 
 /* -----------------------------
    日付・平均・差分（UTC基準）
