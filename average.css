@@ -1,0 +1,15 @@
+section{
+  margin-bottom: 12px;
+  padding-top: 0.8rem;
+  padding-bottom: 0.8rem;
+}
+
+#avg-age {
+    font-size: 1.8em;
+    font-weight: bold;
+    text-align: center;
+  }
+
+h2 {
+    text-align: center;
+}
