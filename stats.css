@@ -3,3 +3,8 @@ section{
   padding-top: 0.8rem;
   padding-bottom: 0.8rem;
 }
+
+#avg-age {
+    font-size: 1.6em;
+    font-weight: bold;
+  }
