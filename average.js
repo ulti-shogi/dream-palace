@@ -24,14 +24,20 @@ async function main() {
   const records = parseCsvToObjects(csvText);
 
   // 対象：棋士番号184以降（birthday と four-day は全て埋まっている前提）
-  const targets = records
+    const targets = records
     .filter((r) => Number(r["num"]) >= 184)
-    .map((r) => ({
-      num: Number(r["num"]),
-      name: r["name"],
-      birthday: parseYmd(r["birthday"]),
-      fourDay: parseYmd(r["four-day"]),
-    }))
+    .map((r) => {
+      const birthday = parseYmd(r["birthday"]);
+      const fourDay = parseYmd(r["four-day"]);
+      return {
+        num: Number(r["num"]),
+        name: r["name"],
+        birthday,
+        fourDay,
+        // 並べ替え用（年齢を日数で比較）
+        ageDays: ymdToDayCount(fourDay) - ymdToDayCount(birthday),
+      };
+    });
     .sort((a, b) => a.num - b.num); // 順位基準：棋士番号順
 
   // 平均日付方式：
@@ -45,22 +51,61 @@ async function main() {
   avgEl.textContent = formatYmdDiff(avgDiff);
 
   // テーブル表示（順位・棋士名・四段昇段年齢・棋士番号）
-  const html = targets
-    .map((t, idx) => {
-      const age = diffYmd(t.birthday, t.fourDay);
-      return (
-        `<tr>` +
-        `<td>${idx + 1}</td>` +
-        `<td>${escapeHtml(t.name)}</td>` +
-        `<td>${formatYmdDiff(age)}</td>` +
-        `<td>${t.num}</td>` +
-        `</tr>`
-      );
-    })
-    .join("");
+    // 並べ替えUI
+  const sortKeyEl = document.getElementById("sort-key");
+  const sortDirEls = document.querySelectorAll('input[name="sort-dir"]');
 
-  rowsEl.innerHTML = html || `<tr><td colspan="4">（対象者なし）</td></tr>`;
-}
+  if (sortKeyEl) sortKeyEl.addEventListener("change", applySortAndRender);
+  sortDirEls.forEach((el) => el.addEventListener("change", applySortAndRender));
+
+  // 初期表示
+  applySortAndRender();
+
+  function applySortAndRender() {
+    const key = sortKeyEl ? sortKeyEl.value : "num";
+    const dir = (() => {
+      const checked = document.querySelector('input[name="sort-dir"]:checked');
+      return checked ? checked.value : "asc";
+    })();
+
+    const sign = dir === "desc" ? -1 : 1;
+
+    const sorted = [...targets].sort((a, b) => {
+      let cmp = 0;
+
+      if (key === "age") {
+        cmp = a.ageDays - b.ageDays;
+        // 同値なら棋士番号で安定化
+        if (cmp === 0) cmp = a.num - b.num;
+      } else {
+        // key === "num"
+        cmp = a.num - b.num;
+      }
+
+      return cmp * sign;
+    });
+
+    renderRows(sorted);
+  }
+
+  function renderRows(list) {
+    const html = list
+      .map((t, idx) => {
+        const age = diffYmd(t.birthday, t.fourDay);
+        return (
+          `<tr>` +
+          `<td>${idx + 1}</td>` +
+          `<td>${escapeHtml(t.name)}</td>` +
+          `<td>${formatYmdDiff(age)}</td>` +
+          `<td>${t.num}</td>` +
+          `</tr>`
+        );
+      })
+      .join("");
+
+    rowsEl.innerHTML = html || `<tr><td colspan="4">（対象者なし）</td></tr>`;
+  }
+
 
 /* -----------------------------
    日付・平均・差分（UTC基準）
