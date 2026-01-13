@@ -177,7 +177,7 @@ function daysInMonth(y, m) {
 }
 
 function formatYmdDiff(diff) {
-  return `${diff.years}年${diff.months}ヶ月${diff.days}日`;
+  return `${diff.years}歳${diff.months}ヶ月${diff.days}日`;
 }
 
 /* -----------------------------
