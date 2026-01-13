@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>四段昇段平均年齢 | 将棋の殿堂</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="table.css">
+    <link rel="stylesheet" href="stats.css">
+    <script src="average.js" defer></script>
+</head>
+
+<body>
+  <div class="wrap">
+    <header>
+  <div class="wrap">
+    <h1><a href="index.html">将棋の殿堂</a></h1>
+  </div>
+</header>
+
+    <main>
+      <!-- section① 平均年齢表示欄 -->
+      <section>
+        <h2>四段昇段平均年齢</h2>
+        <p id="avg-age">（未計算）</p>
+          <div>集計対象：棋士番号184以降の全ての棋士（奨励会三段リーグ開始以降に四段へ昇段した、棋士編入試験合格者を含む167名）</div>
+      </section>
+
+      <!-- section② テーブルの並べ替え -->
+      <section>
+        <h2>集計対象棋士</h2>
+      </section>
+
+      <!-- table（4列） -->
+      <table>
+        <thead>
+          <tr>
+            <th>順位</th>
+            <th>棋士名</th>
+            <th>四段昇段年齢</th>
+            <th>棋士番号</th>
+          </tr>
+        </thead>
+        <tbody id="rows">
+          <tr>
+            <td colspan="4">（未計算）</td>
+          </tr>
+        </tbody>
+      </table>
+    </main>
+
+    <footer>
+      <small>© 将棋の殿堂 / Data-driven (CSV) / Built step by step.</small>
+    </footer>
+  </div>
+
+</body>
+</html>
