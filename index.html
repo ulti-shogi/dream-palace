@@ -1,138 +1,182 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>将棋の殿堂</title>
-  <meta name="description" content="将棋に関するありとあらゆる情報を検索できるサイトを目指す『将棋の殿堂』。" />
-  <link rel="stylesheet" href="style.css?v=20260111-a">
+    <meta charset="UTF-8">
+    <title>将棋タイトル戦 年度別結果データベース</title>
+    <style>
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; margin: 30px; color: #333; background-color: #fafafa; }
+        h2 { color: #2c3e50; border-bottom: 2px solid #b0c4de; padding-bottom: 10px; }
+        .control-panel { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 25px; }
+        label { font-weight: bold; margin-right: 10px; }
+        select { padding: 8px 16px; font-size: 16px; border-radius: 4px; border: 1px solid #ccc; background-color: #fff; cursor: pointer; }
+        table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        th, td { padding: 12px 15px; text-align: center; border-bottom: 1px solid #eee; }
+        th { background-color: #f2f5f8; color: #34495e; font-weight: bold; }
+        tr:hover { background-color: #f9fbfd; }
+        .stars { font-family: monospace; font-size: 16px; letter-spacing: 2px; }
+        .score { font-size: 14px; color: #666; margin-left: 5px; }
+        .no-data { text-align: center; padding: 20px; color: #999; font-style: italic; }
+    </style>
 </head>
-
 <body>
-  <header>
-    <div class="wrap">
-      <h1>将棋の殿堂</h1>
-      <p class="lead">
-        『将棋に関するありとあらゆる情報を検索できるサイト』を目指して制作中です。
-      </p>
 
-      <div class="primary">
-        <a class="btn" href="profile.html" aria-label="棋士プロフィール検索へ">棋士プロフィール検索へ</a>
-      </div>
-    </div>
-  </header>
+<h2>将棋タイトル戦 年度別結果</h2>
 
-  <main>
-    <div class="wrap">
-      <div class="panel">
-        <p style="margin:0;">
-          ここから各種検索ページへ移動できます。未公開のページは「準備中」です。
-        </p>
-      </div>
+<div class="control-panel">
+    <label for="yearSelect">表示年度：</label>
+    <select id="yearSelect" onchange="renderTable()">
+    </select>
+</div>
 
-      <div class="sections" aria-label="検索ページ一覧">
-        <section>
-          <h2>棋士</h2>
-          <ul class="links">
-            <li>
-              <a class="cardlink" href="profile.html">
-                <strong>棋士プロフィール検索</strong>
-                <span>生年月日・昇段日などから平均年齢、最年少記録を検索</span>
-              </a>
-            </li>
-            <li>
-              <a class="cardlink" href="average.html">
-                <strong>四段昇段平均年齢・中央値</strong>
-                <span>現役棋士および三段リーグ開始以降の四段昇段者の平均年齢と中央値を集計して表示</span>
-              </a>
-            </li>
-          </ul>
-        </section>
+<table>
+    <thead>
+        <tr>
+            <th>棋戦</th>
+            <th>期</th>
+            <th>対局者A</th>
+            <th>勝敗 (星の並び)</th>
+            <th>対局者B</th>
+        </tr>
+    </thead>
+    <tbody id="resultBody">
+    </tbody>
+</table>
 
-        <section>
-          <h2>タイトル</h2>
-          <ul class="links">
-            <li>
-              <a class="cardlink disabled" href="#" aria-disabled="true">
-                <strong>タイトル獲得ランキング（準備中）</strong>
-                <span>通算・年度別・棋戦別などで絞り込み</span>
-              </a>
-            </li>
-            <li>
-              <a class="cardlink disabled" href="#" aria-disabled="true">
-                <strong>タイトル戦結果（準備中）</strong>
-                <span>期・年度・挑戦者・スコアなどを検索</span>
-              </a>
-            </li>
-          </ul>
-        </section>
+<script>
+// 1. 将棋の「年度」(4月1日〜翌年3月31日) を判定する関数
+function getFiscalYear(dateStr) {
+    const parts = dateStr.split('-');
+    const year = parseInt(parts[0], 10);
+    const month = parseInt(parts[1], 10);
+    return month >= 4 ? year : year - 1;
+}
 
-        <section>
-          <h2>賞金</h2>
-          <ul class="links">
-            <li>
-              <a class="cardlink disabled" href="#" aria-disabled="true">
-                <strong>賞金ランキング（準備中）</strong>
-                <span>年度別のランキングと推移を検索</span>
-              </a>
-            </li>
-          </ul>
-        </section>
+// パース後のデータを保持するグローバル変数
+let seriesList = []; 
 
-        <section>
-          <h2>棋戦結果・記録</h2>
-          <ul class="links">
-            <li>
-              <a class="cardlink disabled" href="#" aria-disabled="true">
-                <strong>一般棋戦結果（準備中）</strong>
-                <span>棋戦ごとの優勝・準優勝などを検索</span>
-              </a>
-            </li>
-            <li>
-              <a class="cardlink disabled" href="#" aria-disabled="true">
-                <strong>最年少・最年長記録（準備中）</strong>
-                <span>年齢記録を横断的に検索</span>
-              </a>
-            </li>
-          </ul>
-        </section>
+// 2. 選択された年度の結果をテーブルに描画する関数
+function renderTable() {
+    const yearSelect = document.getElementById('yearSelect');
+    if (!yearSelect.value) return; // データ未ロード時はスキップ
 
-          <section>
-          <h2>賞金</h2>
-          <ul class="links">
-            <li>
-              <a class="cardlink disabled" href="#" aria-disabled="true">
-                <strong>賞金ランキング（準備中）</strong>
-                <span>年度別のランキングと推移を検索</span>
-              </a>
-            </li>
-          </ul>
-        </section>
+    const selectedYear = parseInt(yearSelect.value, 10);
+    const tbody = document.getElementById('resultBody');
+    
+    // 選択された年度のシリーズを抽出
+    const filtered = seriesList.filter(s => s.fiscalYear === selectedYear);
+    
+    if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="no-data">該当するデータがありません。</td></tr>`;
+        return;
+    }
+    
+    // テーブルの内容を生成
+    tbody.innerHTML = filtered.map(s => {
+        const starRow = s.stars.join('');
+        const scoreText = `<span class="score">(${s.win1}勝 - ${s.win2}勝${s.draw > 0 ? ` ${s.draw}千日手` : ''})</span>`;
+        
+        return `
+            <tr>
+                <td><strong>${s.match}</strong></td>
+                <td>${s.period}期</td>
+                <td>${s.player1}</td>
+                <td>
+                    <div class="stars">${starRow}</div>
+                    ${scoreText}
+                </td>
+                <td>${s.player2}</td>
+            </tr>
+        `;
+    }).join('');
+}
 
-          <section>
-          <h2>賞金</h2>
-          <ul class="links">
-            <li>
-              <a class="cardlink disabled" href="#" aria-disabled="true">
-                <strong>賞金ランキング（準備中）</strong>
-                <span>年度別のランキングと推移を検索</span>
-              </a>
-            </li>
-          </ul>
-        </section>
-          
-      </div>
-    </div>
-  </main>
+// 3. 外部ファイル(title.csv)の読み込みとデータ構築
+fetch('title.csv')
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('ネットワークエラーが発生しました。');
+        }
+        return response.text();
+    })
+    .then(csvText => {
+        // テキストデータをパース
+        const lines = csvText.trim().split('\n');
+        
+        // 1行目はヘッダーなので slice(1) で除外して処理
+        const games = lines.slice(1).map(line => {
+            const cols = line.split(',');
+            return {
+                date: cols[0], match: cols[1], period: cols[2],
+                pA: cols[4], resA: cols[5], resB: cols[6], pB: cols[7]
+            };
+        }).sort((a, b) => a.date.localeCompare(b.date)); // 星の並びを正しくするため日付順に
 
-  <footer>
-    <div class="wrap">
-      <p class="note">© 将棋の殿堂 / Data-driven (CSV) / Built step by step.</p>
-      <p class="mini">
-        <a href="profile.html">棋士プロフィール検索</a>
-        <a href="#" class="disabled" aria-disabled="true">更新履歴（準備中）</a>
-      </p>
-    </div>
-  </footer>
+        // 「棋戦名-期」をキーとして、シリーズ（番勝負）ごとに結果を集計
+        const seriesMap = {};
+        games.forEach(game => {
+            if (!game.match || !game.period) return;
+            
+            const fy = getFiscalYear(game.date);
+            const key = `${game.match}-${game.period}`;
+            
+            if (!seriesMap[key]) {
+                seriesMap[key] = {
+                    fiscalYear: fy,
+                    match: game.match,
+                    period: game.period,
+                    player1: game.pA,
+                    player2: game.pB,
+                    win1: 0,
+                    win2: 0,
+                    draw: 0,
+                    stars: []
+                };
+            }
+            
+            const s = seriesMap[key];
+            
+            // 結果が未入力の対局処理
+            if (game.resA === "" && game.resB === "") {
+                s.stars.push('・');
+                return;
+            }
+
+            // 勝敗をカウント
+            if (game.pA === s.player1) {
+                if (game.resA === '○') { s.win1++; s.stars.push('○'); }
+                else if (game.resB === '○') { s.win2++; s.stars.push('●'); }
+                else if (game.resA === '千' || game.resA === '持') { s.draw++; s.stars.push('千'); }
+            } else {
+                if (game.resA === '○') { s.win2++; s.stars.push('●'); }
+                else if (game.resB === '○') { s.win1++; s.stars.push('○'); }
+                else if (game.resA === '千' || game.resA === '持') { s.draw++; s.stars.push('千'); }
+            }
+        });
+
+        // 描画用に配列へ変換して保持
+        seriesList = Object.values(seriesMap);
+
+        // プルダウンに存在する年度を自動抽出して追加
+        const yearSelect = document.getElementById('yearSelect');
+        const years = [...new Set(seriesList.map(s => s.fiscalYear))].sort((a, b) => b - a); // 降順
+
+        years.forEach(year => {
+            const option = document.createElement('option');
+            option.value = year;
+            option.textContent = `${year}年度`;
+            yearSelect.appendChild(option);
+        });
+
+        // 全ての準備が整った後にテーブルを描画
+        renderTable();
+    })
+    .catch(error => {
+        console.error('CSV読み込みエラー:', error);
+        document.getElementById('resultBody').innerHTML = `
+            <tr><td colspan="5" class="no-data" style="color: red;">
+                データの読み込みに失敗しました。ローカル環境の場合はWebサーバー(Live Server等)経由で開いているか確認してください。
+            </td></tr>`;
+    });
+</script>
 </body>
 </html>
