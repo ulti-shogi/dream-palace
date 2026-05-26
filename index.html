@@ -2,49 +2,89 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>将棋タイトル戦 年度別結果データベース</title>
+    <title>将棋タイトル戦 データベース</title>
     <style>
         body { font-family: 'Helvetica Neue', Arial, sans-serif; margin: 30px; color: #333; background-color: #fafafa; }
         h2 { color: #2c3e50; border-bottom: 2px solid #b0c4de; padding-bottom: 10px; }
+        
+        /* タブメニューのスタイル */
+        .tabs { display: flex; margin-bottom: 20px; border-bottom: 2px solid #ccc; }
+        .tab-button {
+            background: #eee; border: none; padding: 10px 20px; font-size: 16px; cursor: pointer;
+            margin-right: 5px; border-radius: 8px 8px 0 0; transition: background 0.3s;
+        }
+        .tab-button:hover { background: #ddd; }
+        .tab-button.active { background: #2c3e50; color: #fff; font-weight: bold; }
+        
+        /* コンテンツ領域のスタイル */
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.4s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
         .control-panel { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 25px; }
         label { font-weight: bold; margin-right: 10px; }
         select { padding: 8px 16px; font-size: 16px; border-radius: 4px; border: 1px solid #ccc; background-color: #fff; cursor: pointer; }
+        
         table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         th, td { padding: 12px 15px; text-align: center; border-bottom: 1px solid #eee; }
         th { background-color: #f2f5f8; color: #34495e; font-weight: bold; }
         tr:hover { background-color: #f9fbfd; }
         .stars { font-family: monospace; font-size: 16px; letter-spacing: 2px; }
         .no-data { text-align: center; padding: 20px; color: #999; font-style: italic; }
+        .rank-column { font-weight: bold; font-size: 18px; color: #e67e22; }
     </style>
 </head>
 <body>
 
-<h2>将棋タイトル戦 年度別結果一覧</h2>
+<h2>将棋タイトル戦 データベース</h2>
 
-<div class="control-panel">
-    <label for="yearSelect">表示年度：</label>
-    <select id="yearSelect" onchange="renderTable()">
-    </select>
+<div class="tabs">
+    <button class="tab-button active" onclick="switchTab('tab-yearly', this)">年度別結果</button>
+    <button class="tab-button" onclick="switchTab('tab-ranking', this)">歴代タイトル獲得ランキング</button>
 </div>
 
-<table>
-    <thead>
-        <tr>
-            <th>期</th>
-            <th>棋戦</th>
-            <th>保持者</th>
-            <th>勝数</th>
-            <th>星取り</th>
-            <th>勝数</th>
-            <th>挑戦者</th>
-        </tr>
-    </thead>
-    <tbody id="resultBody">
-    </tbody>
-</table>
+<div id="tab-yearly" class="tab-content active">
+    <div class="control-panel">
+        <label for="yearSelect">表示年度：</label>
+        <select id="yearSelect" onchange="renderYearlyTable()">
+        </select>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>期</th>
+                <th>棋戦</th>
+                <th>保持者</th>
+                <th>勝数</th>
+                <th>星取り</th>
+                <th>勝数</th>
+                <th>挑戦者</th>
+            </tr>
+        </thead>
+        <tbody id="yearlyBody">
+        </tbody>
+    </table>
+</div>
+
+<div id="tab-ranking" class="tab-content">
+    <table>
+        <thead>
+            <tr>
+                <th>順位</th>
+                <th>棋士名</th>
+                <th>タイトル獲得数 (現データ内)</th>
+            </tr>
+        </thead>
+        <tbody id="rankingBody">
+        </tbody>
+    </table>
+</div>
 
 <script>
-// 1. 将棋の「年度」(4月1日〜翌年3月31日) を判定する関数
+// --- 基本設定とユーティリティ ---
+let seriesList = []; 
+
 function getFiscalYear(dateStr) {
     const parts = dateStr.split('-');
     const year = parseInt(parts[0], 10);
@@ -52,16 +92,24 @@ function getFiscalYear(dateStr) {
     return month >= 4 ? year : year - 1;
 }
 
-// パース後のデータを保持するグローバル変数
-let seriesList = []; 
+// タブ切り替え処理
+function switchTab(tabId, btnElement) {
+    // すべてのコンテンツとボタンのactive状態を解除
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-button').forEach(el => el.classList.remove('active'));
+    
+    // 選択されたものをactiveにする
+    document.getElementById(tabId).classList.add('active');
+    btnElement.classList.add('active');
+}
 
-// 2. 選択された年度の結果をテーブルに描画する関数
-function renderTable() {
+// --- 描画処理1: 年度別結果 ---
+function renderYearlyTable() {
     const yearSelect = document.getElementById('yearSelect');
     if (!yearSelect.value) return; 
 
     const selectedYear = parseInt(yearSelect.value, 10);
-    const tbody = document.getElementById('resultBody');
+    const tbody = document.getElementById('yearlyBody');
     
     const filtered = seriesList.filter(s => s.fiscalYear === selectedYear);
     
@@ -72,7 +120,6 @@ function renderTable() {
     
     tbody.innerHTML = filtered.map(s => {
         const starRow = s.stars.join('');
-        
         return `
             <tr>
                 <td>${s.period}</td>
@@ -87,12 +134,65 @@ function renderTable() {
     }).join('');
 }
 
-// 3. 外部ファイル(title.csv)の読み込みとデータ構築
+// --- 描画処理2: 歴代タイトル獲得ランキング ---
+function renderRanking() {
+    const rankingMap = {};
+
+    seriesList.forEach(s => {
+        // 番勝負の種類に応じた必要勝数を設定
+        const requiredWins = s.phase === '七番勝負' ? 4 : (s.phase === '五番勝負' ? 3 : 99);
+        
+        let winner = null;
+        // 勝数が必要勝数に達しているかを判定
+        if (s.win1 >= requiredWins) winner = s.player1;
+        else if (s.win2 >= requiredWins) winner = s.player2;
+
+        // 勝者が決まっていればカウントアップ
+        if (winner) {
+            if (!rankingMap[winner]) rankingMap[winner] = 0;
+            rankingMap[winner]++;
+        }
+    });
+
+    // 配列に変換して獲得数で降順ソート
+    const rankingArray = Object.keys(rankingMap).map(name => {
+        return { name: name, count: rankingMap[name] };
+    }).sort((a, b) => b.count - a.count);
+
+    const tbody = document.getElementById('rankingBody');
+    
+    if (rankingArray.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3" class="no-data">決着がついたタイトル戦データがありません。</td></tr>`;
+        return;
+    }
+
+    let html = '';
+    let currentRank = 1;
+    let previousCount = -1;
+
+    rankingArray.forEach((r, index) => {
+        // 同数の場合は同じ順位にする処理
+        if (r.count !== previousCount) {
+            currentRank = index + 1;
+            previousCount = r.count;
+        }
+        
+        html += `
+            <tr>
+                <td class="rank-column">${currentRank}</td>
+                <td>${r.name}</td>
+                <td><strong>${r.count}</strong> 期</td>
+            </tr>
+        `;
+    });
+
+    tbody.innerHTML = html;
+}
+
+// --- データの読み込みと初期化 ---
 fetch('title.csv')
     .then(response => {
-        if (!response.ok) {
-            throw new Error('ネットワークエラーが発生しました。');
-        }
+        if (!response.ok) throw new Error('ネットワークエラー');
         return response.text();
     })
     .then(csvText => {
@@ -102,7 +202,8 @@ fetch('title.csv')
             const cols = line.split(',');
             return {
                 date: cols[0], match: cols[1], period: cols[2],
-                pA: cols[4], resA: cols[5], resB: cols[6], pB: cols[7]
+                pA: cols[4], resA: cols[5], resB: cols[6], pB: cols[7],
+                phase: cols[9] // 「七番勝負」などを取得 (10列目)
             };
         }).sort((a, b) => a.date.localeCompare(b.date)); 
 
@@ -120,27 +221,25 @@ fetch('title.csv')
                     period: game.period,
                     player1: game.pA,
                     player2: game.pB,
+                    phase: game.phase, // シリーズに情報を保持
                     win1: 0,
                     win2: 0,
                     draw: 0,
                     stars: [],
-                    startDate: game.date, // 改良：シリーズの最初の対局日（開幕日）を保持
+                    startDate: game.date,
                     endDate: "" 
                 };
             }
             
             const s = seriesMap[key];
             
-            // 結果が未入力の対局処理
             if (game.resA === "" && game.resB === "") {
                 s.stars.push('・');
                 return;
             }
 
-            // 結果が入っている最新の対局日を決着日として更新
             s.endDate = game.date;
 
-            // 勝敗をカウント
             if (game.pA === s.player1) {
                 if (game.resA === '○') { s.win1++; s.stars.push('○'); }
                 else if (game.resB === '○') { s.win2++; s.stars.push('●'); }
@@ -154,20 +253,15 @@ fetch('title.csv')
 
         seriesList = Object.values(seriesMap);
 
-        // ★改良版ソート：決着がついた日付が早い順（未決着・未開幕は一番下へ）
+        // 年度別テーブル用のソート（決着日順）
         seriesList.sort((a, b) => {
-            // 1. 両方とも決着がついている場合は、決着日が早い順
-            if (a.endDate && b.endDate) {
-                return a.endDate.localeCompare(b.endDate);
-            }
-            // 2. 片方だけ決着している場合は、決着している方を上に
+            if (a.endDate && b.endDate) return a.endDate.localeCompare(b.endDate);
             if (a.endDate && !b.endDate) return -1;
             if (!a.endDate && b.endDate) return 1;
-            
-            // 3. 両方とも未決着（または未開幕）の場合は、開幕日が早い順
             return a.startDate.localeCompare(b.startDate);
         });
 
+        // 年度プルダウンの生成
         const yearSelect = document.getElementById('yearSelect');
         const years = [...new Set(seriesList.map(s => s.fiscalYear))].sort((a, b) => b - a); 
 
@@ -178,14 +272,13 @@ fetch('title.csv')
             yearSelect.appendChild(option);
         });
 
-        renderTable();
+        // データの準備ができたら両方の描画関数を実行
+        renderYearlyTable();
+        renderRanking();
     })
     .catch(error => {
         console.error('CSV読み込みエラー:', error);
-        document.getElementById('resultBody').innerHTML = `
-            <tr><td colspan="7" class="no-data" style="color: red;">
-                データの読み込みに失敗しました。
-            </td></tr>`;
+        document.getElementById('tab-yearly').innerHTML = `<p style="color:red;">データの読み込みに失敗しました。</p>`;
     });
 </script>
 </body>
