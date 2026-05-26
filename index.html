@@ -14,7 +14,6 @@
         th { background-color: #f2f5f8; color: #34495e; font-weight: bold; }
         tr:hover { background-color: #f9fbfd; }
         .stars { font-family: monospace; font-size: 16px; letter-spacing: 2px; }
-        .score { font-size: 14px; color: #666; margin-left: 5px; }
         .no-data { text-align: center; padding: 20px; color: #999; font-style: italic; }
     </style>
 </head>
@@ -31,11 +30,13 @@
 <table>
     <thead>
         <tr>
-            <th>棋戦</th>
             <th>期</th>
-            <th>対局者A</th>
-            <th>勝敗 (星の並び)</th>
-            <th>対局者B</th>
+            <th>棋戦</th>
+            <th>保持者</th>
+            <th>勝数</th>
+            <th>星取り</th>
+            <th>勝数</th>
+            <th>挑戦者</th>
         </tr>
     </thead>
     <tbody id="resultBody">
@@ -66,24 +67,23 @@ function renderTable() {
     const filtered = seriesList.filter(s => s.fiscalYear === selectedYear);
     
     if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="no-data">該当するデータがありません。</td></tr>`;
+        // 列数が7になったのでcolspanを7に変更
+        tbody.innerHTML = `<tr><td colspan="7" class="no-data">該当するデータがありません。</td></tr>`;
         return;
     }
     
     // テーブルの内容を生成
     tbody.innerHTML = filtered.map(s => {
         const starRow = s.stars.join('');
-        const scoreText = `<span class="score">(${s.win1}勝 - ${s.win2}勝${s.draw > 0 ? ` ${s.draw}千日手` : ''})</span>`;
         
         return `
             <tr>
+                <td>${s.period}</td>
                 <td><strong>${s.match}</strong></td>
-                <td>${s.period}期</td>
                 <td>${s.player1}</td>
-                <td>
-                    <div class="stars">${starRow}</div>
-                    ${scoreText}
-                </td>
+                <td>${s.win1}</td>
+                <td><div class="stars">${starRow}</div></td>
+                <td>${s.win2}</td>
                 <td>${s.player2}</td>
             </tr>
         `;
@@ -128,7 +128,7 @@ fetch('title.csv')
                     player2: game.pB,
                     win1: 0,
                     win2: 0,
-                    draw: 0,
+                    draw: 0, // 今後の拡張用に変数は残しています
                     stars: []
                 };
             }
@@ -173,7 +173,7 @@ fetch('title.csv')
     .catch(error => {
         console.error('CSV読み込みエラー:', error);
         document.getElementById('resultBody').innerHTML = `
-            <tr><td colspan="5" class="no-data" style="color: red;">
+            <tr><td colspan="7" class="no-data" style="color: red;">
                 データの読み込みに失敗しました。ローカル環境の場合はWebサーバー(Live Server等)経由で開いているか確認してください。
             </td></tr>`;
     });
