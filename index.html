@@ -67,7 +67,6 @@ function renderTable() {
     const filtered = seriesList.filter(s => s.fiscalYear === selectedYear);
     
     if (filtered.length === 0) {
-        // 列数が7になったのでcolspanを7に変更
         tbody.innerHTML = `<tr><td colspan="7" class="no-data">該当するデータがありません。</td></tr>`;
         return;
     }
@@ -128,8 +127,9 @@ fetch('title.csv')
                     player2: game.pB,
                     win1: 0,
                     win2: 0,
-                    draw: 0, // 今後の拡張用に変数は残しています
-                    stars: []
+                    draw: 0,
+                    stars: [],
+                    endDate: "" // 決着日（最終局の日付）を保持するプロパティを追加
                 };
             }
             
@@ -140,6 +140,9 @@ fetch('title.csv')
                 s.stars.push('・');
                 return;
             }
+
+            // 結果が入っている最新の対局日を決着日（最終局の日付）として更新
+            s.endDate = game.date;
 
             // 勝敗をカウント
             if (game.pA === s.player1) {
@@ -153,8 +156,11 @@ fetch('title.csv')
             }
         });
 
-        // 描画用に配列へ変換して保持
+        // 連想配列から通常の配列に変換
         seriesList = Object.values(seriesMap);
+
+        // ★追加：決着がついた日付（endDate）が早い順にソート（並び替え）
+        seriesList.sort((a, b) => a.endDate.localeCompare(b.endDate));
 
         // プルダウンに存在する年度を自動抽出して追加
         const yearSelect = document.getElementById('yearSelect');
