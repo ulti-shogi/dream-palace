@@ -70,7 +70,7 @@ function renderMatchTable() {
         return `
             <tr>
                 <td>${s.period}</td>
-                <td>${s.fiscalYear}年度</td>
+                <td>${s.fiscalYear}</td>
                 <td>${s.player1}</td>
                 <td>${s.win1}</td>
                 <td><div class="stars">${starRow}</div></td>
@@ -165,9 +165,9 @@ function renderRanking() {
             <tr>
                 <td class="rank-column">${currentRank}</td>
                 <td><strong>${r.name}</strong></td>
-                <td>${r.appear} 回</td>
-                <td><strong>${r.count}</strong> 期</td>
-                <td>${r.lose} 回</td>
+                <td>${r.appear}</td>
+                <td><strong>${r.count}</strong></td>
+                <td>${r.lose}</td>
                 <td>${rateText}</td>
             </tr>
         `;
@@ -262,7 +262,6 @@ fetch('title.csv')
         renderRanking();
     })
     .catch(error => {
-        // ★修正点：エラー時はUIを破壊せず、テーブルの中にエラーメッセージを出すように変更
         console.error('CSV読み込みエラー:', error);
         const errorHtml = `<tr><td colspan="7" class="no-data" style="color: red;">データの読み込みに失敗しました。</td></tr>`;
         document.getElementById('yearlyBody').innerHTML = errorHtml;

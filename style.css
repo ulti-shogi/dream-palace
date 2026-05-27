@@ -28,15 +28,13 @@ tr:hover { background-color: #f9fbfd; }
 .rank-column { font-weight: bold; font-size: 18px; color: #e67e22; }
 
 /* ======== レスポンシブ対応 (スマホ向け設定) ======== */
-@media (max-width: 768px) {
-    /* 画面端の余白を狭くする */
+@media (max-width: 480px) {
     body { margin: 10px; }
     h2 { font-size: 1.3rem; }
     
-    /* タブボタンをスマホ用に並べ替える */
     .tabs { flex-wrap: wrap; border-bottom: none; margin-bottom: 15px; }
     .tab-button {
-        flex: 1 1 auto; /* 画面幅に合わせて均等に伸びる */
+        flex: 1 1 auto;
         font-size: 14px;
         padding: 10px;
         margin-right: 2px;
@@ -44,20 +42,26 @@ tr:hover { background-color: #f9fbfd; }
         border-radius: 4px;
     }
 
-    /* プルダウン周りの操作を押しやすくする */
     .control-panel { padding: 15px; }
     label { display: block; margin-bottom: 5px; }
-    select { width: 100%; box-sizing: border-box; } /* 画面幅いっぱいまで広げる */
+    select { width: 100%; box-sizing: border-box; }
 
-    /* 表が潰れないように、横スクロールを許可する */
-    .tab-content.active {
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch; /* 指でのスクロールを滑らかに */
-        padding-bottom: 10px; /* スクロール時の見栄え用余白 */
+    /* スマホでは文字サイズとパディングを極力小さくして画面に収める */
+    th, td { 
+        padding: 8px 4px; /* 余白をギリギリまで削る */
+        font-size: 12px;  /* 文字を小さく */
     }
-    table {
-        min-width: 650px; /* この幅以下には縮めない（これ以上狭い画面は横スクロールになる） */
+
+    /* ======= 特定の列を非表示にする設定 ======= */
+    
+    /* 1. 年度別結果・棋戦別結果タブの「星取り」列（5番目の列）を消す */
+    #tab-yearly th:nth-child(5), #tab-yearly td:nth-child(5),
+    #tab-match th:nth-child(5), #tab-match td:nth-child(5) {
+        display: none;
     }
-    th, td { padding: 10px 8px; font-size: 14px; }
-    .stars { font-size: 14px; letter-spacing: 1px; }
+
+    /* 2. ランキングタブの「敗退」列（5番目の列）を消す（画面に収めるため維持） */
+    #tab-ranking th:nth-child(5), #tab-ranking td:nth-child(5) {
+        display: none;
+    }
 }
