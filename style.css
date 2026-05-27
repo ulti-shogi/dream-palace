@@ -1,162 +1,28 @@
-:root{
-      --max: 960px;
-      --pad: 16px;
-      --radius: 14px;
-      --border: 1px solid rgba(0,0,0,.12);
-      --shadow: 0 6px 18px rgba(0,0,0,.08);
-    }
+body { font-family: 'Helvetica Neue', Arial, sans-serif; margin: 30px; color: #333; background-color: #fafafa; }
+h2 { color: #2c3e50; border-bottom: 2px solid #b0c4de; padding-bottom: 10px; }
 
-    *{ box-sizing: border-box; }
-    body{
-      margin: 0;
-      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Noto Sans JP", "Yu Gothic", "Meiryo", sans-serif;
-      line-height: 1.6;
-      color: #111;
-      background: #fafafa;
-    }
+/* タブメニューのスタイル */
+.tabs { display: flex; margin-bottom: 20px; border-bottom: 2px solid #ccc; }
+.tab-button {
+    background: #eee; border: none; padding: 10px 20px; font-size: 16px; cursor: pointer;
+    margin-right: 5px; border-radius: 8px 8px 0 0; transition: background 0.3s;
+}
+.tab-button:hover { background: #ddd; }
+.tab-button.active { background: #2c3e50; color: #fff; font-weight: bold; }
 
-    a{ color: inherit; }
+/* コンテンツ領域のスタイル */
+.tab-content { display: none; }
+.tab-content.active { display: block; animation: fadeIn 0.4s; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-    header{
-      padding: 28px var(--pad) 18px;
-    }
+.control-panel { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 25px; }
+label { font-weight: bold; margin-right: 10px; }
+select { padding: 8px 16px; font-size: 16px; border-radius: 4px; border: 1px solid #ccc; background-color: #fff; cursor: pointer; }
 
-    .wrap{
-      width: min(var(--max), 100% - (var(--pad) * 2));
-      margin: 0 auto;
-    }
-
-    h1{
-      margin: 0;
-      text-align: center; /* 条件：真ん中に寄せる */
-      font-size: clamp(26px, 4vw, 40px);
-      letter-spacing: .03em;
-    }
-
-    .lead{
-      margin: 10px auto 0;
-      /* max-width: 54ch; */
-      text-align: center;
-      opacity: .9;
-    }
-
-    main{
-    　padding: 0 0 28px;
-    }
-
-    .panel{
-      background: #fff;
-      border: var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 18px;
-    }
-
-    .primary{
-      margin-top: 16px;
-      display: flex;
-      justify-content: center;
-    }
-
-    .btn{
-      display: inline-block;
-      text-decoration: none;
-      padding: 12px 16px;
-      border-radius: 999px;
-      border: var(--border);
-      background: #111;
-      color: #fff;
-      font-weight: 700;
-      letter-spacing: .02em;
-    }
-    .btn:active{ transform: translateY(1px); }
-
-    .sections{
-      margin-top: 18px;
-      display: flex;
-      flex-wrap: wrap; /* 列数を固定しない（必要に応じて折り返す） */
-      gap: 12px;
-    }
-
-    section{
-      flex: 1 1 260px; /* 画面幅に応じて自動で並ぶ（列数を決め打ちしない） */
-      min-width: 240px;
-      background: #fff;
-      border: var(--border);
-      border-radius: var(--radius);
-      padding: 14px;
-    }
-
-    section h2{
-      margin: 0 0 10px;
-      font-size: 18px;
-    }
-
-    .links{
-      margin: 0;
-      padding: 0;
-      list-style: none;
-      display: grid;
-      gap: 10px;
-    }
-
-    .cardlink{
-      display: block;
-      text-decoration: none;
-      padding: 12px;
-      border-radius: 12px;
-      border: var(--border);
-      background: #fff;
-    }
-
-    .cardlink strong{
-      display: block;
-      font-size: 15px;
-    }
-
-    .cardlink span{
-      display: block;
-      margin-top: 4px;
-      font-size: 13px;
-      opacity: .85;
-    }
-
-    .cardlink:hover{
-      box-shadow: 0 6px 16px rgba(0,0,0,.08);
-    }
-
-    .disabled{
-      opacity: .55;
-      cursor: not-allowed;
-      pointer-events: none;
-      background: #f2f2f2;
-    }
-
-    footer{
-      padding: 10px var(--pad) 26px;
-      color: rgba(0,0,0,.7);
-      font-size: 12px;
-    }
-
-    footer .wrap{
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .note{
-      margin: 0;
-    }
-
-    .mini{
-      margin: 0;
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-    .mini a{
-      text-decoration: none;
-      border-bottom: 1px dashed rgba(0,0,0,.35);
-    }
+table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+th, td { padding: 12px 15px; text-align: center; border-bottom: 1px solid #eee; }
+th { background-color: #f2f5f8; color: #34495e; font-weight: bold; }
+tr:hover { background-color: #f9fbfd; }
+.stars { font-family: monospace; font-size: 16px; letter-spacing: 2px; }
+.no-data { text-align: center; padding: 20px; color: #999; font-style: italic; }
+.rank-column { font-weight: bold; font-size: 18px; color: #e67e22; }
