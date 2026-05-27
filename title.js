@@ -183,8 +183,7 @@ fetch('title.csv')
         return response.text();
     })
     .then(csvText => {
-        const lines = csvText.trim().split('
-');
+        const lines = csvText.trim().split('\n');
         
         const games = lines.slice(1).map(line => {
             const cols = line.split(',');
@@ -263,6 +262,10 @@ fetch('title.csv')
         renderRanking();
     })
     .catch(error => {
+        // ★修正点：エラー時はUIを破壊せず、テーブルの中にエラーメッセージを出すように変更
         console.error('CSV読み込みエラー:', error);
-        document.getElementById('tab-yearly').innerHTML = `<p style="color:red;">データの読み込みに失敗しました。</p>`;
+        const errorHtml = `<tr><td colspan="7" class="no-data" style="color: red;">データの読み込みに失敗しました。</td></tr>`;
+        document.getElementById('yearlyBody').innerHTML = errorHtml;
+        document.getElementById('matchBody').innerHTML = errorHtml;
+        document.getElementById('rankingBody').innerHTML = errorHtml;
     });
