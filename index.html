@@ -68,12 +68,25 @@
 </div>
 
 <div id="tab-ranking" class="tab-content">
+    <div class="control-panel">
+        <label for="sortSelect">並べ替え基準：</label>
+        <select id="sortSelect" onchange="renderRanking()">
+            <option value="count">獲得の多い順</option>
+            <option value="appear">登場の多い順</option>
+            <option value="lose">敗退の多い順</option>
+            <option value="rate">勝率の高い順</option>
+        </select>
+    </div>
+
     <table>
         <thead>
             <tr>
                 <th>順位</th>
                 <th>棋士名</th>
-                <th>タイトル獲得数 (現データ内)</th>
+                <th>登場</th>
+                <th>獲得</th>
+                <th>敗退</th>
+                <th>勝率</th>
             </tr>
         </thead>
         <tbody id="rankingBody">
@@ -94,11 +107,9 @@ function getFiscalYear(dateStr) {
 
 // タブ切り替え処理
 function switchTab(tabId, btnElement) {
-    // すべてのコンテンツとボタンのactive状態を解除
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.tab-button').forEach(el => el.classList.remove('active'));
     
-    // 選択されたものをactiveにする
     document.getElementById(tabId).classList.add('active');
     btnElement.classList.add('active');
 }
@@ -136,52 +147,99 @@ function renderYearlyTable() {
 
 // --- 描画処理2: 歴代タイトル獲得ランキング ---
 function renderRanking() {
+    const sortSelect = document.getElementById('sortSelect');
+    const sortBy = sortSelect ? sortSelect.value : 'count'; // プルダウンの値を取得
+
     const rankingMap = {};
 
     seriesList.forEach(s => {
-        // 番勝負の種類に応じた必要勝数を設定
-        const requiredWins = s.phase === '七番勝負' ? 4 : (s.phase === '五番勝負' ? 3 : 99);
+        const requiredWins = s.phase === '七番勝負' ? 4 : (s.phase === '五番勝勝負' || s.phase === '五番勝負' ? 3 : 99);
         
         let winner = null;
-        // 勝数が必要勝数に達しているかを判定
-        if (s.win1 >= requiredWins) winner = s.player1;
-        else if (s.win2 >= requiredWins) winner = s.player2;
+        let loser = null;
+        
+        // 勝敗が決している番勝負のみ、登場・獲得・敗退をカウント
+        if (s.win1 >= requiredWins) {
+            winner = s.player1;
+            loser = s.player2;
+        } else if (s.win2 >= requiredWins) {
+            winner = s.player2;
+            loser = s.player1;
+        }
 
-        // 勝者が決まっていればカウントアップ
-        if (winner) {
-            if (!rankingMap[winner]) rankingMap[winner] = 0;
-            rankingMap[winner]++;
+        if (winner && loser) {
+            if (!rankingMap[winner]) rankingMap[winner] = { name: winner, count: 0, appear: 0, lose: 0, rate: 0 };
+            if (!rankingMap[loser]) rankingMap[loser] = { name: loser, count: 0, appear: 0, lose: 0, rate: 0 };
+            
+            rankingMap[winner].count++;  // 獲得
+            rankingMap[winner].appear++; // 登場
+            
+            rankingMap[loser].lose++;    // 敗退
+            rankingMap[loser].appear++;  // 登場
         }
     });
 
-    // 配列に変換して獲得数で降順ソート
-    const rankingArray = Object.keys(rankingMap).map(name => {
-        return { name: name, count: rankingMap[name] };
-    }).sort((a, b) => b.count - a.count);
+    // 配列に変換して勝率（獲得 / 登場）を算出
+    const rankingArray = Object.values(rankingMap).map(r => {
+        r.rate = r.appear > 0 ? r.count / r.appear : 0;
+        return r;
+    });
+
+    // 各項目に応じたソート（第1基準が同数の場合は、獲得数や登場数でスマートに並び替え）
+    rankingArray.sort((a, b) => {
+        if (sortBy === 'appear') {
+            if (b.appear !== a.appear) return b.appear - a.appear;
+            return b.count - a.count;
+        }
+        if (sortBy === 'lose') {
+            if (b.lose !== a.lose) return b.lose - a.lose;
+            return b.count - a.count;
+        }
+        if (sortBy === 'rate') {
+            if (b.rate !== a.rate) return b.rate - a.rate;
+            return b.count - a.count;
+        }
+        // デフォルト: count (獲得)
+        if (b.count !== a.count) return b.count - a.count;
+        return b.appear - a.appear;
+    });
 
     const tbody = document.getElementById('rankingBody');
     
     if (rankingArray.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="3" class="no-data">決着がついたタイトル戦データがありません。</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="no-data">決着がついたタイトル戦データがありません。</td></tr>`;
         return;
     }
 
     let html = '';
     let currentRank = 1;
-    let previousCount = -1;
+    let previousValueText = ''; // 同数判定用に文字列で保持
 
     rankingArray.forEach((r, index) => {
-        // 同数の場合は同じ順位にする処理
-        if (r.count !== previousCount) {
+        // 現在の並び替え基準の値を取得し、同数判定用のテキストを作る
+        let currentValueText = '';
+        if (sortBy === 'appear') currentValueText = r.appear.toString();
+        else if (sortBy === 'lose') currentValueText = r.lose.toString();
+        else if (sortBy === 'rate') currentValueText = r.rate.toFixed(4); // 勝率は四捨五入した値で同率判定
+        else currentValueText = r.count.toString();
+
+        // 前の棋士と値が異なる場合のみ順位を更新（同数の場合は同じ順位になる）
+        if (currentValueText !== previousValueText) {
             currentRank = index + 1;
-            previousCount = r.count;
+            previousValueText = currentValueText;
         }
         
+        // 勝率は小数点第5位を四捨五入して、第4位まで表示（例: 0.7500）
+        const rateText = r.rate.toFixed(4);
+
         html += `
             <tr>
                 <td class="rank-column">${currentRank}</td>
-                <td>${r.name}</td>
+                <td><strong>${r.name}</strong></td>
+                <td>${r.appear} 回</td>
                 <td><strong>${r.count}</strong> 期</td>
+                <td>${r.lose} 回</td>
+                <td>${rateText}</td>
             </tr>
         `;
     });
@@ -203,7 +261,7 @@ fetch('title.csv')
             return {
                 date: cols[0], match: cols[1], period: cols[2],
                 pA: cols[4], resA: cols[5], resB: cols[6], pB: cols[7],
-                phase: cols[9] // 「七番勝負」などを取得 (10列目)
+                phase: cols[9] 
             };
         }).sort((a, b) => a.date.localeCompare(b.date)); 
 
@@ -221,7 +279,7 @@ fetch('title.csv')
                     period: game.period,
                     player1: game.pA,
                     player2: game.pB,
-                    phase: game.phase, // シリーズに情報を保持
+                    phase: game.phase, 
                     win1: 0,
                     win2: 0,
                     draw: 0,
@@ -272,7 +330,7 @@ fetch('title.csv')
             yearSelect.appendChild(option);
         });
 
-        // データの準備ができたら両方の描画関数を実行
+        // 初期描画
         renderYearlyTable();
         renderRanking();
     })
