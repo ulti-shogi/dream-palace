@@ -52,6 +52,9 @@ tr:hover { background-color: #f9fbfd; }
         font-size: 12px;  /* 文字を小さく */
     }
 
+    /* 順位列の装飾を少し控えめにして幅を節約 */
+    .rank-column { font-size: 14px; }
+
     /* ======= 特定の列を非表示にする設定 ======= */
     
     /* 1. 年度別結果・棋戦別結果タブの「星取り」列（5番目の列）を消す */
@@ -60,8 +63,5 @@ tr:hover { background-color: #f9fbfd; }
         display: none;
     }
 
-    /* 2. ランキングタブの「敗退」列（5番目の列）を消す（画面に収めるため維持） */
-    #tab-ranking th:nth-child(5), #tab-ranking td:nth-child(5) {
-        display: none;
-    }
+    /* ランキングタブの敗退列は非表示にしない（削除） */
 }
