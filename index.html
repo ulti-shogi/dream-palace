@@ -40,6 +40,7 @@
 
 <div class="tabs">
     <button class="tab-button active" onclick="switchTab('tab-yearly', this)">年度別結果</button>
+    <button class="tab-button" onclick="switchTab('tab-match', this)">棋戦別結果</button>
     <button class="tab-button" onclick="switchTab('tab-ranking', this)">歴代タイトル獲得ランキング</button>
 </div>
 
@@ -63,6 +64,38 @@
             </tr>
         </thead>
         <tbody id="yearlyBody">
+        </tbody>
+    </table>
+</div>
+
+<div id="tab-match" class="tab-content">
+    <div class="control-panel">
+        <label for="matchSelect">表示棋戦：</label>
+        <select id="matchSelect" onchange="renderMatchTable()">
+            <option value="竜王戦">竜王戦</option>
+            <option value="名人戦">名人戦</option>
+            <option value="叡王戦">叡王戦</option>
+            <option value="王位戦">王位戦</option>
+            <option value="王座戦">王座戦</option>
+            <option value="棋聖戦">棋聖戦</option>
+            <option value="王将戦">王将戦</option>
+            <option value="棋王戦">棋王戦</option>
+        </select>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>期</th>
+                <th>年度</th>
+                <th>保持者</th>
+                <th>勝数</th>
+                <th>星取り</th>
+                <th>勝数</th>
+                <th>挑戦者</th>
+            </tr>
+        </thead>
+        <tbody id="matchBody">
         </tbody>
     </table>
 </div>
@@ -145,20 +178,54 @@ function renderYearlyTable() {
     }).join('');
 }
 
-// --- 描画処理2: 歴代タイトル獲得ランキング ---
+// --- 描画処理2: 棋戦別結果 (新規追加) ---
+function renderMatchTable() {
+    const matchSelect = document.getElementById('matchSelect');
+    if (!matchSelect.value) return;
+
+    const selectedMatch = matchSelect.value;
+    const tbody = document.getElementById('matchBody');
+    
+    // 選択された棋戦のシリーズを抽出
+    const filtered = seriesList.filter(s => s.match === selectedMatch);
+    
+    // 期の降順（新しい期が上）にソート
+    filtered.sort((a, b) => parseInt(b.period, 10) - parseInt(a.period, 10));
+    
+    if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="no-data">該当するデータがありません。</td></tr>`;
+        return;
+    }
+    
+    tbody.innerHTML = filtered.map(s => {
+        const starRow = s.stars.join('');
+        return `
+            <tr>
+                <td>${s.period}</td>
+                <td>${s.fiscalYear}年度</td>
+                <td>${s.player1}</td>
+                <td>${s.win1}</td>
+                <td><div class="stars">${starRow}</div></td>
+                <td>${s.win2}</td>
+                <td>${s.player2}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// --- 描画処理3: 歴代タイトル獲得ランキング ---
 function renderRanking() {
     const sortSelect = document.getElementById('sortSelect');
-    const sortBy = sortSelect ? sortSelect.value : 'count'; // プルダウンの値を取得
+    const sortBy = sortSelect ? sortSelect.value : 'count'; 
 
     const rankingMap = {};
 
     seriesList.forEach(s => {
-        const requiredWins = s.phase === '七番勝負' ? 4 : (s.phase === '五番勝勝負' || s.phase === '五番勝負' ? 3 : 99);
+        const requiredWins = s.phase === '七番勝負' ? 4 : (s.phase === '五番勝負' ? 3 : 99);
         
         let winner = null;
         let loser = null;
         
-        // 勝敗が決している番勝負のみ、登場・獲得・敗退をカウント
         if (s.win1 >= requiredWins) {
             winner = s.player1;
             loser = s.player2;
@@ -171,21 +238,19 @@ function renderRanking() {
             if (!rankingMap[winner]) rankingMap[winner] = { name: winner, count: 0, appear: 0, lose: 0, rate: 0 };
             if (!rankingMap[loser]) rankingMap[loser] = { name: loser, count: 0, appear: 0, lose: 0, rate: 0 };
             
-            rankingMap[winner].count++;  // 獲得
-            rankingMap[winner].appear++; // 登場
+            rankingMap[winner].count++;  
+            rankingMap[winner].appear++; 
             
-            rankingMap[loser].lose++;    // 敗退
-            rankingMap[loser].appear++;  // 登場
+            rankingMap[loser].lose++;    
+            rankingMap[loser].appear++;  
         }
     });
 
-    // 配列に変換して勝率（獲得 / 登場）を算出
     const rankingArray = Object.values(rankingMap).map(r => {
         r.rate = r.appear > 0 ? r.count / r.appear : 0;
         return r;
     });
 
-    // 各項目に応じたソート（第1基準が同数の場合は、獲得数や登場数でスマートに並び替え）
     rankingArray.sort((a, b) => {
         if (sortBy === 'appear') {
             if (b.appear !== a.appear) return b.appear - a.appear;
@@ -199,7 +264,6 @@ function renderRanking() {
             if (b.rate !== a.rate) return b.rate - a.rate;
             return b.count - a.count;
         }
-        // デフォルト: count (獲得)
         if (b.count !== a.count) return b.count - a.count;
         return b.appear - a.appear;
     });
@@ -213,23 +277,20 @@ function renderRanking() {
 
     let html = '';
     let currentRank = 1;
-    let previousValueText = ''; // 同数判定用に文字列で保持
+    let previousValueText = ''; 
 
     rankingArray.forEach((r, index) => {
-        // 現在の並び替え基準の値を取得し、同数判定用のテキストを作る
         let currentValueText = '';
         if (sortBy === 'appear') currentValueText = r.appear.toString();
         else if (sortBy === 'lose') currentValueText = r.lose.toString();
-        else if (sortBy === 'rate') currentValueText = r.rate.toFixed(4); // 勝率は四捨五入した値で同率判定
+        else if (sortBy === 'rate') currentValueText = r.rate.toFixed(4); 
         else currentValueText = r.count.toString();
 
-        // 前の棋士と値が異なる場合のみ順位を更新（同数の場合は同じ順位になる）
         if (currentValueText !== previousValueText) {
             currentRank = index + 1;
             previousValueText = currentValueText;
         }
         
-        // 勝率は小数点第5位を四捨五入して、第4位まで表示（例: 0.7500）
         const rateText = r.rate.toFixed(4);
 
         html += `
@@ -332,6 +393,7 @@ fetch('title.csv')
 
         // 初期描画
         renderYearlyTable();
+        renderMatchTable();
         renderRanking();
     })
     .catch(error => {
