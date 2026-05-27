@@ -2,21 +2,20 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>将棋タイトル戦 データベース</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<h2>将棋タイトル戦 やばいかも</h2>
+<h2>将棋タイトル戦 データベース</h2>
 
-<!-- タブメニュー -->
 <div class="tabs">
     <button class="tab-button active" onclick="switchTab('tab-yearly', this)">年度別結果</button>
     <button class="tab-button" onclick="switchTab('tab-match', this)">棋戦別結果</button>
     <button class="tab-button" onclick="switchTab('tab-ranking', this)">歴代タイトル獲得ランキング</button>
 </div>
 
-<!-- タブコンテンツ1: 年度別結果 -->
 <div id="tab-yearly" class="tab-content active">
     <div class="control-panel">
         <label for="yearSelect">表示年度：</label>
@@ -41,7 +40,6 @@
     </table>
 </div>
 
-<!-- タブコンテンツ2: 棋戦別結果 -->
 <div id="tab-match" class="tab-content">
     <div class="control-panel">
         <label for="matchSelect">表示棋戦：</label>
@@ -74,7 +72,6 @@
     </table>
 </div>
 
-<!-- タブコンテンツ3: ランキング -->
 <div id="tab-ranking" class="tab-content">
     <div class="control-panel">
         <label for="sortSelect">並べ替え基準：</label>
