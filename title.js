@@ -227,14 +227,17 @@ fetch('title.csv')
 
             s.endDate = game.date;
 
+            // ★修正点: 「千日手」と「持将棋」の処理を分離
             if (game.pA === s.player1) {
                 if (game.resA === '○') { s.win1++; s.stars.push('○'); }
                 else if (game.resB === '○') { s.win2++; s.stars.push('●'); }
-                else if (game.resA === '千' || game.resA === '持') { s.draw++; s.stars.push('千'); }
+                else if (game.resA === '千') { s.draw++; } // 千日手は星取りに表示しない（pushしない）
+                else if (game.resA === '持') { s.draw++; s.stars.push('持'); } // 持将棋は「持」と表示
             } else {
                 if (game.resA === '○') { s.win2++; s.stars.push('●'); }
                 else if (game.resB === '○') { s.win1++; s.stars.push('○'); }
-                else if (game.resA === '千' || game.resA === '持') { s.draw++; s.stars.push('千'); }
+                else if (game.resA === '千') { s.draw++; } // 千日手は星取りに表示しない
+                else if (game.resA === '持') { s.draw++; s.stars.push('持'); } // 持将棋は「持」と表示
             }
         });
 
