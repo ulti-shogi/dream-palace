@@ -67,4 +67,9 @@ tr:hover { background-color: #f9fbfd; }
     #tab-player th:nth-child(6), #tab-player td:nth-child(6) {
         display: none;
     }
+
+    /* 3. 棋士別結果タブの「期」列（2番目の列）を消す */
+    #tab-player th:nth-child(2), #tab-player td:nth-child(2) {
+        display: none;
+    }
 }
