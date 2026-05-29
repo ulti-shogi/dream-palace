@@ -17,7 +17,7 @@ h2 { color: #2c3e50; border-bottom: 2px solid #b0c4de; padding-bottom: 10px; }
 
 .control-panel { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 25px; }
 label { font-weight: bold; margin-right: 10px; }
-.opponent-label { margin-left: 15px; } /* 棋士Bのラベル用余白 */
+.opponent-label { margin-left: 15px; } 
 select { padding: 8px 16px; font-size: 16px; border-radius: 4px; border: 1px solid #ccc; background-color: #fff; cursor: pointer; }
 
 table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
@@ -45,7 +45,7 @@ tr:hover { background-color: #f9fbfd; }
 
     .control-panel { padding: 15px; }
     label { display: block; margin-bottom: 5px; }
-    .opponent-label { margin-left: 0; margin-top: 10px; } /* スマホ時は縦並びのため余白を調整 */
+    .opponent-label { margin-left: 0; margin-top: 10px; } 
     select { width: 100%; box-sizing: border-box; }
 
     th, td { 
@@ -57,10 +57,14 @@ tr:hover { background-color: #f9fbfd; }
 
     /* ======= 特定の列を非表示にする設定 ======= */
     
-    /* 1. 各結果タブの「星取り」列（5番目の列）を消す */
+    /* 1. 年度別結果・棋戦別結果タブの「星取り」列（5番目の列）を消す */
     #tab-yearly th:nth-child(5), #tab-yearly td:nth-child(5),
-    #tab-match th:nth-child(5), #tab-match td:nth-child(5),
-    #tab-player th:nth-child(5), #tab-player td:nth-child(5) {
+    #tab-match th:nth-child(5), #tab-match td:nth-child(5) {
+        display: none;
+    }
+
+    /* 2. 棋士別結果タブの「星取り」列（6番目の列）を消す */
+    #tab-player th:nth-child(6), #tab-player td:nth-child(6) {
         display: none;
     }
 }

@@ -81,7 +81,7 @@ function renderMatchTable() {
     }).join('');
 }
 
-// --- 描画処理3: 棋士別結果 (新規追加) ---
+// --- 描画処理3: 棋士別結果 ---
 function renderPlayerTable() {
     const playerASelect = document.getElementById('playerASelect');
     const playerBSelect = document.getElementById('playerBSelect');
@@ -113,16 +113,49 @@ function renderPlayerTable() {
     }
 
     tbody.innerHTML = filtered.map(s => {
-        const starRow = s.stars.join('');
+        const isPlayer1 = (s.player1 === playerA); // 保持者として戦ったか？
+        const opponent = isPlayer1 ? s.player2 : s.player1;
+        
+        // ★ 主役（playerA）視点の勝敗の計算
+        const myWins = isPlayer1 ? s.win1 : s.win2;
+        const myLosses = isPlayer1 ? s.win2 : s.win1;
+        const jishogiCount = s.stars.filter(star => star === '持').length;
+        const scoreText = `${myWins}勝${myLosses}敗${jishogiCount > 0 ? jishogiCount + '持' : ''}`;
+        
+        // ★ 主役視点での星取りの反転（挑戦者側から見た場合、○と●をひっくり返す）
+        const myStars = s.stars.map(star => {
+            if (star === '○') return isPlayer1 ? '○' : '●';
+            if (star === '●') return isPlayer1 ? '●' : '○';
+            return star; // '持' や '・' はそのまま
+        });
+        const starRow = myStars.join('');
+        
+        // ★ 結果（防衛/奪取/失冠/敗退/途中/予定）の判定
+        const requiredWins = s.phase === '七番勝負' ? 4 : (s.phase === '五番勝負' ? 3 : 99);
+        let resultText = '';
+        
+        if (myWins >= requiredWins) {
+            resultText = isPlayer1 ? '防衛' : '奪取';
+        } else if (myLosses >= requiredWins) {
+            resultText = isPlayer1 ? '失冠' : '敗退';
+        } else {
+            // 勝負がついていない場合（s.draw には千日手と持将棋の合計回数が入っている）
+            if (s.win1 + s.win2 + s.draw > 0) {
+                resultText = '途中';
+            } else {
+                resultText = '予定';
+            }
+        }
+
         return `
             <tr>
+                <td>${s.fiscalYear}</td>
                 <td>${s.period}</td>
-                <td><strong>${s.match}</strong><br><small>${s.fiscalYear}年度</small></td>
-                <td>${s.player1}</td>
-                <td>${s.win1}</td>
+                <td><strong>${s.match}</strong></td>
+                <td>${opponent}</td>
+                <td>${scoreText}</td>
                 <td><div class="stars">${starRow}</div></td>
-                <td>${s.win2}</td>
-                <td>${s.player2}</td>
+                <td>${resultText}</td>
             </tr>
         `;
     }).join('');
