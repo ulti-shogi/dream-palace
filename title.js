@@ -81,7 +81,54 @@ function renderMatchTable() {
     }).join('');
 }
 
-// --- 描画処理3: 歴代タイトル獲得ランキング ---
+// --- 描画処理3: 棋士別結果 (新規追加) ---
+function renderPlayerTable() {
+    const playerASelect = document.getElementById('playerASelect');
+    const playerBSelect = document.getElementById('playerBSelect');
+    if (!playerASelect || !playerBSelect || !playerASelect.value) return;
+
+    const playerA = playerASelect.value;
+    const playerB = playerBSelect.value;
+    const tbody = document.getElementById('playerBody');
+
+    // フィルタリング処理
+    let filtered = seriesList.filter(s => {
+        if (playerB === '全て') {
+            return s.player1 === playerA || s.player2 === playerA;
+        } else {
+            return (s.player1 === playerA && s.player2 === playerB) || (s.player1 === playerB && s.player2 === playerA);
+        }
+    });
+
+    // 対局終了日（無ければ開始日）の新しい順（降順）にソート
+    filtered.sort((a, b) => {
+        const dateA = a.endDate || a.startDate;
+        const dateB = b.endDate || b.startDate;
+        return dateB.localeCompare(dateA);
+    });
+
+    if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="no-data">該当するデータがありません。</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = filtered.map(s => {
+        const starRow = s.stars.join('');
+        return `
+            <tr>
+                <td>${s.period}</td>
+                <td><strong>${s.match}</strong><br><small>${s.fiscalYear}年度</small></td>
+                <td>${s.player1}</td>
+                <td>${s.win1}</td>
+                <td><div class="stars">${starRow}</div></td>
+                <td>${s.win2}</td>
+                <td>${s.player2}</td>
+            </tr>
+        `;
+    }).join('');
+}
+
+// --- 描画処理4: 歴代タイトル獲得ランキング ---
 function renderRanking() {
     const sortSelect = document.getElementById('sortSelect');
     const sortBy = sortSelect ? sortSelect.value : 'count'; 
@@ -227,17 +274,16 @@ fetch('title.csv')
 
             s.endDate = game.date;
 
-            // ★修正点: 「千日手」と「持将棋」の処理を分離
             if (game.pA === s.player1) {
                 if (game.resA === '○') { s.win1++; s.stars.push('○'); }
                 else if (game.resB === '○') { s.win2++; s.stars.push('●'); }
-                else if (game.resA === '千') { s.draw++; } // 千日手は星取りに表示しない（pushしない）
-                else if (game.resA === '持') { s.draw++; s.stars.push('持'); } // 持将棋は「持」と表示
+                else if (game.resA === '千') { s.draw++; } 
+                else if (game.resA === '持') { s.draw++; s.stars.push('持'); } 
             } else {
                 if (game.resA === '○') { s.win2++; s.stars.push('●'); }
                 else if (game.resB === '○') { s.win1++; s.stars.push('○'); }
-                else if (game.resA === '千') { s.draw++; } // 千日手は星取りに表示しない
-                else if (game.resA === '持') { s.draw++; s.stars.push('持'); } // 持将棋は「持」と表示
+                else if (game.resA === '千') { s.draw++; } 
+                else if (game.resA === '持') { s.draw++; s.stars.push('持'); } 
             }
         });
 
@@ -250,6 +296,7 @@ fetch('title.csv')
             return a.startDate.localeCompare(b.startDate);
         });
 
+        // 年度プルダウンの生成
         const yearSelect = document.getElementById('yearSelect');
         const years = [...new Set(seriesList.map(s => s.fiscalYear))].sort((a, b) => b - a); 
 
@@ -260,8 +307,47 @@ fetch('title.csv')
             yearSelect.appendChild(option);
         });
 
+        // 棋士プルダウンの自動生成（タイトル獲得数が多い順）
+        const rankingMap = {};
+        seriesList.forEach(s => {
+            const requiredWins = s.phase === '七番勝負' ? 4 : (s.phase === '五番勝負' ? 3 : 99);
+            let winner = null;
+            if (s.win1 >= requiredWins) winner = s.player1;
+            else if (s.win2 >= requiredWins) winner = s.player2;
+            
+            if (!rankingMap[s.player1]) rankingMap[s.player1] = 0;
+            if (!rankingMap[s.player2]) rankingMap[s.player2] = 0;
+            
+            if (winner) {
+                rankingMap[winner]++;
+            }
+        });
+        
+        const sortedPlayers = Object.keys(rankingMap).sort((a, b) => rankingMap[b] - rankingMap[a]);
+        
+        const playerASelect = document.getElementById('playerASelect');
+        const playerBSelect = document.getElementById('playerBSelect');
+        
+        const optAll = document.createElement('option');
+        optAll.value = '全て';
+        optAll.textContent = '全て';
+        playerBSelect.appendChild(optAll);
+        
+        sortedPlayers.forEach(p => {
+            const optA = document.createElement('option');
+            optA.value = p;
+            optA.textContent = p;
+            playerASelect.appendChild(optA);
+            
+            const optB = document.createElement('option');
+            optB.value = p;
+            optB.textContent = p;
+            playerBSelect.appendChild(optB);
+        });
+
         renderYearlyTable();
         renderMatchTable();
+        renderPlayerTable();
         renderRanking();
     })
     .catch(error => {
@@ -269,5 +355,6 @@ fetch('title.csv')
         const errorHtml = `<tr><td colspan="7" class="no-data" style="color: red;">データの読み込みに失敗しました。</td></tr>`;
         document.getElementById('yearlyBody').innerHTML = errorHtml;
         document.getElementById('matchBody').innerHTML = errorHtml;
+        document.getElementById('playerBody').innerHTML = errorHtml;
         document.getElementById('rankingBody').innerHTML = errorHtml;
     });

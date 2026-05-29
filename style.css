@@ -17,6 +17,7 @@ h2 { color: #2c3e50; border-bottom: 2px solid #b0c4de; padding-bottom: 10px; }
 
 .control-panel { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 25px; }
 label { font-weight: bold; margin-right: 10px; }
+.opponent-label { margin-left: 15px; } /* 棋士Bのラベル用余白 */
 select { padding: 8px 16px; font-size: 16px; border-radius: 4px; border: 1px solid #ccc; background-color: #fff; cursor: pointer; }
 
 table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
@@ -44,24 +45,22 @@ tr:hover { background-color: #f9fbfd; }
 
     .control-panel { padding: 15px; }
     label { display: block; margin-bottom: 5px; }
+    .opponent-label { margin-left: 0; margin-top: 10px; } /* スマホ時は縦並びのため余白を調整 */
     select { width: 100%; box-sizing: border-box; }
 
-    /* スマホでは文字サイズとパディングを極力小さくして画面に収める */
     th, td { 
-        padding: 8px 4px; /* 余白をギリギリまで削る */
-        font-size: 12px;  /* 文字を小さく */
+        padding: 8px 4px; 
+        font-size: 12px;  
     }
 
-    /* 順位列の装飾を少し控えめにして幅を節約 */
     .rank-column { font-size: 14px; }
 
     /* ======= 特定の列を非表示にする設定 ======= */
     
-    /* 1. 年度別結果・棋戦別結果タブの「星取り」列（5番目の列）を消す */
+    /* 1. 各結果タブの「星取り」列（5番目の列）を消す */
     #tab-yearly th:nth-child(5), #tab-yearly td:nth-child(5),
-    #tab-match th:nth-child(5), #tab-match td:nth-child(5) {
+    #tab-match th:nth-child(5), #tab-match td:nth-child(5),
+    #tab-player th:nth-child(5), #tab-player td:nth-child(5) {
         display: none;
     }
-
-    /* ランキングタブの敗退列は非表示にしない（削除） */
 }
