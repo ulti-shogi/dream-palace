@@ -43,10 +43,11 @@ tr:hover { background-color: #f9fbfd; }
         border-radius: 4px;
     }
 
-    .control-panel { padding: 15px; }
-    label { display: block; margin-bottom: 5px; }
-    .opponent-label { margin-left: 0; margin-top: 10px; } 
-    select { width: 100%; box-sizing: border-box; }
+    .control-panel { padding: 15px; text-align: left; }
+    /* 文字の横に並べるようにし、ダラっと100%伸びるのを防ぐ */
+    label { display: inline-block; font-size: 14px; margin-bottom: 5px; margin-right: 5px; }
+    .opponent-label { margin-left: 0; margin-top: 5px; } 
+    select { width: auto; max-width: 100%; font-size: 14px; padding: 6px 12px; margin-bottom: 5px; box-sizing: border-box; }
 
     th, td { 
         padding: 8px 4px; 
@@ -57,7 +58,7 @@ tr:hover { background-color: #f9fbfd; }
 
     /* ======= 特定の列を非表示にする設定 ======= */
     
-    /* 1. 年度別結果・棋戦別結果タブの「星取り」列（5番目の列）を消す */
+    /* 1. 各結果タブの「星取り」列（5番目の列）を消す */
     #tab-yearly th:nth-child(5), #tab-yearly td:nth-child(5),
     #tab-match th:nth-child(5), #tab-match td:nth-child(5) {
         display: none;
