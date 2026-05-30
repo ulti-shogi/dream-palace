@@ -110,13 +110,14 @@ function renderPlayerTable() {
 
     // ★ プルダウンBが「全て」のときの成績集計処理
     if (playerB === '全て' && filtered.length > 0) {
-        let totalAppear = filtered.length;
         let totalTitle = 0;
+        let totalLost = 0; // 敗退
         let totalCurrent = 0;
         let totalUpcoming = 0;
 
         let totalWins = 0;
         let totalLosses = 0;
+        let totalJishogi = 0; // 持将棋の合計
 
         filtered.forEach(s => {
             const isPlayer1 = (s.player1 === playerA);
@@ -128,35 +129,42 @@ function renderPlayerTable() {
             if (myWins >= requiredWins) {
                 totalTitle++;
             } else if (myLosses >= requiredWins) {
-                // 敗退・失冠
+                totalLost++;
             } else {
                 if (s.win1 + s.win2 + s.draw > 0) totalCurrent++;
                 else totalUpcoming++;
             }
 
-            // 対局単位の勝敗集計
+            // 対局単位の勝敗と持将棋の集計
             totalWins += myWins;
             totalLosses += myLosses;
+            const jishogiCount = s.stars.filter(star => star === '持').length;
+            totalJishogi += jishogiCount;
         });
+
+        // 登場回数は「獲得」＋「敗退」
+        const totalAppear = totalTitle + totalLost;
 
         const totalGames = totalWins + totalLosses;
         const winRate = totalGames > 0 ? (totalWins / totalGames).toFixed(4) : "0.0000";
+
+        // 持将棋がある場合のみテキストを生成
+        const jishogiText = totalJishogi > 0 ? `<span style="font-weight: normal; font-size: 0.9em; margin-left: 5px;">（持将棋${totalJishogi}局を除く）</span>` : "";
 
         statsDiv.style.display = 'block';
         statsDiv.innerHTML = `
             <div class="stats-flex">
                 <div class="stats-group">
                     <strong>番勝負成績</strong><br>
-                    登場：${totalAppear} / 獲得：${totalTitle} / 途中：${totalCurrent} / 予定：${totalUpcoming}
+                    登場：${totalAppear} / 獲得：${totalTitle} / 敗退：${totalLost} / 途中：${totalCurrent} / 予定：${totalUpcoming}
                 </div>
                 <div class="stats-group">
-                    <strong>タイトル戦通算対局成績</strong><br>
+                    <strong>タイトル戦通算対局成績</strong>${jishogiText}<br>
                     対局数：${totalGames} / 勝数：${totalWins} / 負数：${totalLosses} / 勝率：${winRate}
                 </div>
             </div>
         `;
     } else {
-        // 「特定の棋士」を選んだとき、またはデータがないときは非表示にする
         statsDiv.style.display = 'none';
         statsDiv.innerHTML = '';
     }
@@ -379,7 +387,6 @@ fetch('title.csv')
             return a.startDate.localeCompare(b.startDate);
         });
 
-        // 年度プルダウンの生成
         const yearSelect = document.getElementById('yearSelect');
         const years = [...new Set(seriesList.map(s => s.fiscalYear))].sort((a, b) => b - a); 
 
@@ -390,7 +397,6 @@ fetch('title.csv')
             yearSelect.appendChild(option);
         });
 
-        // 棋士プルダウンの自動生成（タイトル獲得数が多い順）
         const rankingMap = {};
         seriesList.forEach(s => {
             const requiredWins = s.phase === '七番勝負' ? 4 : (s.phase === '五番勝負' ? 3 : 99);
