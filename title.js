@@ -90,6 +90,7 @@ function renderPlayerTable() {
     const playerA = playerASelect.value;
     const playerB = playerBSelect.value;
     const tbody = document.getElementById('playerBody');
+    const statsDiv = document.getElementById('playerStats');
 
     // フィルタリング処理
     let filtered = seriesList.filter(s => {
@@ -107,30 +108,80 @@ function renderPlayerTable() {
         return dateB.localeCompare(dateA);
     });
 
+    // ★ プルダウンBが「全て」のときの成績集計処理
+    if (playerB === '全て' && filtered.length > 0) {
+        let totalAppear = filtered.length;
+        let totalTitle = 0;
+        let totalCurrent = 0;
+        let totalUpcoming = 0;
+
+        let totalWins = 0;
+        let totalLosses = 0;
+
+        filtered.forEach(s => {
+            const isPlayer1 = (s.player1 === playerA);
+            const myWins = isPlayer1 ? s.win1 : s.win2;
+            const myLosses = isPlayer1 ? s.win2 : s.win1;
+            const requiredWins = s.phase === '七番勝負' ? 4 : (s.phase === '五番勝負' ? 3 : 99);
+
+            // 結果ステータスの集計
+            if (myWins >= requiredWins) {
+                totalTitle++;
+            } else if (myLosses >= requiredWins) {
+                // 敗退・失冠
+            } else {
+                if (s.win1 + s.win2 + s.draw > 0) totalCurrent++;
+                else totalUpcoming++;
+            }
+
+            // 対局単位の勝敗集計
+            totalWins += myWins;
+            totalLosses += myLosses;
+        });
+
+        const totalGames = totalWins + totalLosses;
+        const winRate = totalGames > 0 ? (totalWins / totalGames).toFixed(4) : "0.0000";
+
+        statsDiv.style.display = 'block';
+        statsDiv.innerHTML = `
+            <div class="stats-flex">
+                <div class="stats-group">
+                    <strong>番勝負成績</strong><br>
+                    登場：${totalAppear} / 獲得：${totalTitle} / 途中：${totalCurrent} / 予定：${totalUpcoming}
+                </div>
+                <div class="stats-group">
+                    <strong>タイトル戦通算対局成績</strong><br>
+                    対局数：${totalGames} / 勝数：${totalWins} / 負数：${totalLosses} / 勝率：${winRate}
+                </div>
+            </div>
+        `;
+    } else {
+        // 「特定の棋士」を選んだとき、またはデータがないときは非表示にする
+        statsDiv.style.display = 'none';
+        statsDiv.innerHTML = '';
+    }
+
     if (filtered.length === 0) {
         tbody.innerHTML = `<tr><td colspan="7" class="no-data">該当するデータがありません。</td></tr>`;
         return;
     }
 
     tbody.innerHTML = filtered.map(s => {
-        const isPlayer1 = (s.player1 === playerA); // 保持者として戦ったか？
+        const isPlayer1 = (s.player1 === playerA); 
         const opponent = isPlayer1 ? s.player2 : s.player1;
         
-        // ★ 主役（playerA）視点の勝敗の計算
         const myWins = isPlayer1 ? s.win1 : s.win2;
         const myLosses = isPlayer1 ? s.win2 : s.win1;
         const jishogiCount = s.stars.filter(star => star === '持').length;
         const scoreText = `${myWins}勝${myLosses}敗${jishogiCount > 0 ? jishogiCount + '持' : ''}`;
         
-        // ★ 主役視点での星取りの反転（挑戦者側から見た場合、○と●をひっくり返す）
         const myStars = s.stars.map(star => {
             if (star === '○') return isPlayer1 ? '○' : '●';
             if (star === '●') return isPlayer1 ? '●' : '○';
-            return star; // '持' や '・' はそのまま
+            return star; 
         });
         const starRow = myStars.join('');
         
-        // ★ 結果（防衛/奪取/失冠/敗退/途中/予定）の判定
         const requiredWins = s.phase === '七番勝負' ? 4 : (s.phase === '五番勝負' ? 3 : 99);
         let resultText = '';
         
@@ -139,7 +190,6 @@ function renderPlayerTable() {
         } else if (myLosses >= requiredWins) {
             resultText = isPlayer1 ? '失冠' : '敗退';
         } else {
-            // 勝負がついていない場合（s.draw には千日手と持将棋の合計回数が入っている）
             if (s.win1 + s.win2 + s.draw > 0) {
                 resultText = '途中';
             } else {
