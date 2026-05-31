@@ -40,7 +40,7 @@ select { padding: 8px 16px; font-size: 16px; border-radius: 4px; border: 1px sol
     border-right: 5px solid #e67e22;
 }
 
-/* ★修正: PC画面で成績パネルの中身を中央に寄せる（justify-content: center; を追加） */
+/* PC画面：成績パネルの中身を中央に寄せる（justify-content: center;） */
 .stats-flex { display: flex; justify-content: center; gap: 40px; }
 .stats-group { font-size: 15px; line-height: 1.6; }
 .stats-group strong { color: #2c3e50; font-size: 16px; display: inline-block; margin-bottom: 4px; }
@@ -75,8 +75,8 @@ tr:hover { background-color: #f9fbfd; }
 
 /* ======== レスポンシブ対応 (タブレット向け設定: 768px以下) ======== */
 @media (max-width: 768px) {
-    /* ★修正: 成績パネルを上下配置に変更した際、テキスト全体も中央揃えになるように追加 */
-    .stats-flex { flex-direction: column; align-items: center; text-align: center; gap: 15px; }
+    /* ★修正: 中央揃えの指定を削除し、純粋に上下配置にするだけに戻しました（左揃えになります） */
+    .stats-flex { flex-direction: column; gap: 15px; }
 
     /* 棋士別結果タブの「期」列のみをタブレットで非表示にする */
     #tab-player th:nth-child(2), #tab-player td:nth-child(2) {
