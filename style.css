@@ -32,7 +32,7 @@ select { padding: 8px 16px; font-size: 16px; border-radius: 4px; border: 1px sol
     color: #7f8c8d;
 }
 
-/* 成績表示パネルのスタイル（左右にオレンジ枠） */
+/* 成績表示パネルのスタイル */
 .stats-panel {
     background: #fff; padding: 15px 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     margin-bottom: 25px; 
@@ -43,7 +43,7 @@ select { padding: 8px 16px; font-size: 16px; border-radius: 4px; border: 1px sol
 .stats-group { font-size: 15px; line-height: 1.6; }
 .stats-group strong { color: #2c3e50; font-size: 16px; display: inline-block; margin-bottom: 4px; }
 
-/* 直接対決の成績表示スタイル（箱の中央に表示） */
+/* 直接対決の成績表示スタイル */
 .h2h-stats {
     text-align: center;
     font-size: 22px;
@@ -58,8 +58,11 @@ th, td { padding: 12px 15px; text-align: center; border: 1px solid #eee; }
 th { background-color: #f2f5f8; color: #34495e; font-weight: bold; }
 tr:hover { background-color: #f9fbfd; }
 
-/* ★追加: 勝者のセル背景色を薄い赤に */
+/* 勝者のセル背景色を薄い赤に */
 .winner-cell { background-color: #ffeeee; }
+
+/* ★追加: PC画面ではスマホ用の勝敗ヘッダーを隠す */
+.score-th-sp { display: none; }
 
 .stars { font-family: monospace; font-size: 16px; letter-spacing: 2px; }
 .no-data { text-align: center; padding: 20px; color: #999; font-style: italic; }
@@ -102,10 +105,15 @@ tr:hover { background-color: #f9fbfd; }
     .rank-column { font-size: 14px; }
 
     /* ======= 特定の列を非表示にする設定 ======= */
+
+    /* ★追加: スマホ画面ではPC用の勝敗ヘッダーを隠し、スマホ用を表示 */
+    .score-th-pc { display: none; }
+    .score-th-sp { display: table-cell; }
     
-    /* 1. 各結果タブの「星取り」列（5番目の列）を消す */
-    #tab-yearly th:nth-child(5), #tab-yearly td:nth-child(5),
-    #tab-match th:nth-child(5), #tab-match td:nth-child(5) {
+    /* 1. 各結果タブの「星取り」データ列（5番目）を消す */
+    /* ※th(ヘッダー)側は「勝敗」でひとまとめにしたので、td(データ部分)のみ指定します */
+    #tab-yearly td:nth-child(5),
+    #tab-match td:nth-child(5) {
         display: none;
     }
 
