@@ -14,7 +14,7 @@
     <button class="tab-button active" onclick="switchTab('tab-yearly', this)">年度別結果</button>
     <button class="tab-button" onclick="switchTab('tab-match', this)">棋戦別結果</button>
     <button class="tab-button" onclick="switchTab('tab-player', this)">棋士別結果</button>
-    <button class="tab-button" onclick="switchTab('tab-ranking', this)">ランキング</button>
+    <button class="tab-button" onclick="switchTab('tab-ranking', this)">歴代タイトル獲得ランキング</button>
 </div>
 
 <div id="tab-yearly" class="tab-content active">
@@ -74,16 +74,13 @@
 </div>
 
 <div id="tab-player" class="tab-content">
-    <div class="control-panel">
-        <label for="playerASelect"></label>
-        <select id="playerASelect" onchange="renderPlayerTable()">
-        </select>
-        <label for="playerBSelect" class="opponent-label">　VS</label>
-        <select id="playerBSelect" onchange="renderPlayerTable()">
-        </select>
+    <div class="control-panel player-vs-panel">
+        <select id="playerASelect" onchange="renderPlayerTable()"></select>
+        <span class="vs-text">VS</span>
+        <select id="playerBSelect" onchange="renderPlayerTable()"></select>
     </div>
 
-    <div id="playerStats" class="stats-panel" style="display: none;"></div>
+    <div id="playerStats" style="display: none;"></div>
 
     <table>
         <thead>

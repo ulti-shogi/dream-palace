@@ -108,16 +108,11 @@ function renderPlayerTable() {
         return dateB.localeCompare(dateA);
     });
 
-    // ★ プルダウンBが「全て」のときの成績集計処理
+    // ★ プルダウンの状態に応じて成績表示を切り替える
     if (playerB === '全て' && filtered.length > 0) {
-        let totalTitle = 0;
-        let totalLost = 0; // 敗退
-        let totalCurrent = 0;
-        let totalUpcoming = 0;
-
-        let totalWins = 0;
-        let totalLosses = 0;
-        let totalJishogi = 0; // 持将棋の合計
+        // [全て] 選択時：総合ダッシュボードの表示
+        let totalTitle = 0, totalLost = 0, totalCurrent = 0, totalUpcoming = 0;
+        let totalWins = 0, totalLosses = 0, totalJishogi = 0;
 
         filtered.forEach(s => {
             const isPlayer1 = (s.player1 === playerA);
@@ -125,32 +120,24 @@ function renderPlayerTable() {
             const myLosses = isPlayer1 ? s.win2 : s.win1;
             const requiredWins = s.phase === '七番勝負' ? 4 : (s.phase === '五番勝負' ? 3 : 99);
 
-            // 結果ステータスの集計
-            if (myWins >= requiredWins) {
-                totalTitle++;
-            } else if (myLosses >= requiredWins) {
-                totalLost++;
-            } else {
+            if (myWins >= requiredWins) totalTitle++;
+            else if (myLosses >= requiredWins) totalLost++;
+            else {
                 if (s.win1 + s.win2 + s.draw > 0) totalCurrent++;
                 else totalUpcoming++;
             }
 
-            // 対局単位の勝敗と持将棋の集計
             totalWins += myWins;
             totalLosses += myLosses;
-            const jishogiCount = s.stars.filter(star => star === '持').length;
-            totalJishogi += jishogiCount;
+            totalJishogi += s.stars.filter(star => star === '持').length;
         });
 
-        // 登場回数は「獲得」＋「敗退」
         const totalAppear = totalTitle + totalLost;
-
         const totalGames = totalWins + totalLosses;
         const winRate = totalGames > 0 ? (totalWins / totalGames).toFixed(4) : "0.0000";
-
-        // 持将棋がある場合のみテキストを生成
         const jishogiText = totalJishogi > 0 ? `<span style="font-weight: normal; font-size: 0.9em; margin-left: 5px;">（持将棋${totalJishogi}局を除く）</span>` : "";
 
+        statsDiv.className = 'stats-panel'; // ダッシュボード用のデザインクラスを付与
         statsDiv.style.display = 'block';
         statsDiv.innerHTML = `
             <div class="stats-flex">
@@ -164,7 +151,29 @@ function renderPlayerTable() {
                 </div>
             </div>
         `;
+    } else if (playerB !== '全て' && filtered.length > 0) {
+        // [特定の棋士] 選択時：直接対決の番勝負成績のみを表示
+        let aSeriesWins = 0;
+        let bSeriesWins = 0;
+
+        filtered.forEach(s => {
+            const isPlayer1 = (s.player1 === playerA);
+            const myWins = isPlayer1 ? s.win1 : s.win2;
+            const oppWins = isPlayer1 ? s.win2 : s.win1;
+            const requiredWins = s.phase === '七番勝負' ? 4 : (s.phase === '五番勝負' ? 3 : 99);
+
+            if (myWins >= requiredWins) {
+                aSeriesWins++;
+            } else if (oppWins >= requiredWins) {
+                bSeriesWins++;
+            }
+        });
+
+        statsDiv.className = 'h2h-stats'; // 直接対決用のデザインクラスを付与
+        statsDiv.style.display = 'block';
+        statsDiv.innerHTML = `${aSeriesWins}勝　${bSeriesWins}勝`;
     } else {
+        // 該当データがない場合
         statsDiv.style.display = 'none';
         statsDiv.innerHTML = '';
     }

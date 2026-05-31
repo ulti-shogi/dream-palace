@@ -17,10 +17,22 @@ h2 { color: #2c3e50; border-bottom: 2px solid #b0c4de; padding-bottom: 10px; }
 
 .control-panel { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 25px; }
 label { font-weight: bold; margin-right: 10px; }
-.opponent-label { margin-left: 15px; } 
 select { padding: 8px 16px; font-size: 16px; border-radius: 4px; border: 1px solid #ccc; background-color: #fff; cursor: pointer; }
 
-/* 成績表示パネルのスタイル */
+/* 棋士別タブ用のVSレイアウト */
+.player-vs-panel {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+}
+.vs-text {
+    font-weight: bold;
+    font-size: 16px;
+    color: #7f8c8d;
+}
+
+/* 成績表示パネルのスタイル（全て選択時） */
 .stats-panel {
     background: #fff; padding: 15px 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     margin-bottom: 25px; border-left: 5px solid #e67e22;
@@ -28,6 +40,17 @@ select { padding: 8px 16px; font-size: 16px; border-radius: 4px; border: 1px sol
 .stats-flex { display: flex; gap: 40px; }
 .stats-group { font-size: 15px; line-height: 1.6; }
 .stats-group strong { color: #2c3e50; font-size: 16px; display: inline-block; margin-bottom: 4px; }
+
+/* 直接対決の成績表示スタイル（特定の棋士選択時） */
+.h2h-stats {
+    text-align: center;
+    font-size: 22px;
+    font-weight: bold;
+    color: #2c3e50;
+    margin-top: -10px; /* パネルとの隙間を詰める */
+    margin-bottom: 20px;
+    letter-spacing: 2px;
+}
 
 table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
 th, td { padding: 12px 15px; text-align: center; border: 1px solid #eee; }
@@ -54,14 +77,17 @@ tr:hover { background-color: #f9fbfd; }
 
     .control-panel { padding: 15px; text-align: left; }
     label { display: inline-block; font-size: 14px; margin-bottom: 5px; margin-right: 5px; }
-    .opponent-label { margin-left: 0; margin-top: 5px; } 
     select { width: auto; max-width: 100%; font-size: 14px; padding: 6px 12px; margin-bottom: 5px; box-sizing: border-box; }
 
+    /* スマホ用のVSレイアウト調整 */
+    .player-vs-panel { gap: 8px; }
+    
     /* スマホ用成績パネル設定 */
     .stats-panel { padding: 15px; margin-bottom: 15px; }
     .stats-flex { flex-direction: column; gap: 12px; }
     .stats-group { font-size: 13px; }
     .stats-group strong { font-size: 14px; }
+    .h2h-stats { font-size: 18px; margin-bottom: 15px; }
 
     th, td { 
         padding: 8px 4px; 
