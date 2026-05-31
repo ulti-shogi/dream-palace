@@ -61,8 +61,8 @@ tr:hover { background-color: #f9fbfd; }
 /* 勝者のセル背景色を薄い赤に */
 .winner-cell { background-color: #ffeeee; }
 
-/* ★修正: PC画面(769px以上)のときだけ、スマホ・タブレット用ヘッダーを隠す */
-@media (min-width: 769px) {
+/* ★修正箇所: PC・タブレット画面(481px以上)のときだけ、スマホ用ヘッダーを隠す */
+@media (min-width: 481px) {
     .score-th-sp { display: none; }
 }
 
@@ -107,7 +107,6 @@ tr:hover { background-color: #f9fbfd; }
     
     /* スマホ用成績パネル設定 */
     .stats-panel { padding: 15px; margin-bottom: 15px; }
-    /* (上下配置の flex-direction: column; は 768px以下 で既に適用済みなので削除) */
     .stats-group { font-size: 13px; }
     .stats-group strong { font-size: 14px; }
     .h2h-stats { font-size: 18px; padding: 5px 0; }
@@ -120,9 +119,8 @@ tr:hover { background-color: #f9fbfd; }
     .rank-column { font-size: 14px; }
 
     /* ======= 特定の列を非表示にする設定 ======= */
-    /* ※棋士別タブの「期」列はタブレット(768px以下)の時点で既に消しているため、ここでは設定不要 */
 
-    /* スマホ画面ではPC用の勝敗ヘッダーだけを隠す */
+    /* スマホ画面ではPC用の勝敗ヘッダーを隠す */
     .score-th-pc { display: none; }
     
     /* 1. 年度別・棋戦別タブの「星取り」データ列（5番目）を消す */
