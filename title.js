@@ -8,6 +8,13 @@ function getFiscalYear(dateStr) {
     return month >= 4 ? year : year - 1;
 }
 
+// ★勝率を四捨五入せずに小数点第4位で切り捨てる関数
+function formatRate(rate) {
+    // JavaScript特有の小数点計算の誤差を吸収しつつ、第4位でスパッと切り捨て
+    const truncated = Math.floor(rate * 10000 + 1e-9) / 10000;
+    return truncated.toFixed(4); // 常に4桁表示にする（ゼロ埋め）
+}
+
 // タブ切り替え処理
 function switchTab(tabId, btnElement) {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -108,10 +115,16 @@ function renderPlayerTable() {
         return dateB.localeCompare(dateA);
     });
 
-    // ★ プルダウンの状態に応じて成績表示を切り替える
+    // ★ プルダウンBが「全て」のときの成績集計処理
     if (playerB === '全て' && filtered.length > 0) {
-        let totalTitle = 0, totalLost = 0, totalCurrent = 0, totalUpcoming = 0;
-        let totalWins = 0, totalLosses = 0, totalJishogi = 0;
+        let totalTitle = 0;
+        let totalLost = 0; 
+        let totalCurrent = 0;
+        let totalUpcoming = 0;
+
+        let totalWins = 0;
+        let totalLosses = 0;
+        let totalJishogi = 0;
 
         filtered.forEach(s => {
             const isPlayer1 = (s.player1 === playerA);
@@ -119,21 +132,29 @@ function renderPlayerTable() {
             const myLosses = isPlayer1 ? s.win2 : s.win1;
             const requiredWins = s.phase === '七番勝負' ? 4 : (s.phase === '五番勝負' ? 3 : 99);
 
-            if (myWins >= requiredWins) totalTitle++;
-            else if (myLosses >= requiredWins) totalLost++;
-            else {
+            // 結果ステータスの集計
+            if (myWins >= requiredWins) {
+                totalTitle++;
+            } else if (myLosses >= requiredWins) {
+                totalLost++;
+            } else {
                 if (s.win1 + s.win2 + s.draw > 0) totalCurrent++;
                 else totalUpcoming++;
             }
 
+            // 対局単位の勝敗と持将棋の集計
             totalWins += myWins;
             totalLosses += myLosses;
-            totalJishogi += s.stars.filter(star => star === '持').length;
+            const jishogiCount = s.stars.filter(star => star === '持').length;
+            totalJishogi += jishogiCount;
         });
 
         const totalAppear = totalTitle + totalLost;
         const totalGames = totalWins + totalLosses;
-        const winRate = totalGames > 0 ? (totalWins / totalGames).toFixed(4) : "0.0000";
+        
+        // ★ 勝率を切り捨て関数でフォーマット
+        const winRate = totalGames > 0 ? formatRate(totalWins / totalGames) : "0.0000";
+
         const jishogiText = totalJishogi > 0 ? `<span style="font-weight: normal; font-size: 0.9em; margin-left: 5px;">（持将棋${totalJishogi}局を除く）</span>` : "";
 
         statsDiv.className = 'stats-panel'; 
@@ -146,7 +167,7 @@ function renderPlayerTable() {
                 </div>
                 <div class="stats-group">
                     <strong>タイトル戦通算対局成績</strong>${jishogiText}<br>
-                    対局数：${totalGames} / 勝数：${totalWins} / 負数：${totalLosses} / 勝率：${winRate}
+                    ${totalGames}局${totalWins}勝${totalLosses}敗 勝率${winRate}
                 </div>
             </div>
         `;
@@ -167,7 +188,6 @@ function renderPlayerTable() {
             }
         });
 
-        // ★ 直接対決時も同じ stats-panel（オレンジ枠の箱）を使用し、文字を内側に配置する
         statsDiv.className = 'stats-panel'; 
         statsDiv.style.display = 'block';
         statsDiv.innerHTML = `<div class="h2h-stats">${aSeriesWins}勝　${bSeriesWins}勝</div>`;
@@ -296,7 +316,8 @@ function renderRanking() {
         let currentValueText = '';
         if (sortBy === 'appear') currentValueText = r.appear.toString();
         else if (sortBy === 'lose') currentValueText = r.lose.toString();
-        else if (sortBy === 'rate') currentValueText = r.rate.toFixed(4); 
+        // ★ ランキングの順位判定用の勝率も切り捨てフォーマットに統一
+        else if (sortBy === 'rate') currentValueText = formatRate(r.rate); 
         else currentValueText = r.count.toString();
 
         if (currentValueText !== previousValueText) {
@@ -304,7 +325,8 @@ function renderRanking() {
             previousValueText = currentValueText;
         }
         
-        const rateText = r.rate.toFixed(4);
+        // ★ ランキングに表示する勝率も切り捨てフォーマットを適用
+        const rateText = formatRate(r.rate);
 
         html += `
             <tr>
