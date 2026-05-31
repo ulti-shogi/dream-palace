@@ -61,8 +61,8 @@ tr:hover { background-color: #f9fbfd; }
 /* 勝者のセル背景色を薄い赤に */
 .winner-cell { background-color: #ffeeee; }
 
-/* ★修正: PC画面(481px以上)のときだけ、スマホ用ヘッダーを隠す */
-@media (min-width: 481px) {
+/* ★修正: PC画面(769px以上)のときだけ、スマホ・タブレット用ヘッダーを隠す */
+@media (min-width: 769px) {
     .score-th-sp { display: none; }
 }
 
@@ -70,7 +70,20 @@ tr:hover { background-color: #f9fbfd; }
 .no-data { text-align: center; padding: 20px; color: #999; font-style: italic; }
 .rank-column { font-weight: bold; font-size: 18px; color: #e67e22; }
 
-/* ======== レスポンシブ対応 (スマホ向け設定) ======== */
+
+/* ======== レスポンシブ対応 (タブレット向け設定: 768px以下) ======== */
+@media (max-width: 768px) {
+    /* 成績パネルを上下配置に変更し、窮屈さを解消 */
+    .stats-flex { flex-direction: column; gap: 15px; }
+
+    /* 棋士別結果タブの「期」列（2番目の列）を消す */
+    #tab-player th:nth-child(2), #tab-player td:nth-child(2) {
+        display: none;
+    }
+}
+
+
+/* ======== レスポンシブ対応 (スマホ向け設定: 480px以下) ======== */
 @media (max-width: 480px) {
     body { margin: 10px; }
     h2 { font-size: 1.3rem; }
@@ -89,10 +102,12 @@ tr:hover { background-color: #f9fbfd; }
     label { display: inline-block; font-size: 14px; margin-bottom: 5px; margin-right: 5px; }
     select { width: auto; max-width: 100%; font-size: 14px; padding: 6px 12px; margin-bottom: 5px; box-sizing: border-box; }
 
+    /* スマホ用のVSレイアウト調整 */
     .player-vs-panel { gap: 8px; }
     
+    /* スマホ用成績パネル設定 */
     .stats-panel { padding: 15px; margin-bottom: 15px; }
-    .stats-flex { flex-direction: column; gap: 12px; }
+    /* (上下配置の flex-direction: column; は 768px以下 で既に適用済みなので削除) */
     .stats-group { font-size: 13px; }
     .stats-group strong { font-size: 14px; }
     .h2h-stats { font-size: 18px; padding: 5px 0; }
@@ -105,11 +120,12 @@ tr:hover { background-color: #f9fbfd; }
     .rank-column { font-size: 14px; }
 
     /* ======= 特定の列を非表示にする設定 ======= */
+    /* ※棋士別タブの「期」列はタブレット(768px以下)の時点で既に消しているため、ここでは設定不要 */
 
-    /* ★修正: スマホ画面ではPC用の勝敗ヘッダーだけを隠す（table-cellの上書きはしない） */
+    /* スマホ画面ではPC用の勝敗ヘッダーだけを隠す */
     .score-th-pc { display: none; }
     
-    /* 1. 各結果タブの「星取り」データ列（5番目）を消す */
+    /* 1. 年度別・棋戦別タブの「星取り」データ列（5番目）を消す */
     #tab-yearly td:nth-child(5),
     #tab-match td:nth-child(5) {
         display: none;
@@ -117,11 +133,6 @@ tr:hover { background-color: #f9fbfd; }
 
     /* 2. 棋士別結果タブの「星取り」列（6番目の列）を消す */
     #tab-player th:nth-child(6), #tab-player td:nth-child(6) {
-        display: none;
-    }
-
-    /* 3. 棋士別結果タブの「期」列（2番目の列）を消す */
-    #tab-player th:nth-child(2), #tab-player td:nth-child(2) {
         display: none;
     }
 }
