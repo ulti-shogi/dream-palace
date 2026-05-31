@@ -57,6 +57,10 @@ table { width: 100%; border-collapse: collapse; background: #fff; border-radius:
 th, td { padding: 12px 15px; text-align: center; border: 1px solid #eee; }
 th { background-color: #f2f5f8; color: #34495e; font-weight: bold; }
 tr:hover { background-color: #f9fbfd; }
+
+/* ★追加: 勝者のセル背景色を薄い赤に */
+.winner-cell { background-color: #ffeeee; }
+
 .stars { font-family: monospace; font-size: 16px; letter-spacing: 2px; }
 .no-data { text-align: center; padding: 20px; color: #999; font-style: italic; }
 .rank-column { font-weight: bold; font-size: 18px; color: #e67e22; }

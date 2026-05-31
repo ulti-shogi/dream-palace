@@ -8,11 +8,10 @@ function getFiscalYear(dateStr) {
     return month >= 4 ? year : year - 1;
 }
 
-// ★勝率を四捨五入せずに小数点第4位で切り捨てる関数
+// 勝率を四捨五入せずに小数点第4位で切り捨てる関数
 function formatRate(rate) {
-    // JavaScript特有の小数点計算の誤差を吸収しつつ、第4位でスパッと切り捨て
     const truncated = Math.floor(rate * 10000 + 1e-9) / 10000;
-    return truncated.toFixed(4); // 常に4桁表示にする（ゼロ埋め）
+    return truncated.toFixed(4); 
 }
 
 // タブ切り替え処理
@@ -41,15 +40,20 @@ function renderYearlyTable() {
     
     tbody.innerHTML = filtered.map(s => {
         const starRow = s.stars.join('');
+        // ★ 勝者の背景を赤くするための判定
+        const requiredWins = s.phase === '七番勝負' ? 4 : (s.phase === '五番勝負' ? 3 : 99);
+        const p1Class = s.win1 >= requiredWins ? ' class="winner-cell"' : '';
+        const p2Class = s.win2 >= requiredWins ? ' class="winner-cell"' : '';
+
         return `
             <tr>
                 <td>${s.period}</td>
                 <td><strong>${s.match}</strong></td>
-                <td>${s.player1}</td>
+                <td${p1Class}>${s.player1}</td>
                 <td>${s.win1}</td>
                 <td><div class="stars">${starRow}</div></td>
                 <td>${s.win2}</td>
-                <td>${s.player2}</td>
+                <td${p2Class}>${s.player2}</td>
             </tr>
         `;
     }).join('');
@@ -74,15 +78,20 @@ function renderMatchTable() {
     
     tbody.innerHTML = filtered.map(s => {
         const starRow = s.stars.join('');
+        // ★ 勝者の背景を赤くするための判定
+        const requiredWins = s.phase === '七番勝負' ? 4 : (s.phase === '五番勝負' ? 3 : 99);
+        const p1Class = s.win1 >= requiredWins ? ' class="winner-cell"' : '';
+        const p2Class = s.win2 >= requiredWins ? ' class="winner-cell"' : '';
+
         return `
             <tr>
                 <td>${s.period}</td>
                 <td>${s.fiscalYear}</td>
-                <td>${s.player1}</td>
+                <td${p1Class}>${s.player1}</td>
                 <td>${s.win1}</td>
                 <td><div class="stars">${starRow}</div></td>
                 <td>${s.win2}</td>
-                <td>${s.player2}</td>
+                <td${p2Class}>${s.player2}</td>
             </tr>
         `;
     }).join('');
@@ -152,7 +161,6 @@ function renderPlayerTable() {
         const totalAppear = totalTitle + totalLost;
         const totalGames = totalWins + totalLosses;
         
-        // ★ 勝率を切り捨て関数でフォーマット
         const winRate = totalGames > 0 ? formatRate(totalWins / totalGames) : "0.0000";
 
         const jishogiText = totalJishogi > 0 ? `<span style="font-weight: normal; font-size: 0.9em; margin-left: 5px;">（持将棋${totalJishogi}局を除く）</span>` : "";
@@ -316,7 +324,6 @@ function renderRanking() {
         let currentValueText = '';
         if (sortBy === 'appear') currentValueText = r.appear.toString();
         else if (sortBy === 'lose') currentValueText = r.lose.toString();
-        // ★ ランキングの順位判定用の勝率も切り捨てフォーマットに統一
         else if (sortBy === 'rate') currentValueText = formatRate(r.rate); 
         else currentValueText = r.count.toString();
 
@@ -325,7 +332,6 @@ function renderRanking() {
             previousValueText = currentValueText;
         }
         
-        // ★ ランキングに表示する勝率も切り捨てフォーマットを適用
         const rateText = formatRate(r.rate);
 
         html += `

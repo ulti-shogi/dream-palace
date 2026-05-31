@@ -10,13 +10,15 @@
 
 <h2>将棋タイトル戦 データベース</h2>
 
+<!-- タブメニュー -->
 <div class="tabs">
     <button class="tab-button active" onclick="switchTab('tab-yearly', this)">年度別結果</button>
     <button class="tab-button" onclick="switchTab('tab-match', this)">棋戦別結果</button>
     <button class="tab-button" onclick="switchTab('tab-player', this)">棋士別結果</button>
-    <button class="tab-button" onclick="switchTab('tab-ranking', this)">歴代タイトル獲得ランキング</button>
+    <button class="tab-button" onclick="switchTab('tab-ranking', this)">ランキング</button>
 </div>
 
+<!-- タブコンテンツ1: 年度別結果 -->
 <div id="tab-yearly" class="tab-content active">
     <div class="control-panel">
         <label for="yearSelect">表示年度：</label>
@@ -41,6 +43,7 @@
     </table>
 </div>
 
+<!-- タブコンテンツ2: 棋戦別結果 -->
 <div id="tab-match" class="tab-content">
     <div class="control-panel">
         <label for="matchSelect">表示棋戦：</label>
@@ -73,6 +76,7 @@
     </table>
 </div>
 
+<!-- タブコンテンツ3: 棋士別結果 -->
 <div id="tab-player" class="tab-content">
     <div class="control-panel player-vs-panel">
         <select id="playerASelect" onchange="renderPlayerTable()"></select>
@@ -99,6 +103,7 @@
     </table>
 </div>
 
+<!-- タブコンテンツ4: ランキング -->
 <div id="tab-ranking" class="tab-content">
     <div class="control-panel">
         <label for="sortSelect">並べ替え基準：</label>
@@ -113,7 +118,7 @@
     <table>
         <thead>
             <tr>
-                <th>順</th>
+                <th>順位</th>
                 <th>棋士名</th>
                 <th>登場</th>
                 <th>獲得</th>
