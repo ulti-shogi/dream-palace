@@ -39,7 +39,9 @@ select { padding: 8px 16px; font-size: 16px; border-radius: 4px; border: 1px sol
     border-left: 5px solid #e67e22; 
     border-right: 5px solid #e67e22;
 }
-.stats-flex { display: flex; gap: 40px; }
+
+/* ★修正: PC画面で成績パネルの中身を中央に寄せる（justify-content: center; を追加） */
+.stats-flex { display: flex; justify-content: center; gap: 40px; }
 .stats-group { font-size: 15px; line-height: 1.6; }
 .stats-group strong { color: #2c3e50; font-size: 16px; display: inline-block; margin-bottom: 4px; }
 
@@ -61,7 +63,7 @@ tr:hover { background-color: #f9fbfd; }
 /* 勝者のセル背景色を薄い赤に */
 .winner-cell { background-color: #ffeeee; }
 
-/* ★PC・タブレット画面(481px以上)のときだけ、スマホ用ヘッダーを隠す */
+/* PC・タブレット画面(481px以上)のときだけ、スマホ用ヘッダーを隠す */
 @media (min-width: 481px) {
     .score-th-sp { display: none; }
 }
@@ -73,10 +75,10 @@ tr:hover { background-color: #f9fbfd; }
 
 /* ======== レスポンシブ対応 (タブレット向け設定: 768px以下) ======== */
 @media (max-width: 768px) {
-    /* 成績パネルを上下配置に変更し、窮屈さを解消 */
-    .stats-flex { flex-direction: column; gap: 15px; }
+    /* ★修正: 成績パネルを上下配置に変更した際、テキスト全体も中央揃えになるように追加 */
+    .stats-flex { flex-direction: column; align-items: center; text-align: center; gap: 15px; }
 
-    /* ★修正: 棋士別結果タブの「期」列のみをタブレットで非表示にする */
+    /* 棋士別結果タブの「期」列のみをタブレットで非表示にする */
     #tab-player th:nth-child(2), #tab-player td:nth-child(2) {
         display: none;
     }
