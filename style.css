@@ -61,7 +61,7 @@ tr:hover { background-color: #f9fbfd; }
 /* 勝者のセル背景色を薄い赤に */
 .winner-cell { background-color: #ffeeee; }
 
-/* ★修正箇所: PC・タブレット画面(481px以上)のときだけ、スマホ用ヘッダーを隠す */
+/* ★PC・タブレット画面(481px以上)のときだけ、スマホ用ヘッダーを隠す */
 @media (min-width: 481px) {
     .score-th-sp { display: none; }
 }
@@ -76,7 +76,7 @@ tr:hover { background-color: #f9fbfd; }
     /* 成績パネルを上下配置に変更し、窮屈さを解消 */
     .stats-flex { flex-direction: column; gap: 15px; }
 
-    /* 棋士別結果タブの「期」列（2番目の列）を消す */
+    /* ★修正: 棋士別結果タブの「期」列のみをタブレットで非表示にする */
     #tab-player th:nth-child(2), #tab-player td:nth-child(2) {
         display: none;
     }
