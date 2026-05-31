@@ -167,7 +167,7 @@ function renderPlayerTable() {
                 </div>
                 <div class="stats-group">
                     <strong>タイトル戦通算対局成績</strong>${jishogiText}<br>
-                    ${totalGames}局${totalWins}勝${totalLosses}敗 勝率${winRate}
+                    ${totalGames}局 ${totalWins}勝 ${totalLosses}敗 勝率:${winRate}
                 </div>
             </div>
         `;
