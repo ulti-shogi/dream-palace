@@ -110,7 +110,6 @@ function renderPlayerTable() {
 
     // ★ プルダウンの状態に応じて成績表示を切り替える
     if (playerB === '全て' && filtered.length > 0) {
-        // [全て] 選択時：総合ダッシュボードの表示
         let totalTitle = 0, totalLost = 0, totalCurrent = 0, totalUpcoming = 0;
         let totalWins = 0, totalLosses = 0, totalJishogi = 0;
 
@@ -137,7 +136,7 @@ function renderPlayerTable() {
         const winRate = totalGames > 0 ? (totalWins / totalGames).toFixed(4) : "0.0000";
         const jishogiText = totalJishogi > 0 ? `<span style="font-weight: normal; font-size: 0.9em; margin-left: 5px;">（持将棋${totalJishogi}局を除く）</span>` : "";
 
-        statsDiv.className = 'stats-panel'; // ダッシュボード用のデザインクラスを付与
+        statsDiv.className = 'stats-panel'; 
         statsDiv.style.display = 'block';
         statsDiv.innerHTML = `
             <div class="stats-flex">
@@ -152,7 +151,6 @@ function renderPlayerTable() {
             </div>
         `;
     } else if (playerB !== '全て' && filtered.length > 0) {
-        // [特定の棋士] 選択時：直接対決の番勝負成績のみを表示
         let aSeriesWins = 0;
         let bSeriesWins = 0;
 
@@ -169,11 +167,11 @@ function renderPlayerTable() {
             }
         });
 
-        statsDiv.className = 'h2h-stats'; // 直接対決用のデザインクラスを付与
+        // ★ 直接対決時も同じ stats-panel（オレンジ枠の箱）を使用し、文字を内側に配置する
+        statsDiv.className = 'stats-panel'; 
         statsDiv.style.display = 'block';
-        statsDiv.innerHTML = `${aSeriesWins}勝　${bSeriesWins}勝`;
+        statsDiv.innerHTML = `<div class="h2h-stats">${aSeriesWins}勝　${bSeriesWins}勝</div>`;
     } else {
-        // 該当データがない場合
         statsDiv.style.display = 'none';
         statsDiv.innerHTML = '';
     }

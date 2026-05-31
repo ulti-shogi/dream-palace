@@ -32,24 +32,25 @@ select { padding: 8px 16px; font-size: 16px; border-radius: 4px; border: 1px sol
     color: #7f8c8d;
 }
 
-/* 成績表示パネルのスタイル（全て選択時） */
+/* 成績表示パネルのスタイル（左右にオレンジ枠） */
 .stats-panel {
     background: #fff; padding: 15px 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    margin-bottom: 25px; border-left: 5px solid #e67e22;
+    margin-bottom: 25px; 
+    border-left: 5px solid #e67e22; 
+    border-right: 5px solid #e67e22;
 }
 .stats-flex { display: flex; gap: 40px; }
 .stats-group { font-size: 15px; line-height: 1.6; }
 .stats-group strong { color: #2c3e50; font-size: 16px; display: inline-block; margin-bottom: 4px; }
 
-/* 直接対決の成績表示スタイル（特定の棋士選択時） */
+/* 直接対決の成績表示スタイル（箱の中央に表示） */
 .h2h-stats {
     text-align: center;
     font-size: 22px;
     font-weight: bold;
     color: #2c3e50;
-    margin-top: -10px; /* パネルとの隙間を詰める */
-    margin-bottom: 20px;
     letter-spacing: 2px;
+    padding: 10px 0;
 }
 
 table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
@@ -87,7 +88,7 @@ tr:hover { background-color: #f9fbfd; }
     .stats-flex { flex-direction: column; gap: 12px; }
     .stats-group { font-size: 13px; }
     .stats-group strong { font-size: 14px; }
-    .h2h-stats { font-size: 18px; margin-bottom: 15px; }
+    .h2h-stats { font-size: 18px; padding: 5px 0; }
 
     th, td { 
         padding: 8px 4px; 
