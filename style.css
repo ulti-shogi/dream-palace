@@ -61,8 +61,10 @@ tr:hover { background-color: #f9fbfd; }
 /* 勝者のセル背景色を薄い赤に */
 .winner-cell { background-color: #ffeeee; }
 
-/* ★追加: PC画面ではスマホ用の勝敗ヘッダーを隠す */
-.score-th-sp { display: none; }
+/* ★修正: PC画面(481px以上)のときだけ、スマホ用ヘッダーを隠す */
+@media (min-width: 481px) {
+    .score-th-sp { display: none; }
+}
 
 .stars { font-family: monospace; font-size: 16px; letter-spacing: 2px; }
 .no-data { text-align: center; padding: 20px; color: #999; font-style: italic; }
@@ -87,10 +89,8 @@ tr:hover { background-color: #f9fbfd; }
     label { display: inline-block; font-size: 14px; margin-bottom: 5px; margin-right: 5px; }
     select { width: auto; max-width: 100%; font-size: 14px; padding: 6px 12px; margin-bottom: 5px; box-sizing: border-box; }
 
-    /* スマホ用のVSレイアウト調整 */
     .player-vs-panel { gap: 8px; }
     
-    /* スマホ用成績パネル設定 */
     .stats-panel { padding: 15px; margin-bottom: 15px; }
     .stats-flex { flex-direction: column; gap: 12px; }
     .stats-group { font-size: 13px; }
@@ -106,12 +106,10 @@ tr:hover { background-color: #f9fbfd; }
 
     /* ======= 特定の列を非表示にする設定 ======= */
 
-    /* ★追加: スマホ画面ではPC用の勝敗ヘッダーを隠し、スマホ用を表示 */
+    /* ★修正: スマホ画面ではPC用の勝敗ヘッダーだけを隠す（table-cellの上書きはしない） */
     .score-th-pc { display: none; }
-    .score-th-sp { display: table-cell; }
     
     /* 1. 各結果タブの「星取り」データ列（5番目）を消す */
-    /* ※th(ヘッダー)側は「勝敗」でひとまとめにしたので、td(データ部分)のみ指定します */
     #tab-yearly td:nth-child(5),
     #tab-match td:nth-child(5) {
         display: none;
