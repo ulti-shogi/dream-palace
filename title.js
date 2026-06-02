@@ -170,11 +170,11 @@ function renderPlayerTable() {
         statsDiv.innerHTML = `
             <div class="stats-flex">
                 <div class="stats-group">
-                    <strong>番勝負成績</strong><br>
+                    <strong>番勝負通算成績</strong><br>
                     登場：${totalAppear} / 獲得：${totalTitle} / 敗退：${totalLost} / 途中：${totalCurrent} / 予定：${totalUpcoming}
                 </div>
                 <div class="stats-group">
-                    <strong>タイトル戦通算対局成績</strong>${jishogiText}<br>
+                    <strong>番勝負通算勝敗</strong>${jishogiText}<br>
                     ${totalGames}局 ${totalWins}勝 ${totalLosses}敗 勝率:${winRate}
                 </div>
             </div>
