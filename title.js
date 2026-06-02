@@ -312,7 +312,7 @@ function renderRanking() {
     const tbody = document.getElementById('rankingBody');
     
     if (rankingArray.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="no-data">決着がついたタイトル戦データがありません。</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="no-data">決着がついたタイトル戦のデータがありません。</td></tr>`;
         return;
     }
 
