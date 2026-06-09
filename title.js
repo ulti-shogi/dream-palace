@@ -40,7 +40,6 @@ function renderYearlyTable() {
     
     tbody.innerHTML = filtered.map(s => {
         const starRow = s.stars.join('');
-        // ★ 変更: 三番勝負（2勝）の判定を追加
         const requiredWins = s.phase === '七番勝負' ? 4 : (s.phase === '五番勝負' ? 3 : (s.phase === '三番勝負' ? 2 : 99));
         const p1Class = s.win1 >= requiredWins ? ' class="winner-cell"' : '';
         const p2Class = s.win2 >= requiredWins ? ' class="winner-cell"' : '';
@@ -78,7 +77,6 @@ function renderMatchTable() {
     
     tbody.innerHTML = filtered.map(s => {
         const starRow = s.stars.join('');
-        // ★ 変更: 三番勝負（2勝）の判定を追加
         const requiredWins = s.phase === '七番勝負' ? 4 : (s.phase === '五番勝負' ? 3 : (s.phase === '三番勝負' ? 2 : 99));
         const p1Class = s.win1 >= requiredWins ? ' class="winner-cell"' : '';
         const p2Class = s.win2 >= requiredWins ? ' class="winner-cell"' : '';
@@ -138,7 +136,6 @@ function renderPlayerTable() {
             const isPlayer1 = (s.player1 === playerA);
             const myWins = isPlayer1 ? s.win1 : s.win2;
             const myLosses = isPlayer1 ? s.win2 : s.win1;
-            // ★ 変更: 三番勝負（2勝）の判定を追加
             const requiredWins = s.phase === '七番勝負' ? 4 : (s.phase === '五番勝負' ? 3 : (s.phase === '三番勝負' ? 2 : 99));
 
             // 結果ステータスの集計
@@ -187,7 +184,6 @@ function renderPlayerTable() {
             const isPlayer1 = (s.player1 === playerA);
             const myWins = isPlayer1 ? s.win1 : s.win2;
             const oppWins = isPlayer1 ? s.win2 : s.win1;
-            // ★ 変更: 三番勝負（2勝）の判定を追加
             const requiredWins = s.phase === '七番勝負' ? 4 : (s.phase === '五番勝負' ? 3 : (s.phase === '三番勝負' ? 2 : 99));
 
             if (myWins >= requiredWins) {
@@ -226,12 +222,13 @@ function renderPlayerTable() {
         });
         const starRow = myStars.join('');
         
-        // ★ 変更: 三番勝負（2勝）の判定を追加
         const requiredWins = s.phase === '七番勝負' ? 4 : (s.phase === '五番勝負' ? 3 : (s.phase === '三番勝負' ? 2 : 99));
         let resultText = '';
+        let resultClass = ''; // ★ 追加: 結果セルのクラスを判定するための変数
         
         if (myWins >= requiredWins) {
             resultText = isPlayer1 ? '防衛' : '奪取';
+            resultClass = ' class="winner-cell"'; // ★ 奪取か防衛のときは背景を赤くする
         } else if (myLosses >= requiredWins) {
             resultText = isPlayer1 ? '失冠' : '敗退';
         } else {
@@ -250,8 +247,7 @@ function renderPlayerTable() {
                 <td>${opponent}</td>
                 <td>${scoreText}</td>
                 <td><div class="stars">${starRow}</div></td>
-                <td>${resultText}</td>
-            </tr>
+                <td${resultClass}>${resultText}</td> </tr>
         `;
     }).join('');
 }
@@ -264,7 +260,6 @@ function renderRanking() {
     const rankingMap = {};
 
     seriesList.forEach(s => {
-        // ★ 変更: 三番勝負（2勝）の判定を追加
         const requiredWins = s.phase === '七番勝負' ? 4 : (s.phase === '五番勝負' ? 3 : (s.phase === '三番勝負' ? 2 : 99));
         
         let winner = null;
@@ -437,7 +432,6 @@ fetch('title.csv')
 
         const rankingMap = {};
         seriesList.forEach(s => {
-            // ★ 変更: 三番勝負（2勝）の判定を追加
             const requiredWins = s.phase === '七番勝負' ? 4 : (s.phase === '五番勝負' ? 3 : (s.phase === '三番勝負' ? 2 : 99));
             let winner = null;
             if (s.win1 >= requiredWins) winner = s.player1;
