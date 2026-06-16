@@ -40,18 +40,27 @@ function renderYearlyTable() {
     
     tbody.innerHTML = filtered.map(s => {
         const starRow = s.stars.join('');
-        const requiredWins = s.phase === '七番勝負' ? 4 : (s.phase === '五番勝負' ? 3 : (s.phase === '三番勝負' ? 2 : 99));
-        const p1Class = s.win1 >= requiredWins ? ' class="winner-cell"' : '';
-        const p2Class = s.win2 >= requiredWins ? ' class="winner-cell"' : '';
+        // ★ 変更: 決勝L戦（1勝）の判定を追加
+        const requiredWins = s.phase === '七番勝負' ? 4 : (s.phase === '五番勝負' ? 3 : (s.phase === '三番勝負' ? 2 : (s.phase === '決勝L戦' ? 1 : 99)));
+        let p1Class = '';
+        let p2Class = '';
+
+        // ★ 変更: 実施なしの場合は無条件で左側（保持者）を勝者として赤色にする
+        if (s.phase === '実施なし') {
+            p1Class = ' class="winner-cell"';
+        } else {
+            p1Class = s.win1 >= requiredWins ? ' class="winner-cell"' : '';
+            p2Class = s.win2 >= requiredWins ? ' class="winner-cell"' : '';
+        }
 
         return `
             <tr>
                 <td>${s.period}</td>
                 <td><strong>${s.match}</strong></td>
                 <td${p1Class}>${s.player1}</td>
-                <td>${s.win1}</td>
+                <td>${s.win1 > 0 || s.phase !== '実施なし' ? s.win1 : '-'}</td>
                 <td><div class="stars">${starRow}</div></td>
-                <td>${s.win2}</td>
+                <td>${s.win2 > 0 || s.phase !== '実施なし' ? s.win2 : '-'}</td>
                 <td${p2Class}>${s.player2}</td>
             </tr>
         `;
@@ -77,18 +86,25 @@ function renderMatchTable() {
     
     tbody.innerHTML = filtered.map(s => {
         const starRow = s.stars.join('');
-        const requiredWins = s.phase === '七番勝負' ? 4 : (s.phase === '五番勝負' ? 3 : (s.phase === '三番勝負' ? 2 : 99));
-        const p1Class = s.win1 >= requiredWins ? ' class="winner-cell"' : '';
-        const p2Class = s.win2 >= requiredWins ? ' class="winner-cell"' : '';
+        const requiredWins = s.phase === '七番勝負' ? 4 : (s.phase === '五番勝負' ? 3 : (s.phase === '三番勝負' ? 2 : (s.phase === '決勝L戦' ? 1 : 99)));
+        let p1Class = '';
+        let p2Class = '';
+
+        if (s.phase === '実施なし') {
+            p1Class = ' class="winner-cell"';
+        } else {
+            p1Class = s.win1 >= requiredWins ? ' class="winner-cell"' : '';
+            p2Class = s.win2 >= requiredWins ? ' class="winner-cell"' : '';
+        }
 
         return `
             <tr>
                 <td>${s.period}</td>
                 <td>${s.fiscalYear}</td>
                 <td${p1Class}>${s.player1}</td>
-                <td>${s.win1}</td>
+                <td>${s.win1 > 0 || s.phase !== '実施なし' ? s.win1 : '-'}</td>
                 <td><div class="stars">${starRow}</div></td>
-                <td>${s.win2}</td>
+                <td>${s.win2 > 0 || s.phase !== '実施なし' ? s.win2 : '-'}</td>
                 <td${p2Class}>${s.player2}</td>
             </tr>
         `;
@@ -115,7 +131,6 @@ function renderPlayerTable() {
         }
     });
 
-    // 対局終了日（無ければ開始日）の新しい順（降順）にソート
     filtered.sort((a, b) => {
         const dateA = a.endDate || a.startDate;
         const dateB = b.endDate || b.startDate;
@@ -136,10 +151,12 @@ function renderPlayerTable() {
             const isPlayer1 = (s.player1 === playerA);
             const myWins = isPlayer1 ? s.win1 : s.win2;
             const myLosses = isPlayer1 ? s.win2 : s.win1;
-            const requiredWins = s.phase === '七番勝負' ? 4 : (s.phase === '五番勝負' ? 3 : (s.phase === '三番勝負' ? 2 : 99));
+            const requiredWins = s.phase === '七番勝負' ? 4 : (s.phase === '五番勝負' ? 3 : (s.phase === '三番勝負' ? 2 : (s.phase === '決勝L戦' ? 1 : 99)));
 
-            // 結果ステータスの集計
-            if (myWins >= requiredWins) {
+            // ★ 変更: 実施なしの場合は保持者（player1）なら無条件で獲得とする
+            if (s.phase === '実施なし') {
+                if (isPlayer1) totalTitle++;
+            } else if (myWins >= requiredWins) {
                 totalTitle++;
             } else if (myLosses >= requiredWins) {
                 totalLost++;
@@ -148,11 +165,13 @@ function renderPlayerTable() {
                 else totalUpcoming++;
             }
 
-            // 対局単位の勝敗と持将棋の集計
-            totalWins += myWins;
-            totalLosses += myLosses;
-            const jishogiCount = s.stars.filter(star => star === '持').length;
-            totalJishogi += jishogiCount;
+            // 実施なしの時は対局がないので勝敗数には足さない
+            if (s.phase !== '実施なし') {
+                totalWins += myWins;
+                totalLosses += myLosses;
+                const jishogiCount = s.stars.filter(star => star === '持').length;
+                totalJishogi += jishogiCount;
+            }
         });
 
         const totalAppear = totalTitle + totalLost;
@@ -184,12 +203,15 @@ function renderPlayerTable() {
             const isPlayer1 = (s.player1 === playerA);
             const myWins = isPlayer1 ? s.win1 : s.win2;
             const oppWins = isPlayer1 ? s.win2 : s.win1;
-            const requiredWins = s.phase === '七番勝負' ? 4 : (s.phase === '五番勝負' ? 3 : (s.phase === '三番勝負' ? 2 : 99));
+            const requiredWins = s.phase === '七番勝負' ? 4 : (s.phase === '五番勝負' ? 3 : (s.phase === '三番勝負' ? 2 : (s.phase === '決勝L戦' ? 1 : 99)));
 
-            if (myWins >= requiredWins) {
-                aSeriesWins++;
-            } else if (oppWins >= requiredWins) {
-                bSeriesWins++;
+            // 実施なしの場合は直接対決にならないためスキップ
+            if (s.phase !== '実施なし') {
+                if (myWins >= requiredWins) {
+                    aSeriesWins++;
+                } else if (oppWins >= requiredWins) {
+                    bSeriesWins++;
+                }
             }
         });
 
@@ -213,7 +235,9 @@ function renderPlayerTable() {
         const myWins = isPlayer1 ? s.win1 : s.win2;
         const myLosses = isPlayer1 ? s.win2 : s.win1;
         const jishogiCount = s.stars.filter(star => star === '持').length;
-        const scoreText = `${myWins}勝${myLosses}敗${jishogiCount > 0 ? jishogiCount + '持' : ''}`;
+        
+        // 実施なしの場合は勝敗テキストを「-」にする
+        const scoreText = s.phase === '実施なし' ? '-' : `${myWins}勝${myLosses}敗${jishogiCount > 0 ? jishogiCount + '持' : ''}`;
         
         const myStars = s.stars.map(star => {
             if (star === '○') return isPlayer1 ? '○' : '●';
@@ -222,11 +246,17 @@ function renderPlayerTable() {
         });
         const starRow = myStars.join('');
         
-        const requiredWins = s.phase === '七番勝負' ? 4 : (s.phase === '五番勝負' ? 3 : (s.phase === '三番勝負' ? 2 : 99));
+        const requiredWins = s.phase === '七番勝負' ? 4 : (s.phase === '五番勝負' ? 3 : (s.phase === '三番勝負' ? 2 : (s.phase === '決勝L戦' ? 1 : 99)));
         let resultText = '';
         let resultClass = ''; 
         
-        if (myWins >= requiredWins) {
+        // ★ 変更: 実施なしの場合は「獲得(防衛)」扱いにする
+        if (s.phase === '実施なし') {
+            if (isPlayer1) {
+                resultText = '獲得';
+                resultClass = ' class="winner-cell"';
+            }
+        } else if (myWins >= requiredWins) {
             resultText = isPlayer1 ? '防衛' : '奪取';
             resultClass = ' class="winner-cell"'; 
         } else if (myLosses >= requiredWins) {
@@ -244,7 +274,7 @@ function renderPlayerTable() {
                 <td>${s.fiscalYear}</td>
                 <td>${s.period}</td>
                 <td><strong>${s.match}</strong></td>
-                <td>${opponent}</td>
+                <td>${opponent || '-'}</td>
                 <td>${scoreText}</td>
                 <td><div class="stars">${starRow}</div></td>
                 <td${resultClass}>${resultText}</td> 
@@ -261,12 +291,15 @@ function renderRanking() {
     const rankingMap = {};
 
     seriesList.forEach(s => {
-        const requiredWins = s.phase === '七番勝負' ? 4 : (s.phase === '五番勝負' ? 3 : (s.phase === '三番勝負' ? 2 : 99));
+        const requiredWins = s.phase === '七番勝負' ? 4 : (s.phase === '五番勝負' ? 3 : (s.phase === '三番勝負' ? 2 : (s.phase === '決勝L戦' ? 1 : 99)));
         
         let winner = null;
         let loser = null;
         
-        if (s.win1 >= requiredWins) {
+        // ★ 変更: 実施なしの時は保持者のみを勝者とし、敗者はいないものとする
+        if (s.phase === '実施なし') {
+            winner = s.player1;
+        } else if (s.win1 >= requiredWins) {
             winner = s.player1;
             loser = s.player2;
         } else if (s.win2 >= requiredWins) {
@@ -274,13 +307,14 @@ function renderRanking() {
             loser = s.player1;
         }
 
-        if (winner && loser) {
+        if (winner) {
             if (!rankingMap[winner]) rankingMap[winner] = { name: winner, count: 0, appear: 0, lose: 0, rate: 0 };
-            if (!rankingMap[loser]) rankingMap[loser] = { name: loser, count: 0, appear: 0, lose: 0, rate: 0 };
-            
             rankingMap[winner].count++;  
             rankingMap[winner].appear++; 
-            
+        }
+        
+        if (loser) {
+            if (!rankingMap[loser]) rankingMap[loser] = { name: loser, count: 0, appear: 0, lose: 0, rate: 0 };
             rankingMap[loser].lose++;    
             rankingMap[loser].appear++;  
         }
@@ -333,13 +367,11 @@ function renderRanking() {
         
         const rateText = formatRate(r.rate);
 
-        // ★追加: プルダウンで選択された基準に合致する列にだけ active-sort クラスを付与
         const appearClass = sortBy === 'appear' ? ' class="active-sort"' : '';
         const countClass = sortBy === 'count' ? ' class="active-sort"' : '';
         const loseClass = sortBy === 'lose' ? ' class="active-sort"' : '';
         const rateClass = sortBy === 'rate' ? ' class="active-sort"' : '';
 
-        // ★変更: 順位や獲得数から元々ついていた装飾（クラスや<strong>）を削除
         html += `
             <tr>
                 <td>${currentRank}</td>
@@ -406,16 +438,19 @@ fetch('title.csv')
 
             s.endDate = game.date;
 
-            if (game.pA === s.player1) {
-                if (game.resA === '○') { s.win1++; s.stars.push('○'); }
-                else if (game.resB === '○') { s.win2++; s.stars.push('●'); }
-                else if (game.resA === '千') { s.draw++; } 
-                else if (game.resA === '持') { s.draw++; s.stars.push('持'); } 
-            } else {
-                if (game.resA === '○') { s.win2++; s.stars.push('●'); }
-                else if (game.resB === '○') { s.win1++; s.stars.push('○'); }
-                else if (game.resA === '千') { s.draw++; } 
-                else if (game.resA === '持') { s.draw++; s.stars.push('持'); } 
+            // 実施なしの場合は勝敗をカウントしない
+            if (game.phase !== '実施なし') {
+                if (game.pA === s.player1) {
+                    if (game.resA === '○') { s.win1++; s.stars.push('○'); }
+                    else if (game.resB === '○') { s.win2++; s.stars.push('●'); }
+                    else if (game.resA === '千') { s.draw++; } 
+                    else if (game.resA === '持') { s.draw++; s.stars.push('持'); } 
+                } else {
+                    if (game.resA === '○') { s.win2++; s.stars.push('●'); }
+                    else if (game.resB === '○') { s.win1++; s.stars.push('○'); }
+                    else if (game.resA === '千') { s.draw++; } 
+                    else if (game.resA === '持') { s.draw++; s.stars.push('持'); } 
+                }
             }
         });
 
@@ -440,13 +475,25 @@ fetch('title.csv')
 
         const rankingMap = {};
         seriesList.forEach(s => {
-            const requiredWins = s.phase === '七番勝負' ? 4 : (s.phase === '五番勝負' ? 3 : (s.phase === '三番勝負' ? 2 : 99));
+            const requiredWins = s.phase === '七番勝負' ? 4 : (s.phase === '五番勝負' ? 3 : (s.phase === '三番勝負' ? 2 : (s.phase === '決勝L戦' ? 1 : 99)));
             let winner = null;
-            if (s.win1 >= requiredWins) winner = s.player1;
-            else if (s.win2 >= requiredWins) winner = s.player2;
             
-            if (!rankingMap[s.player1]) rankingMap[s.player1] = 0;
-            if (!rankingMap[s.player2]) rankingMap[s.player2] = 0;
+            // ★ 初期読み込み時も実施なしの判定を追加
+            if (s.phase === '実施なし') {
+                winner = s.player1;
+            } else if (s.win1 >= requiredWins) {
+                winner = s.player1;
+            } else if (s.win2 >= requiredWins) {
+                winner = s.player2;
+            }
+            
+            // プレイヤー名の登録（空の場合は無視する）
+            if (s.player1) {
+                if (!rankingMap[s.player1]) rankingMap[s.player1] = 0;
+            }
+            if (s.player2) {
+                if (!rankingMap[s.player2]) rankingMap[s.player2] = 0;
+            }
             
             if (winner) {
                 rankingMap[winner]++;
