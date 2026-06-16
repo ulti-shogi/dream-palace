@@ -40,7 +40,7 @@ select { padding: 8px 16px; font-size: 16px; border-radius: 4px; border: 1px sol
     border-right: 5px solid #e67e22;
 }
 
-/* PC画面：成績パネルの中身を中央に寄せる（justify-content: center;） */
+/* PC画面：成績パネルの中身を中央に寄せる */
 .stats-flex { display: flex; justify-content: center; gap: 40px; }
 .stats-group { font-size: 15px; line-height: 1.6; }
 .stats-group strong { color: #2c3e50; font-size: 16px; display: inline-block; margin-bottom: 4px; }
@@ -63,6 +63,9 @@ tr:hover { background-color: #f9fbfd; }
 /* 勝者のセル背景色を薄い赤に */
 .winner-cell { background-color: #ffeeee; }
 
+/* ★追加: ランキングで選択された列を太字＆赤字に */
+.active-sort { font-weight: bold; color: #e74c3c; }
+
 /* PC・タブレット画面(481px以上)のときだけ、スマホ用ヘッダーを隠す */
 @media (min-width: 481px) {
     .score-th-sp { display: none; }
@@ -70,12 +73,10 @@ tr:hover { background-color: #f9fbfd; }
 
 .stars { font-family: monospace; font-size: 16px; letter-spacing: 2px; }
 .no-data { text-align: center; padding: 20px; color: #999; font-style: italic; }
-.rank-column { font-weight: bold; font-size: 18px; color: #e67e22; }
 
 
 /* ======== レスポンシブ対応 (タブレット向け設定: 768px以下) ======== */
 @media (max-width: 768px) {
-    /* ★修正: 中央揃えの指定を削除し、純粋に上下配置にするだけに戻しました（左揃えになります） */
     .stats-flex { flex-direction: column; gap: 15px; }
 
     /* 棋士別結果タブの「期」列のみをタブレットで非表示にする */
@@ -117,8 +118,6 @@ tr:hover { background-color: #f9fbfd; }
         padding: 8px 4px; 
         font-size: 12px;  
     }
-
-    .rank-column { font-size: 14px; }
 
     /* ======= 特定の列を非表示にする設定 ======= */
 

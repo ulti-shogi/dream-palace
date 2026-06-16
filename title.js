@@ -224,11 +224,11 @@ function renderPlayerTable() {
         
         const requiredWins = s.phase === '七番勝負' ? 4 : (s.phase === '五番勝負' ? 3 : (s.phase === '三番勝負' ? 2 : 99));
         let resultText = '';
-        let resultClass = ''; // ★ 追加: 結果セルのクラスを判定するための変数
+        let resultClass = ''; 
         
         if (myWins >= requiredWins) {
             resultText = isPlayer1 ? '防衛' : '奪取';
-            resultClass = ' class="winner-cell"'; // ★ 奪取か防衛のときは背景を赤くする
+            resultClass = ' class="winner-cell"'; 
         } else if (myLosses >= requiredWins) {
             resultText = isPlayer1 ? '失冠' : '敗退';
         } else {
@@ -247,7 +247,8 @@ function renderPlayerTable() {
                 <td>${opponent}</td>
                 <td>${scoreText}</td>
                 <td><div class="stars">${starRow}</div></td>
-                <td${resultClass}>${resultText}</td> </tr>
+                <td${resultClass}>${resultText}</td> 
+            </tr>
         `;
     }).join('');
 }
@@ -332,14 +333,21 @@ function renderRanking() {
         
         const rateText = formatRate(r.rate);
 
+        // ★追加: プルダウンで選択された基準に合致する列にだけ active-sort クラスを付与
+        const appearClass = sortBy === 'appear' ? ' class="active-sort"' : '';
+        const countClass = sortBy === 'count' ? ' class="active-sort"' : '';
+        const loseClass = sortBy === 'lose' ? ' class="active-sort"' : '';
+        const rateClass = sortBy === 'rate' ? ' class="active-sort"' : '';
+
+        // ★変更: 順位や獲得数から元々ついていた装飾（クラスや<strong>）を削除
         html += `
             <tr>
-                <td class="rank-column">${currentRank}</td>
+                <td>${currentRank}</td>
                 <td><strong>${r.name}</strong></td>
-                <td>${r.appear}</td>
-                <td><strong>${r.count}</strong></td>
-                <td>${r.lose}</td>
-                <td>${rateText}</td>
+                <td${appearClass}>${r.appear}</td>
+                <td${countClass}>${r.count}</td>
+                <td${loseClass}>${r.lose}</td>
+                <td${rateClass}>${rateText}</td>
             </tr>
         `;
     });
