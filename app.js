@@ -51,23 +51,41 @@ async function loadPokemonData() {
     }
 }
 
-// 画面にリストを描画する処理
+// 画面にリストを描画する処理（スマホ向けカードUI対応版）
 function renderList(data) {
     const resultsContainer = document.getElementById('results');
     resultsContainer.innerHTML = ''; // 一旦クリア
 
     data.forEach(poke => {
-        // タイプ番号を名前に変換（タイプ2が00の場合は空文字に）
+        // タイプ1のバッジ生成
         const type1Name = typeMap[poke.type_1];
-        const type2Name = poke.type_2 !== "00" ? ` / ${typeMap[poke.type_2]}` : "";
+        let typesHtml = `<span class="type-badge type-${poke.type_1}">${type1Name}</span>`;
+        
+        // タイプ2がある場合のバッジ生成 (00以外の場合)
+        if (poke.type_2 !== "00") {
+            const type2Name = typeMap[poke.type_2];
+            typesHtml += `<span class="type-badge type-${poke.type_2}">${type2Name}</span>`;
+        }
 
-        // HTML要素を作成して追加 (現在はシンプルなテキスト表示)
         const div = document.createElement('div');
+        div.className = 'card';
         div.innerHTML = `
-            <strong>No.${poke.number} ${poke.name}</strong><br>
-            タイプ: ${type1Name}${type2Name} <br>
-            種族値: H${poke.H} A${poke.A} B${poke.B} C${poke.C} D${poke.D} S${poke.S} (合計: ${poke.total})
-            <hr>
+            <div class="card-header">
+                <span class="poke-name">${poke.name}</span>
+                <span class="poke-number">No.${poke.number}</span>
+            </div>
+            <div class="types">
+                ${typesHtml}
+            </div>
+            <div class="stats">
+                <div class="stat-item">H: ${poke.H}</div>
+                <div class="stat-item">A: ${poke.A}</div>
+                <div class="stat-item">B: ${poke.B}</div>
+                <div class="stat-item">C: ${poke.C}</div>
+                <div class="stat-item">D: ${poke.D}</div>
+                <div class="stat-item">S: ${poke.S}</div>
+                <div class="stat-item total">合計: ${poke.total}</div>
+            </div>
         `;
         resultsContainer.appendChild(div);
     });

@@ -1,137 +1,149 @@
-body { font-family: 'Helvetica Neue', Arial, sans-serif; margin: 30px; color: #333; background-color: #fafafa; }
-h2 { color: #2c3e50; border-bottom: 2px solid #b0c4de; padding-bottom: 10px; }
-
-/* タブメニューのスタイル */
-.tabs { display: flex; margin-bottom: 20px; border-bottom: 2px solid #ccc; }
-.tab-button {
-    background: #eee; border: none; padding: 10px 20px; font-size: 16px; cursor: pointer;
-    margin-right: 5px; border-radius: 8px 8px 0 0; transition: background 0.3s;
-}
-.tab-button:hover { background: #ddd; }
-.tab-button.active { background: #2c3e50; color: #fff; font-weight: bold; }
-
-/* コンテンツ領域のスタイル */
-.tab-content { display: none; }
-.tab-content.active { display: block; animation: fadeIn 0.4s; }
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-.control-panel { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 25px; }
-label { font-weight: bold; margin-right: 10px; }
-select { padding: 8px 16px; font-size: 16px; border-radius: 4px; border: 1px solid #ccc; background-color: #fff; cursor: pointer; }
-
-/* 棋士別タブ用のVSレイアウト */
-.player-vs-panel {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 15px;
-}
-.vs-text {
-    font-weight: bold;
-    font-size: 16px;
-    color: #7f8c8d;
+/* 全体の基本的なリセットと設定 */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
-/* 成績表示パネルのスタイル */
-.stats-panel {
-    background: #fff; padding: 15px 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    margin-bottom: 25px; 
-    border-left: 5px solid #e67e22; 
-    border-right: 5px solid #e67e22;
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: #f0f2f5;
+    color: #333;
+    /* ヘッダーが固定されるため、その分の余白を上部に設ける */
+    padding-top: 120px;
+    padding-bottom: 40px;
 }
 
-/* PC画面：成績パネルの中身を中央に寄せる */
-.stats-flex { display: flex; justify-content: center; gap: 40px; }
-.stats-group { font-size: 15px; line-height: 1.6; }
-.stats-group strong { color: #2c3e50; font-size: 16px; display: inline-block; margin-bottom: 4px; }
+/* 上部固定ヘッダー */
+header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background-color: #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    padding: 10px 15px;
+    z-index: 1000;
+}
 
-/* 直接対決の成績表示スタイル */
-.h2h-stats {
+header h1 {
+    font-size: 1.2rem;
+    color: #e3350d; /* ポケモンらしい赤色 */
+    margin-bottom: 10px;
     text-align: center;
-    font-size: 22px;
+}
+
+.search-container {
+    display: flex;
+    gap: 10px;
+}
+
+/* 検索入力欄とセレクトボックス（スマホでタップしやすい大きさに） */
+input[type="text"], select {
+    flex: 1;
+    padding: 10px;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    outline: none;
+}
+
+input[type="text"]:focus, select:focus {
+    border-color: #e3350d;
+}
+
+/* メインコンテンツ（検索結果）のコンテナ */
+main {
+    padding: 0 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+/* ポケモン情報のカード */
+.card {
+    background-color: #fff;
+    border-radius: 12px;
+    padding: 15px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 8px;
+}
+
+.poke-name {
+    font-size: 1.2rem;
     font-weight: bold;
-    color: #2c3e50;
-    letter-spacing: 2px;
-    padding: 10px 0;
 }
 
-table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-th, td { padding: 12px 15px; text-align: center; border: 1px solid #eee; }
-th { background-color: #f2f5f8; color: #34495e; font-weight: bold; }
-tr:hover { background-color: #f9fbfd; }
-
-/* 勝者のセル背景色を薄い赤に */
-.winner-cell { background-color: #ffeeee; }
-
-/* ★追加: ランキングで選択された列を太字＆赤字に */
-.active-sort { font-weight: bold; color: #e74c3c; }
-
-/* PC・タブレット画面(481px以上)のときだけ、スマホ用ヘッダーを隠す */
-@media (min-width: 481px) {
-    .score-th-sp { display: none; }
+.poke-number {
+    color: #888;
+    font-size: 0.9rem;
 }
 
-.stars { font-family: monospace; font-size: 16px; letter-spacing: 2px; }
-.no-data { text-align: center; padding: 20px; color: #999; font-style: italic; }
-
-
-/* ======== レスポンシブ対応 (タブレット向け設定: 768px以下) ======== */
-@media (max-width: 768px) {
-    .stats-flex { flex-direction: column; gap: 15px; }
-
-    /* 棋士別結果タブの「期」列のみをタブレットで非表示にする */
-    #tab-player th:nth-child(2), #tab-player td:nth-child(2) {
-        display: none;
-    }
+/* タイプバッジ */
+.types {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
 }
 
-
-/* ======== レスポンシブ対応 (スマホ向け設定: 480px以下) ======== */
-@media (max-width: 480px) {
-    body { margin: 10px; }
-    h2 { font-size: 1.3rem; }
-    
-    .tabs { flex-wrap: wrap; border-bottom: none; margin-bottom: 15px; }
-    .tab-button {
-        flex: 1 1 auto;
-        font-size: 14px;
-        padding: 10px;
-        margin-right: 2px;
-        margin-bottom: 5px;
-        border-radius: 4px;
-    }
-
-    .control-panel { padding: 15px; text-align: left; }
-    label { display: inline-block; font-size: 14px; margin-bottom: 5px; margin-right: 5px; }
-    select { width: auto; max-width: 100%; font-size: 14px; padding: 6px 12px; margin-bottom: 5px; box-sizing: border-box; }
-
-    /* スマホ用のVSレイアウト調整 */
-    .player-vs-panel { gap: 8px; }
-    
-    /* スマホ用成績パネル設定 */
-    .stats-panel { padding: 15px; margin-bottom: 15px; }
-    .stats-group { font-size: 13px; }
-    .stats-group strong { font-size: 14px; }
-    .h2h-stats { font-size: 18px; padding: 5px 0; }
-
-    th, td { 
-        padding: 8px 4px; 
-        font-size: 12px;  
-    }
-
-    /* ======= 特定の列を非表示にする設定 ======= */
-
-    /* スマホ画面ではPC用の勝敗ヘッダーを隠す */
-    .score-th-pc { display: none; }
-    
-    /* 1. 年度別・棋戦別タブの「星取り」データ列（5番目）を消す */
-    #tab-yearly td:nth-child(5),
-    #tab-match td:nth-child(5) {
-        display: none;
-    }
-
-    /* 2. 棋士別結果タブの「星取り」列（6番目の列）を消す */
-    #tab-player th:nth-child(6), #tab-player td:nth-child(6) {
-        display: none;
-    }
+.type-badge {
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    color: #fff;
+    font-weight: bold;
+    text-shadow: 1px 1px 1px rgba(0,0,0,0.3);
 }
+
+/* 種族値の表示エリア */
+.stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    font-size: 0.9rem;
+}
+
+.stat-item {
+    background-color: #f8f9fa;
+    padding: 4px 8px;
+    border-radius: 6px;
+    flex: 1;
+    min-width: calc(100% / 4 - 8px); /* 1行に3〜4個並ぶように調整 */
+    text-align: center;
+    border: 1px solid #eee;
+}
+
+.stat-item.total {
+    font-weight: bold;
+    background-color: #ffe8e8;
+    border-color: #ffcccc;
+    color: #d32f2f;
+}
+
+/* タイプごとの背景色指定 (01〜18のIDに紐付け) */
+.type-01 { background-color: #A8A878; } /* ノーマル */
+.type-02 { background-color: #F08030; } /* ほのお */
+.type-03 { background-color: #6890F0; } /* みず */
+.type-04 { background-color: #F8D030; } /* でんき */
+.type-05 { background-color: #78C850; } /* くさ */
+.type-06 { background-color: #98D8D8; } /* こおり */
+.type-07 { background-color: #C03028; } /* かくとう */
+.type-08 { background-color: #A040A0; } /* どく */
+.type-09 { background-color: #E0C068; } /* じめん */
+.type-10 { background-color: #A890F0; } /* ひこう */
+.type-11 { background-color: #F85888; } /* エスパー */
+.type-12 { background-color: #A8B820; } /* むし */
+.type-13 { background-color: #B8A038; } /* いわ */
+.type-14 { background-color: #705898; } /* ゴースト */
+.type-15 { background-color: #7038F8; } /* ドラゴン */
+.type-16 { background-color: #705848; } /* あく */
+.type-17 { background-color: #B8B8D0; } /* はがね */
+.type-18 { background-color: #EE99AC; } /* フェアリー */

@@ -4,21 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Myポケ徹</title>
+    <!-- CSSファイルの読み込みを追加 -->
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <header>
         <h1>Myポケ徹</h1>
-        <!-- 検索フォーム -->
-        <input type="text" id="searchInput" placeholder="ポケモン名で検索">
-        <select id="typeFilter">
-            <option value="">すべてのタイプ</option>
-        </select>
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="ポケモン名で検索">
+            <select id="typeFilter">
+                <option value="">すべてのタイプ</option>
+            </select>
+        </div>
     </header>
 
-    <!-- 検索結果を表示するエリア -->
     <main id="results"></main>
 
-    <!-- スクリプトの読み込み -->
     <script src="app.js"></script>
 </body>
 </html>
