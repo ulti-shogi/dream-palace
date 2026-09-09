@@ -9,8 +9,8 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     background-color: #f0f2f5;
     color: #333;
-    /* ヘッダーが固定されるため、その分の余白を上部に設ける */
-    padding-top: 120px;
+    /* ヘッダーの高さが増えるため、120px から 160px 程度に増やします */
+    padding-top: 160px; 
     padding-bottom: 40px;
 }
 
@@ -35,17 +35,27 @@ header h1 {
 
 .search-container {
     display: flex;
+    flex-direction: column; /* 横並びから「縦並び」に変更 */
     gap: 10px;
 }
 
-/* 検索入力欄とセレクトボックス（スマホでタップしやすい大きさに） */
+/* 検索入力欄とセレクトボックス */
 input[type="text"], select {
-    flex: 1;
+    width: 100%; /* 横幅いっぱいに広げる */
+    box-sizing: border-box; /* 余白を幅に含めてはみ出しを防止 */
     padding: 10px;
     font-size: 1rem;
     border: 1px solid #ccc;
     border-radius: 8px;
     outline: none;
+    /* iOS Safariでのデフォルトの見た目をリセットして綺麗にする設定 */
+    appearance: none; 
+    -webkit-appearance: none;
+    background-color: #fff;
+}
+
+input[type="text"]:focus, select:focus {
+    border-color: #e3350d;
 }
 
 input[type="text"]:focus, select:focus {
