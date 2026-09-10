@@ -9,18 +9,15 @@
 <body>
     <header>
         <h1>Myポケ徹</h1>
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="ポケモン名で検索">
+            <select id="typeFilter">
+                <option value="">タイプで絞り込み</option>
+            </select>
+        </div>
     </header>
-    
-    <main>
-        <section class="search-container">
-            <input type="text" id="searchInput" placeholder="ポケモンの名前で検索...">
-        </section>
 
-        <section id="resultContainer" class="result-container">
-            <!-- 検索結果がここに表示されます -->
-            <p>データを読み込んでいます...</p>
-        </section>
-    </main>
+    <main id="results"></main>
 
     <script src="app.js"></script>
 </body>
