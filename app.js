@@ -15,7 +15,7 @@ async function init() {
 async function loadTypeData() {
     const response = await fetch('type.txt');
     const text = await response.text();
-    const lines = text.trim().split('\n');
+    const lines = text.replace(/\r/g, '').trim().split('\n');
     
     const ids = lines[0].split(',');
     const names = lines[1].split(',');
@@ -37,7 +37,7 @@ async function loadTypeData() {
 async function loadAbilityData() {
     const response = await fetch('ability.txt');
     const text = await response.text();
-    const lines = text.trim().split('\n');
+    const lines = text.replace(/\r/g, '').trim().split('\n');
     
     // 1行目のヘッダー(id,ability)を飛ばして処理
     for (let i = 1; i < lines.length; i++) {
@@ -50,7 +50,7 @@ async function loadAbilityData() {
 async function loadPokemonData() {
     const response = await fetch('pokemon.txt');
     const text = await response.text();
-    const lines = text.trim().split('\n');
+    const lines = text.replace(/\r/g, '').trim().split('\n');
     
     // 1行目のヘッダーを飛ばして処理
     for (let i = 1; i < lines.length; i++) {
