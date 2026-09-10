@@ -1,21 +1,19 @@
 let pokemonList = [];
 let typeMap = {};
-let abilityMap = {}; // 特性の辞書を追加
+let abilityMap = {}; 
 
-// アプリ起動時の初期化処理
 async function init() {
     await loadTypeData();
-    await loadAbilityData(); // 特性データの読み込みを追加
+    await loadAbilityData(); 
     await loadPokemonData();
     setupFilters();
-    renderList(pokemonList); // 最初は全件表示
+    renderList(pokemonList); 
 }
 
-// type.txtを読み込んで、IDとタイプ名の辞書を作る
 async function loadTypeData() {
     const response = await fetch('type.txt');
     const text = await response.text();
-    const lines = text.replace(/\r/g, '').trim().split('\n');
+    const lines = text.trim().split('\n');
     
     const ids = lines[0].split(',');
     const names = lines[1].split(',');
@@ -33,28 +31,27 @@ async function loadTypeData() {
     });
 }
 
-// ability.txtを読み込んで、IDと特性名の辞書を作る（新規追加）
+// 見えない改行文字のバグを修正
 async function loadAbilityData() {
     const response = await fetch('ability.txt');
     const text = await response.text();
-    const lines = text.replace(/\r/g, '').trim().split('\n');
+    // \r?\n とすることで、Windows特有の改行のズレを吸収
+    const lines = text.trim().split(/\r?\n/); 
     
-    // 1行目のヘッダー(id,ability)を飛ばして処理
     for (let i = 1; i < lines.length; i++) {
         const [id, name] = lines[i].split(',');
-        abilityMap[id] = name;
+        if (id && name) {
+            abilityMap[id.trim()] = name.trim(); // 見えない文字を消して辞書に登録
+        }
     }
 }
 
-// pokemon.txtを読み込んで、配列に格納する
 async function loadPokemonData() {
     const response = await fetch('pokemon.txt');
     const text = await response.text();
-    const lines = text.replace(/\r/g, '').trim().split('\n');
+    const lines = text.trim().split(/\r?\n/); // こちらも修正
     
-    // 1行目のヘッダーを飛ばして処理
     for (let i = 1; i < lines.length; i++) {
-        // ability_1, ability_2, ability_3 を追加で受け取る
         const [number, name, type_1, type_2, H, A, B, C, D, S, ability_1, ability_2, ability_3] = lines[i].split(',');
         
         const total = Number(H) + Number(A) + Number(B) + Number(C) + Number(D) + Number(S);
@@ -65,13 +62,11 @@ async function loadPokemonData() {
     }
 }
 
-// 画面にリストを描画する処理
 function renderList(data) {
     const resultsContainer = document.getElementById('results');
     resultsContainer.innerHTML = '';
 
     data.forEach(poke => {
-        // タイプバッジ生成
         const type1Name = typeMap[poke.type_1];
         let typesHtml = `<span class="type-badge type-${poke.type_1}">${type1Name}</span>`;
         
@@ -80,16 +75,18 @@ function renderList(data) {
             typesHtml += `<span class="type-badge type-${poke.type_2}">${type2Name}</span>`;
         }
 
-        // 特性のHTML生成（新規追加）
+        // 余計なクラス分けを廃止し、見えない文字を削除して純粋に特性があるか判定
         let abilitiesHtml = '';
-        if (poke.ability_1) abilitiesHtml += `<span class="ability-item">${abilityMap[poke.ability_1]}</span>`;
-        if (poke.ability_2) abilitiesHtml += `<span class="ability-item">${abilityMap[poke.ability_2]}</span>`;
-        // 夢特性（隠れ特性）用として3つ目は少しクラスを変えています
-        if (poke.ability_3) abilitiesHtml += `<span class="ability-item hidden-ability">${abilityMap[poke.ability_3]}</span>`;
+        let a1 = poke.ability_1 ? poke.ability_1.trim() : "";
+        let a2 = poke.ability_2 ? poke.ability_2.trim() : "";
+        let a3 = poke.ability_3 ? poke.ability_3.trim() : "";
+
+        if (a1 && abilityMap[a1]) abilitiesHtml += `<span class="ability-item">${abilityMap[a1]}</span>`;
+        if (a2 && abilityMap[a2]) abilitiesHtml += `<span class="ability-item">${abilityMap[a2]}</span>`;
+        if (a3 && abilityMap[a3]) abilitiesHtml += `<span class="ability-item">${abilityMap[a3]}</span>`;
 
         const div = document.createElement('div');
         div.className = 'card';
-        // テンプレートの中に特性エリア（div.abilities）を差し込み
         div.innerHTML = `
             <div class="card-header">
                 <span class="poke-name">${poke.name}</span>
@@ -115,7 +112,6 @@ function renderList(data) {
     });
 }
 
-// 検索・絞り込みのイベント設定
 function setupFilters() {
     const searchInput = document.getElementById('searchInput');
     const typeFilter = document.getElementById('typeFilter');
@@ -137,5 +133,4 @@ function setupFilters() {
     typeFilter.addEventListener('change', filterData);
 }
 
-// アプリの実行
 init();
