@@ -157,3 +157,27 @@ main {
 .type-16 { background-color: #705848; } /* あく */
 .type-17 { background-color: #B8B8D0; } /* はがね */
 .type-18 { background-color: #EE99AC; } /* フェアリー */
+
+/* 特性の表示エリア */
+.abilities {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+/* 通常特性のデザイン */
+.ability-item {
+    background-color: #e2e8f0;
+    color: #475569;
+    padding: 3px 10px;
+    border-radius: 15px;
+    font-size: 0.85rem;
+    font-weight: bold;
+}
+
+/* 夢特性（3つ目の特性）のデザイン */
+.hidden-ability {
+    background-color: #fef08a; /* 少し黄色っぽい背景 */
+    color: #854d0e;            /* 濃い茶色の文字 */
+}

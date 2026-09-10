@@ -1,9 +1,11 @@
 let pokemonList = [];
 let typeMap = {};
+let abilityMap = {}; // 特性の辞書を追加
 
 // アプリ起動時の初期化処理
 async function init() {
     await loadTypeData();
+    await loadAbilityData(); // 特性データの読み込みを追加
     await loadPokemonData();
     setupFilters();
     renderList(pokemonList); // 最初は全件表示
@@ -22,7 +24,6 @@ async function loadTypeData() {
         typeMap[ids[i]] = names[i];
     }
     
-    // セレクトボックスにタイプを追加
     const typeFilter = document.getElementById('typeFilter');
     names.forEach((name, index) => {
         const option = document.createElement('option');
@@ -32,43 +33,63 @@ async function loadTypeData() {
     });
 }
 
+// ability.txtを読み込んで、IDと特性名の辞書を作る（新規追加）
+async function loadAbilityData() {
+    const response = await fetch('ability.txt');
+    const text = await response.text();
+    const lines = text.trim().split('\n');
+    
+    // 1行目のヘッダー(id,ability)を飛ばして処理
+    for (let i = 1; i < lines.length; i++) {
+        const [id, name] = lines[i].split(',');
+        abilityMap[id] = name;
+    }
+}
+
 // pokemon.txtを読み込んで、配列に格納する
 async function loadPokemonData() {
     const response = await fetch('pokemon.txt');
     const text = await response.text();
     const lines = text.trim().split('\n');
     
-    // 1行目のヘッダーを飛ばして、2行目から処理
+    // 1行目のヘッダーを飛ばして処理
     for (let i = 1; i < lines.length; i++) {
-        const [number, name, type_1, type_2, H, A, B, C, D, S] = lines[i].split(',');
+        // ability_1, ability_2, ability_3 を追加で受け取る
+        const [number, name, type_1, type_2, H, A, B, C, D, S, ability_1, ability_2, ability_3] = lines[i].split(',');
         
-        // 合計種族値を計算
         const total = Number(H) + Number(A) + Number(B) + Number(C) + Number(D) + Number(S);
         
         pokemonList.push({
-            number, name, type_1, type_2, H, A, B, C, D, S, total
+            number, name, type_1, type_2, H, A, B, C, D, S, total, ability_1, ability_2, ability_3
         });
     }
 }
 
-// 画面にリストを描画する処理（スマホ向けカードUI対応版）
+// 画面にリストを描画する処理
 function renderList(data) {
     const resultsContainer = document.getElementById('results');
-    resultsContainer.innerHTML = ''; // 一旦クリア
+    resultsContainer.innerHTML = '';
 
     data.forEach(poke => {
-        // タイプ1のバッジ生成
+        // タイプバッジ生成
         const type1Name = typeMap[poke.type_1];
         let typesHtml = `<span class="type-badge type-${poke.type_1}">${type1Name}</span>`;
         
-        // タイプ2がある場合のバッジ生成 (00以外の場合)
         if (poke.type_2 !== "00") {
             const type2Name = typeMap[poke.type_2];
             typesHtml += `<span class="type-badge type-${poke.type_2}">${type2Name}</span>`;
         }
 
+        // 特性のHTML生成（新規追加）
+        let abilitiesHtml = '';
+        if (poke.ability_1) abilitiesHtml += `<span class="ability-item">${abilityMap[poke.ability_1]}</span>`;
+        if (poke.ability_2) abilitiesHtml += `<span class="ability-item">${abilityMap[poke.ability_2]}</span>`;
+        // 夢特性（隠れ特性）用として3つ目は少しクラスを変えています
+        if (poke.ability_3) abilitiesHtml += `<span class="ability-item hidden-ability">${abilityMap[poke.ability_3]}</span>`;
+
         const div = document.createElement('div');
         div.className = 'card';
+        // テンプレートの中に特性エリア（div.abilities）を差し込み
         div.innerHTML = `
             <div class="card-header">
                 <span class="poke-name">${poke.name}</span>
@@ -76,6 +97,9 @@ function renderList(data) {
             </div>
             <div class="types">
                 ${typesHtml}
+            </div>
+            <div class="abilities">
+                ${abilitiesHtml}
             </div>
             <div class="stats">
                 <div class="stat-item">H: ${poke.H}</div>
@@ -101,11 +125,8 @@ function setupFilters() {
         const selectedType = typeFilter.value;
 
         const filtered = pokemonList.filter(poke => {
-            // 名前の一致確認（ひらがな・カタカナの区別なしなどは後で追加可能）
             const matchName = poke.name.includes(keyword);
-            // タイプの確認（タイプ1かタイプ2どちらかに含まれていればOK）
             const matchType = selectedType === "" || poke.type_1 === selectedType || poke.type_2 === selectedType;
-            
             return matchName && matchType;
         });
 
