@@ -1,136 +1,113 @@
+// データを格納する変数
+let typeDict = {};
+let abilityDict = {};
 let pokemonList = [];
-let typeMap = {};
-let abilityMap = {}; 
 
-async function init() {
-    await loadTypeData();
-    await loadAbilityData(); 
-    await loadPokemonData();
-    setupFilters();
-    renderList(pokemonList); 
+// アプリの初期化
+async function initApp() {
+    try {
+        await loadTypes();
+        await loadAbilities();
+        await loadPokemons();
+        displayPokemons(pokemonList); // 初期表示
+        setupEventListeners();
+    } catch (error) {
+        document.getElementById('resultContainer').innerHTML = `<p>エラーが発生しました: ${error.message}<br>※ローカル環境(file://)ではfetchがブロックされるため、VS CodeのLive Serverなどを使用してください。</p>`;
+    }
 }
 
-async function loadTypeData() {
-    const response = await fetch('type.txt');
-    const text = await response.text();
+// 1. type.txtの読み込みと辞書化
+async function loadTypes() {
+    const res = await fetch('type.txt');
+    const text = await res.text();
     const lines = text.trim().split('\n');
-    
     const ids = lines[0].split(',');
     const names = lines[1].split(',');
     
     for (let i = 0; i < ids.length; i++) {
-        typeMap[ids[i]] = names[i];
+        typeDict[ids[i]] = names[i];
     }
-    
-    const typeFilter = document.getElementById('typeFilter');
-    names.forEach((name, index) => {
-        const option = document.createElement('option');
-        option.value = ids[index];
-        option.textContent = name;
-        typeFilter.appendChild(option);
-    });
 }
 
-// 見えない改行文字のバグを修正
-async function loadAbilityData() {
-    const response = await fetch('ability.txt');
-    const text = await response.text();
-    // \r?\n とすることで、Windows特有の改行のズレを吸収
-    const lines = text.trim().split(/\r?\n/); 
+// 2. ability.txtの読み込みと辞書化
+async function loadAbilities() {
+    const res = await fetch('ability.txt');
+    const text = await res.text();
+    const lines = text.trim().split('\n');
     
+    // 1行目はヘッダなので2行目からループ
     for (let i = 1; i < lines.length; i++) {
         const [id, name] = lines[i].split(',');
-        if (id && name) {
-            abilityMap[id.trim()] = name.trim(); // 見えない文字を消して辞書に登録
-        }
+        if (id && name) abilityDict[id] = name;
     }
 }
 
-async function loadPokemonData() {
-    const response = await fetch('pokemon.txt');
-    const text = await response.text();
-    const lines = text.trim().split(/\r?\n/); // こちらも修正
+// 3. pokemon.txtの読み込みと整形
+async function loadPokemons() {
+    const res = await fetch('pokemon.txt');
+    const text = await res.text();
+    const lines = text.trim().split('\n');
     
     for (let i = 1; i < lines.length; i++) {
-        const [number, name, type_1, type_2, H, A, B, C, D, S, ability_1, ability_2, ability_3] = lines[i].split(',');
-        
-        const total = Number(H) + Number(A) + Number(B) + Number(C) + Number(D) + Number(S);
-        
+        const p = lines[i].split(',');
+        if (p.length < 13) continue; // データ不足行をスキップ
+
         pokemonList.push({
-            number, name, type_1, type_2, H, A, B, C, D, S, total, ability_1, ability_2, ability_3
+            number: p[0],
+            name: p[1],
+            type1: typeDict[p[2]] || '',
+            type2: p[3] !== '00' ? typeDict[p[3]] : '',
+            H: p[4], A: p[5], B: p[6], C: p[7], D: p[8], S: p[9],
+            ab1: abilityDict[p[10]] || '',
+            ab2: abilityDict[p[11]] || '',
+            ab3: abilityDict[p[12]] || ''
         });
     }
 }
 
-function renderList(data) {
-    const resultsContainer = document.getElementById('results');
-    resultsContainer.innerHTML = '';
-
-    data.forEach(poke => {
-        const type1Name = typeMap[poke.type_1];
-        let typesHtml = `<span class="type-badge type-${poke.type_1}">${type1Name}</span>`;
-        
-        if (poke.type_2 !== "00") {
-            const type2Name = typeMap[poke.type_2];
-            typesHtml += `<span class="type-badge type-${poke.type_2}">${type2Name}</span>`;
-        }
-
-        // 余計なクラス分けを廃止し、見えない文字を削除して純粋に特性があるか判定
-        let abilitiesHtml = '';
-        let a1 = poke.ability_1 ? poke.ability_1.trim() : "";
-        let a2 = poke.ability_2 ? poke.ability_2.trim() : "";
-        let a3 = poke.ability_3 ? poke.ability_3.trim() : "";
-
-        if (a1 && abilityMap[a1]) abilitiesHtml += `<span class="ability-item">${abilityMap[a1]}</span>`;
-        if (a2 && abilityMap[a2]) abilitiesHtml += `<span class="ability-item">${abilityMap[a2]}</span>`;
-        if (a3 && abilityMap[a3]) abilitiesHtml += `<span class="ability-item">${abilityMap[a3]}</span>`;
-
-        const div = document.createElement('div');
-        div.className = 'card';
-        div.innerHTML = `
-            <div class="card-header">
-                <span class="poke-name">${poke.name}</span>
-                <span class="poke-number">No.${poke.number}</span>
-            </div>
-            <div class="types">
-                ${typesHtml}
-            </div>
-            <div class="abilities">
-                ${abilitiesHtml}
-            </div>
-            <div class="stats">
-                <div class="stat-item">H: ${poke.H}</div>
-                <div class="stat-item">A: ${poke.A}</div>
-                <div class="stat-item">B: ${poke.B}</div>
-                <div class="stat-item">C: ${poke.C}</div>
-                <div class="stat-item">D: ${poke.D}</div>
-                <div class="stat-item">S: ${poke.S}</div>
-                <div class="stat-item total">合計: ${poke.total}</div>
-            </div>
-        `;
-        resultsContainer.appendChild(div);
+// 検索・絞り込みイベントの設定
+function setupEventListeners() {
+    const searchInput = document.getElementById('searchInput');
+    
+    searchInput.addEventListener('input', (e) => {
+        const keyword = e.target.value.toLowerCase();
+        const filtered = pokemonList.filter(p => p.name.includes(keyword));
+        displayPokemons(filtered);
     });
 }
 
-function setupFilters() {
-    const searchInput = document.getElementById('searchInput');
-    const typeFilter = document.getElementById('typeFilter');
+// 結果をHTMLに描画する関数
+function displayPokemons(list) {
+    const container = document.getElementById('resultContainer');
+    container.innerHTML = ''; // クリア
 
-    function filterData() {
-        const keyword = searchInput.value;
-        const selectedType = typeFilter.value;
-
-        const filtered = pokemonList.filter(poke => {
-            const matchName = poke.name.includes(keyword);
-            const matchType = selectedType === "" || poke.type_1 === selectedType || poke.type_2 === selectedType;
-            return matchName && matchType;
-        });
-
-        renderList(filtered);
+    if (list.length === 0) {
+        container.innerHTML = '<p>該当するポケモンが見つかりません。</p>';
+        return;
     }
 
-    searchInput.addEventListener('input', filterData);
-    typeFilter.addEventListener('change', filterData);
+    // パフォーマンスのため、最大100件程度の表示に制限するのも手です
+    list.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'pokemon-card';
+        
+        let typesHtml = `<span class="type-badge">${p.type1}</span>`;
+        if (p.type2) typesHtml += `<span class="type-badge">${p.type2}</span>`;
+
+        let abilities = [p.ab1, p.ab2, p.ab3].filter(a => a !== '').join(' / ');
+
+        card.innerHTML = `
+            <h2>No.${p.number} ${p.name}</h2>
+            <div class="types">${typesHtml}</div>
+            <p style="font-size: 13px; margin-top: 5px; color: #555;">特性: ${abilities}</p>
+            <div class="stats">
+                <span>H:${p.H}</span><span>A:${p.A}</span><span>B:${p.B}</span>
+                <span>C:${p.C}</span><span>D:${p.D}</span><span>S:${p.S}</span>
+            </div>
+        `;
+        container.appendChild(card);
+    });
 }
 
-init();
+// 実行
+initApp();

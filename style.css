@@ -1,4 +1,3 @@
-/* 全体の基本的なリセットと設定 */
 * {
     box-sizing: border-box;
     margin: 0;
@@ -6,178 +5,66 @@
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-family: sans-serif;
     background-color: #f0f2f5;
     color: #333;
-    /* ヘッダーの高さが増えるため、120px から 160px 程度に増やします */
-    padding-top: 160px; 
-    padding-bottom: 40px;
 }
 
-/* 上部固定ヘッダー */
 header {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    background-color: #fff;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    padding: 10px 15px;
-    z-index: 1000;
-}
-
-header h1 {
-    font-size: 1.2rem;
-    color: #e3350d; /* ポケモンらしい赤色 */
-    margin-bottom: 10px;
+    background-color: #e3350d; /* ポケモン風の赤 */
+    color: white;
+    padding: 15px;
     text-align: center;
+    position: sticky;
+    top: 0;
+    z-index: 100;
 }
 
 .search-container {
-    display: flex;
-    flex-direction: column; /* 横並びから「縦並び」に変更 */
+    padding: 15px;
+    background-color: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+#searchInput {
+    width: 100%;
+    padding: 12px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+}
+
+.result-container {
+    padding: 15px;
+    display: grid;
     gap: 10px;
 }
 
-/* 検索入力欄とセレクトボックス */
-input[type="text"], select {
-    width: 100%; /* 横幅いっぱいに広げる */
-    box-sizing: border-box; /* 余白を幅に含めてはみ出しを防止 */
-    padding: 10px;
-    font-size: 1rem;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    outline: none;
-    /* iOS Safariでのデフォルトの見た目をリセットして綺麗にする設定 */
-    appearance: none; 
-    -webkit-appearance: none;
-    background-color: #fff;
-}
-
-input[type="text"]:focus, select:focus {
-    border-color: #e3350d;
-}
-
-input[type="text"]:focus, select:focus {
-    border-color: #e3350d;
-}
-
-/* メインコンテンツ（検索結果）のコンテナ */
-main {
-    padding: 0 15px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-/* ポケモン情報のカード */
-.card {
-    background-color: #fff;
-    border-radius: 12px;
+.pokemon-card {
+    background-color: white;
     padding: 15px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-.card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    margin-bottom: 10px;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 8px;
+.pokemon-card h2 {
+    font-size: 18px;
+    margin-bottom: 8px;
 }
 
-.poke-name {
-    font-size: 1.2rem;
-    font-weight: bold;
+.types span {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    color: white;
+    background-color: #666;
+    margin-right: 5px;
 }
 
-.poke-number {
-    color: #888;
-    font-size: 0.9rem;
-}
-
-/* タイプバッジ */
-.types {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 12px;
-}
-
-.type-badge {
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 0.85rem;
-    color: #fff;
-    font-weight: bold;
-    text-shadow: 1px 1px 1px rgba(0,0,0,0.3);
-}
-
-/* 種族値の表示エリア */
 .stats {
     display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    font-size: 0.9rem;
-}
-
-.stat-item {
-    background-color: #f8f9fa;
-    padding: 4px 8px;
-    border-radius: 6px;
-    flex: 1;
-    min-width: calc(100% / 4 - 8px); /* 1行に3〜4個並ぶように調整 */
-    text-align: center;
-    border: 1px solid #eee;
-}
-
-.stat-item.total {
-    font-weight: bold;
-    background-color: #ffe8e8;
-    border-color: #ffcccc;
-    color: #d32f2f;
-}
-
-/* タイプごとの背景色指定 (01〜18のIDに紐付け) */
-.type-01 { background-color: #A8A878; } /* ノーマル */
-.type-02 { background-color: #F08030; } /* ほのお */
-.type-03 { background-color: #6890F0; } /* みず */
-.type-04 { background-color: #F8D030; } /* でんき */
-.type-05 { background-color: #78C850; } /* くさ */
-.type-06 { background-color: #98D8D8; } /* こおり */
-.type-07 { background-color: #C03028; } /* かくとう */
-.type-08 { background-color: #A040A0; } /* どく */
-.type-09 { background-color: #E0C068; } /* じめん */
-.type-10 { background-color: #A890F0; } /* ひこう */
-.type-11 { background-color: #F85888; } /* エスパー */
-.type-12 { background-color: #A8B820; } /* むし */
-.type-13 { background-color: #B8A038; } /* いわ */
-.type-14 { background-color: #705898; } /* ゴースト */
-.type-15 { background-color: #7038F8; } /* ドラゴン */
-.type-16 { background-color: #705848; } /* あく */
-.type-17 { background-color: #B8B8D0; } /* はがね */
-.type-18 { background-color: #EE99AC; } /* フェアリー */
-
-/* 特性の表示エリア */
-.abilities {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin-bottom: 12px;
-}
-
-/* 通常特性のデザイン */
-.ability-item {
-    background-color: #e2e8f0;
-    color: #475569;
-    padding: 3px 10px;
-    border-radius: 15px;
-    font-size: 0.85rem;
-    font-weight: bold;
-}
-
-/* 夢特性（3つ目の特性）のデザイン */
-.hidden-ability {
-    background-color: #fef08a; /* 少し黄色っぽい背景 */
-    color: #854d0e;            /* 濃い茶色の文字 */
+    gap: 10px;
+    margin-top: 10px;
+    font-size: 14px;
 }
