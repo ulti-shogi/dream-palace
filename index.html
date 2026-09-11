@@ -10,14 +10,12 @@
     <header>
         <h1>Myポケ徹</h1>
         <div class="controls-container">
-            <!-- ① 特性でも検索可能に -->
             <input type="text" id="searchInput" placeholder="ポケモン名・特性名で検索">
             
             <div class="filters-row">
                 <select id="typeFilter">
                     <option value="">すべてのタイプ</option>
                 </select>
-                <!-- ⑥ 一般・メガ・全ての表示切り替え -->
                 <select id="formFilter">
                     <option value="all">すべての姿</option>
                     <option value="normal">一般ポケモン</option>
@@ -26,7 +24,6 @@
             </div>
             
             <div class="filters-row">
-                <!-- ② 図鑑番号・各種族値順に並び替え -->
                 <select id="sortFilter">
                     <option value="number">図鑑番号順</option>
                     <option value="total">合計種族値順</option>
@@ -38,10 +35,10 @@
                     <option value="S">すばやさ順</option>
                 </select>
                 
-                <!-- ③ 表示の切り替えスイッチ -->
+                <!-- スイッチの順番を変更（実数値を上に） -->
                 <div class="toggle-mode">
-                    <label><input type="radio" name="dispMode" value="base" checked> 種族値</label>
                     <label><input type="radio" name="dispMode" value="real"> 実数値</label>
+                    <label><input type="radio" name="dispMode" value="base" checked> 種族値</label>
                 </div>
             </div>
         </div>
