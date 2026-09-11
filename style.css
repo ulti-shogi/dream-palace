@@ -1,4 +1,3 @@
-/* 全体の基本的なリセットと設定 */
 * {
     box-sizing: border-box;
     margin: 0;
@@ -9,12 +8,11 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     background-color: #f0f2f5;
     color: #333;
-    /* ヘッダーの高さが増えるため、120px から 160px 程度に増やします */
-    padding-top: 160px; 
+    /* ヘッダーの要素が増えたため、高さを多めに確保 */
+    padding-top: 180px; 
     padding-bottom: 40px;
 }
 
-/* 上部固定ヘッダー */
 header {
     position: fixed;
     top: 0;
@@ -28,56 +26,63 @@ header {
 
 header h1 {
     font-size: 1.2rem;
-    color: #e3350d; /* ポケモンらしい赤色 */
+    color: #e3350d;
     margin-bottom: 10px;
     text-align: center;
 }
 
-.search-container {
+/* ヘッダー内のコントロール群のレイアウト */
+.controls-container {
     display: flex;
-    flex-direction: column; /* 横並びから「縦並び」に変更 */
-    gap: 10px;
+    flex-direction: column;
+    gap: 8px;
+}
+.filters-row {
+    display: flex;
+    gap: 8px;
 }
 
-/* 検索入力欄とセレクトボックス */
 input[type="text"], select {
-    width: 100%; /* 横幅いっぱいに広げる */
-    box-sizing: border-box; /* 余白を幅に含めてはみ出しを防止 */
-    padding: 10px;
-    font-size: 1rem;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px 10px;
+    font-size: 0.95rem;
     border: 1px solid #ccc;
-    border-radius: 8px;
+    border-radius: 6px;
     outline: none;
-    /* iOS Safariでのデフォルトの見た目をリセットして綺麗にする設定 */
-    appearance: none; 
+    appearance: none;
     -webkit-appearance: none;
     background-color: #fff;
 }
-
 input[type="text"]:focus, select:focus {
     border-color: #e3350d;
 }
 
-input[type="text"]:focus, select:focus {
-    border-color: #e3350d;
+/* ラジオボタンエリアのデザイン */
+.toggle-mode {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    background: #f8f9fa;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    flex: 1;
+    font-size: 0.9rem;
 }
 
-/* メインコンテンツ（検索結果）のコンテナ */
 main {
     padding: 0 15px;
     display: flex;
     flex-direction: column;
     gap: 12px;
 }
-
-/* ポケモン情報のカード */
 .card {
     background-color: #fff;
     border-radius: 12px;
     padding: 15px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.05);
 }
-
 .card-header {
     display: flex;
     justify-content: space-between;
@@ -86,12 +91,10 @@ main {
     border-bottom: 1px solid #eee;
     padding-bottom: 8px;
 }
-
 .poke-name {
     font-size: 1.2rem;
     font-weight: bold;
 }
-
 .poke-number {
     color: #888;
     font-size: 0.9rem;
@@ -101,9 +104,8 @@ main {
 .types {
     display: flex;
     gap: 8px;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
 }
-
 .type-badge {
     padding: 4px 12px;
     border-radius: 20px;
@@ -113,71 +115,82 @@ main {
     text-shadow: 1px 1px 1px rgba(0,0,0,0.3);
 }
 
-/* 種族値の表示エリア */
-.stats {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    font-size: 0.9rem;
-}
-
-.stat-item {
-    background-color: #f8f9fa;
-    padding: 4px 8px;
-    border-radius: 6px;
-    flex: 1;
-    min-width: calc(100% / 4 - 8px); /* 1行に3〜4個並ぶように調整 */
-    text-align: center;
-    border: 1px solid #eee;
-}
-
-.stat-item.total {
-    font-weight: bold;
-    background-color: #ffe8e8;
-    border-color: #ffcccc;
-    color: #d32f2f;
-}
-
-/* タイプごとの背景色指定 (01〜18のIDに紐付け) */
-.type-01 { background-color: #A8A878; } /* ノーマル */
-.type-02 { background-color: #F08030; } /* ほのお */
-.type-03 { background-color: #6890F0; } /* みず */
-.type-04 { background-color: #F8D030; } /* でんき */
-.type-05 { background-color: #78C850; } /* くさ */
-.type-06 { background-color: #98D8D8; } /* こおり */
-.type-07 { background-color: #C03028; } /* かくとう */
-.type-08 { background-color: #A040A0; } /* どく */
-.type-09 { background-color: #E0C068; } /* じめん */
-.type-10 { background-color: #A890F0; } /* ひこう */
-.type-11 { background-color: #F85888; } /* エスパー */
-.type-12 { background-color: #A8B820; } /* むし */
-.type-13 { background-color: #B8A038; } /* いわ */
-.type-14 { background-color: #705898; } /* ゴースト */
-.type-15 { background-color: #7038F8; } /* ドラゴン */
-.type-16 { background-color: #705848; } /* あく */
-.type-17 { background-color: #B8B8D0; } /* はがね */
-.type-18 { background-color: #EE99AC; } /* フェアリー */
-
-/* 特性の表示エリア */
+/* 特性表示（④ 通常・隠れの区別なく統一） */
 .abilities {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
     margin-bottom: 12px;
 }
-
-/* 通常特性のデザイン */
 .ability-item {
-    background-color: #e2e8f0;
-    color: #475569;
+    background-color: #fef08a; /* 黄色背景 */
+    color: #854d0e;            /* 茶色文字 */
     padding: 3px 10px;
     border-radius: 15px;
     font-size: 0.85rem;
     font-weight: bold;
 }
 
-/* 夢特性（3つ目の特性）のデザイン */
-.hidden-ability {
-    background-color: #fef08a; /* 少し黄色っぽい背景 */
-    color: #854d0e;            /* 濃い茶色の文字 */
+/* ⑤ 各種族値の配置を変更（Gridレイアウト 3列） */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
 }
+
+.stat-item {
+    background-color: #f8f9fa;
+    border: 1px solid #eee;
+    border-radius: 6px;
+    padding: 6px;
+    text-align: center;
+}
+
+.stat-label {
+    font-weight: bold;
+    font-size: 0.9rem;
+    color: #555;
+    margin-bottom: 2px;
+}
+
+/* 種族値の見た目 */
+.base-values {
+    font-size: 1.1rem;
+    font-weight: bold;
+}
+
+/* 実数値の見た目 */
+.real-values {
+    font-size: 0.75rem;
+    color: #333;
+    line-height: 1.3;
+    text-align: left;
+    display: inline-block;
+}
+
+/* 下段にまたがる「合計」 */
+.stat-item.total {
+    grid-column: span 3;
+    background-color: #ffe8e8;
+    border-color: #ffcccc;
+    color: #d32f2f;
+    font-weight: bold;
+    font-size: 1rem;
+    padding: 8px;
+}
+
+/* ③ 表示モードのCSS制御（bodyのクラスによって表示を切り替え） */
+body.mode-base .real-values { display: none; }
+body.mode-real .base-values { display: none; }
+
+
+/* タイプカラー一覧 */
+.type-01 { background-color: #A8A878; } .type-02 { background-color: #F08030; }
+.type-03 { background-color: #6890F0; } .type-04 { background-color: #F8D030; }
+.type-05 { background-color: #78C850; } .type-06 { background-color: #98D8D8; }
+.type-07 { background-color: #C03028; } .type-08 { background-color: #A040A0; }
+.type-09 { background-color: #E0C068; } .type-10 { background-color: #A890F0; }
+.type-11 { background-color: #F85888; } .type-12 { background-color: #A8B820; }
+.type-13 { background-color: #B8A038; } .type-14 { background-color: #705898; }
+.type-15 { background-color: #7038F8; } .type-16 { background-color: #705848; }
+.type-17 { background-color: #B8B8D0; } .type-18 { background-color: #EE99AC; }

@@ -1,28 +1,22 @@
 let pokemonList = [];
 let typeMap = {};
-let abilityMap = {}; // 特性の辞書を追加
+let abilityMap = {};
 
-// アプリ起動時の初期化処理
 async function init() {
     await loadTypeData();
-    await loadAbilityData(); // 特性データの読み込みを追加
+    await loadAbilityData();
     await loadPokemonData();
     setupFilters();
-    renderList(pokemonList); // 最初は全件表示
+    filterData(); // 最初は全件表示
 }
 
-// type.txtを読み込んで、IDとタイプ名の辞書を作る
 async function loadTypeData() {
     const response = await fetch('type.txt');
     const text = await response.text();
     const lines = text.trim().split('\n');
-    
     const ids = lines[0].split(',');
     const names = lines[1].split(',');
-    
-    for (let i = 0; i < ids.length; i++) {
-        typeMap[ids[i]] = names[i];
-    }
+    for (let i = 0; i < ids.length; i++) typeMap[ids[i]] = names[i];
     
     const typeFilter = document.getElementById('typeFilter');
     names.forEach((name, index) => {
@@ -33,109 +27,175 @@ async function loadTypeData() {
     });
 }
 
-// ability.txtを読み込んで、IDと特性名の辞書を作る（新規追加）
 async function loadAbilityData() {
     const response = await fetch('ability.txt');
     const text = await response.text();
     const lines = text.trim().split('\n');
-    
-    // 1行目のヘッダー(id,ability)を飛ばして処理
     for (let i = 1; i < lines.length; i++) {
         const [id, name] = lines[i].split(',');
         abilityMap[id] = name;
     }
 }
 
-// pokemon.txtを読み込んで、配列に格納する
 async function loadPokemonData() {
     const response = await fetch('pokemon.txt');
     const text = await response.text();
     const lines = text.trim().split('\n');
     
-    // 1行目のヘッダーを飛ばして処理
     for (let i = 1; i < lines.length; i++) {
-        // ability_1, ability_2, ability_3 を追加で受け取る
         const [number, name, type_1, type_2, H, A, B, C, D, S, ability_1, ability_2, ability_3] = lines[i].split(',');
+        const numH = Number(H), numA = Number(A), numB = Number(B), numC = Number(C), numD = Number(D), numS = Number(S);
+        const total = numH + numA + numB + numC + numD + numS;
         
-        const total = Number(H) + Number(A) + Number(B) + Number(C) + Number(D) + Number(S);
-        
+        // 特性名を事前に取得しておく
+        const abName1 = ability_1 ? abilityMap[ability_1] : "";
+        const abName2 = ability_2 ? abilityMap[ability_2] : "";
+        const abName3 = ability_3 ? abilityMap[ability_3] : "";
+
         pokemonList.push({
-            number, name, type_1, type_2, H, A, B, C, D, S, total, ability_1, ability_2, ability_3
+            number, name, type_1, type_2, 
+            H: numH, A: numA, B: numB, C: numC, D: numD, S: numS, total,
+            abName1, abName2, abName3
         });
     }
 }
 
-// 画面にリストを描画する処理
+// カードの描画処理
 function renderList(data) {
     const resultsContainer = document.getElementById('results');
     resultsContainer.innerHTML = '';
 
     data.forEach(poke => {
-        // タイプバッジ生成
-        const type1Name = typeMap[poke.type_1];
-        let typesHtml = `<span class="type-badge type-${poke.type_1}">${type1Name}</span>`;
-        
-        if (poke.type_2 !== "00") {
-            const type2Name = typeMap[poke.type_2];
-            typesHtml += `<span class="type-badge type-${poke.type_2}">${type2Name}</span>`;
-        }
+        let typesHtml = `<span class="type-badge type-${poke.type_1}">${typeMap[poke.type_1]}</span>`;
+        if (poke.type_2 !== "00") typesHtml += `<span class="type-badge type-${poke.type_2}">${typeMap[poke.type_2]}</span>`;
 
-        // 特性のHTML生成（新規追加）
         let abilitiesHtml = '';
-        if (poke.ability_1) abilitiesHtml += `<span class="ability-item">${abilityMap[poke.ability_1]}</span>`;
-        if (poke.ability_2) abilitiesHtml += `<span class="ability-item">${abilityMap[poke.ability_2]}</span>`;
-        // 夢特性（隠れ特性）用として3つ目は少しクラスを変えています
-        if (poke.ability_3) abilitiesHtml += `<span class="ability-item hidden-ability">${abilityMap[poke.ability_3]}</span>`;
+        // 夢特性と同じ通常特性を持つ場合などの重複を消して表示
+        const abs = [poke.abName1, poke.abName2, poke.abName3].filter(Boolean);
+        const uniqueAbs = [...new Set(abs)]; 
+        uniqueAbs.forEach(ab => {
+            abilitiesHtml += `<span class="ability-item">${ab}</span>`;
+        });
+
+        // H以外の実数値を計算する関数
+        const calcReal = (stat) => {
+            return `特化: ${Math.floor((stat + 52) * 1.1)}<br>
+                    32振: ${stat + 52}<br>
+                    無振: ${stat + 20}<br>
+                    下降: ${Math.floor((stat + 20) * 0.9)}`;
+        };
 
         const div = document.createElement('div');
         div.className = 'card';
-        // テンプレートの中に特性エリア（div.abilities）を差し込み
         div.innerHTML = `
             <div class="card-header">
                 <span class="poke-name">${poke.name}</span>
                 <span class="poke-number">No.${poke.number}</span>
             </div>
-            <div class="types">
-                ${typesHtml}
-            </div>
-            <div class="abilities">
-                ${abilitiesHtml}
-            </div>
-            <div class="stats">
-                <div class="stat-item">H: ${poke.H}</div>
-                <div class="stat-item">A: ${poke.A}</div>
-                <div class="stat-item">B: ${poke.B}</div>
-                <div class="stat-item">C: ${poke.C}</div>
-                <div class="stat-item">D: ${poke.D}</div>
-                <div class="stat-item">S: ${poke.S}</div>
-                <div class="stat-item total">合計: ${poke.total}</div>
+            <div class="types">${typesHtml}</div>
+            <div class="abilities">${abilitiesHtml}</div>
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-label">H</div>
+                    <div class="base-values">${poke.H}</div>
+                    <div class="real-values">ぶっぱ: ${poke.H + 107}<br>無振り: ${poke.H + 75}</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">A</div>
+                    <div class="base-values">${poke.A}</div>
+                    <div class="real-values">${calcReal(poke.A)}</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">B</div>
+                    <div class="base-values">${poke.B}</div>
+                    <div class="real-values">${calcReal(poke.B)}</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">C</div>
+                    <div class="base-values">${poke.C}</div>
+                    <div class="real-values">${calcReal(poke.C)}</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">D</div>
+                    <div class="base-values">${poke.D}</div>
+                    <div class="real-values">${calcReal(poke.D)}</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">S</div>
+                    <div class="base-values">${poke.S}</div>
+                    <div class="real-values">${calcReal(poke.S)}</div>
+                </div>
+                <div class="stat-item total">
+                    種族値合計: ${poke.total}
+                </div>
             </div>
         `;
         resultsContainer.appendChild(div);
     });
 }
 
-// 検索・絞り込みのイベント設定
 function setupFilters() {
     const searchInput = document.getElementById('searchInput');
     const typeFilter = document.getElementById('typeFilter');
+    const formFilter = document.getElementById('formFilter');
+    const sortFilter = document.getElementById('sortFilter');
+    const modeRadios = document.querySelectorAll('input[name="dispMode"]');
 
-    function filterData() {
+    // ③ 表示モードの切り替え（bodyのクラスを変えるだけ）
+    modeRadios.forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            document.body.className = `mode-${e.target.value}`;
+        });
+    });
+
+    // フィルタ・ソート処理を一つにまとめる
+    window.filterData = function() {
         const keyword = searchInput.value;
         const selectedType = typeFilter.value;
+        const formValue = formFilter.value;
+        const sortType = sortFilter.value;
 
-        const filtered = pokemonList.filter(poke => {
+        let filtered = pokemonList.filter(poke => {
+            // ① 名前と特性での絞り込み
             const matchName = poke.name.includes(keyword);
+            const matchAb = (poke.abName1 && poke.abName1.includes(keyword)) ||
+                            (poke.abName2 && poke.abName2.includes(keyword)) ||
+                            (poke.abName3 && poke.abName3.includes(keyword));
+            const matchKeyword = matchName || matchAb || keyword === "";
+
+            // タイプでの絞り込み
             const matchType = selectedType === "" || poke.type_1 === selectedType || poke.type_2 === selectedType;
-            return matchName && matchType;
+
+            // ⑥ 一般・メガ・全ての表示切り替え
+            const isMega = poke.name.includes('メガ');
+            let matchForm = true;
+            if (formValue === 'normal' && isMega) matchForm = false;
+            if (formValue === 'mega' && !isMega) matchForm = false;
+
+            return matchKeyword && matchType && matchForm;
+        });
+
+        // ② 各種族値や図鑑番号順での並び替え
+        filtered.sort((a, b) => {
+            if (sortType === 'number') {
+                return Number(a.number) - Number(b.number); // 番号は昇順
+            } else {
+                // 種族値や合計値の場合は高い順（降順）
+                if (b[sortType] !== a[sortType]) {
+                    return b[sortType] - a[sortType];
+                }
+                // もし数値が同じだった場合は、図鑑番号順にする
+                return Number(a.number) - Number(b.number);
+            }
         });
 
         renderList(filtered);
-    }
+    };
 
-    searchInput.addEventListener('input', filterData);
-    typeFilter.addEventListener('change', filterData);
+    searchInput.addEventListener('input', window.filterData);
+    typeFilter.addEventListener('change', window.filterData);
+    formFilter.addEventListener('change', window.filterData);
+    sortFilter.addEventListener('change', window.filterData);
 }
 
-// アプリの実行
 init();
