@@ -209,3 +209,40 @@ body.mode-real .base-values { display: none; }
 .type-13 { background-color: #B8A038; } .type-14 { background-color: #705898; }
 .type-15 { background-color: #7038F8; } .type-16 { background-color: #705848; }
 .type-17 { background-color: #B8B8D0; } .type-18 { background-color: #EE99AC; }
+
+/* 折りたたみ式の技一覧エリア */
+.moves-details {
+    margin-top: 15px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    padding: 10px;
+}
+
+/* 「覚える技」のクリックできる見出し */
+.moves-details summary {
+    font-weight: bold;
+    font-size: 0.95rem;
+    color: #444;
+    cursor: pointer;
+    outline: none;
+    user-select: none; /* スマホでタップした時の青いハイライト防止 */
+}
+
+/* 技が並ぶコンテナ */
+.moves-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+/* 個別の技の見た目 */
+.move-item {
+    background-color: #fff;
+    border: 1px solid #ccc;
+    color: #333;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+}
