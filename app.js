@@ -45,7 +45,7 @@ async function loadAbilityData() {
 
 // 【新規】move_2.txt を読み込んで技の辞書を作る
 async function loadMoveData() {
-    const response = await fetch('move_2.txt');
+    const response = await fetch('move.txt');
     const text = await response.text();
     const lines = text.trim().split('\n');
     
