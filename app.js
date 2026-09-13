@@ -1,20 +1,19 @@
 let pokemonList = [];
 let typeMap = {};
 let abilityMap = {};
-let moveMap = {};        // 技IDと技名の辞書
-let pokemonMoves = {};   // 図鑑番号と覚える技リストの辞書
+let moveMap = {};           // 技データ用
+let pokemonMovesMap = {};   // どのポケモンがどの技を覚えるか用
 
 async function init() {
     await loadTypeData();
     await loadAbilityData();
-    await loadMoveData();       // 技データの読み込み
-    await loadPokemonMoves();   // 技の紐付けデータの読み込み
+    await loadMoveData();         // 追加：技データの読み込み
+    await loadPokemonMovesData(); // 追加：紐付けデータの読み込み
     await loadPokemonData();
     setupFilters();
-    filterData(); 
+    filterData();
 }
 
-// （既存の処理）type.txt の読み込み
 async function loadTypeData() {
     const response = await fetch('type.txt');
     const text = await response.text();
@@ -32,7 +31,6 @@ async function loadTypeData() {
     });
 }
 
-// （既存の処理）ability.txt の読み込み
 async function loadAbilityData() {
     const response = await fetch('ability.txt');
     const text = await response.text();
@@ -43,45 +41,33 @@ async function loadAbilityData() {
     }
 }
 
-// 【新規】move_2.txt を読み込んで技の辞書を作る
+// 技データを読み込む（追加）
 async function loadMoveData() {
     const response = await fetch('move.txt');
     const text = await response.text();
     const lines = text.trim().split('\n');
-    
-    // 1行目のヘッダーを飛ばして処理
     for (let i = 1; i < lines.length; i++) {
         const parts = lines[i].split(',');
         if (parts.length >= 2) {
             const id = parts[0];
             const name = parts[1];
-            moveMap[id] = name; // IDと技名を紐付け
+            const type = parts[2]; // タイプ情報（空欄でもOK）
+            moveMap[id] = { name, type };
         }
     }
 }
 
-// 【新規】pokemon_moves.txt を読み込んでポケモンに技を紐付ける
-async function loadPokemonMoves() {
+// ポケモンと技の紐付けデータを読み込む（追加）
+async function loadPokemonMovesData() {
     const response = await fetch('pokemon_moves.txt');
     const text = await response.text();
     const lines = text.trim().split('\n');
-    
     for (let i = 1; i < lines.length; i++) {
-        const parts = lines[i].split(',');
-        if (parts.length >= 2) {
-            const number = parts[0];
-            const moveId = parts[1];
-            
-            // その図鑑番号の配列がまだなければ作る
-            if (!pokemonMoves[number]) {
-                pokemonMoves[number] = [];
-            }
-            
-            // 技IDを技名に変換して追加
-            if (moveMap[moveId]) {
-                pokemonMoves[number].push(moveMap[moveId]);
-            }
+        const [number, move_id] = lines[i].split(',');
+        if (!pokemonMovesMap[number]) {
+            pokemonMovesMap[number] = [];
         }
+        pokemonMovesMap[number].push(move_id);
     }
 }
 
@@ -99,14 +85,10 @@ async function loadPokemonData() {
         const abName2 = ability_2 ? abilityMap[ability_2] : "";
         const abName3 = ability_3 ? abilityMap[ability_3] : "";
 
-        // このポケモンが覚える技リストを取得（データがない場合は空の配列）
-        const moves = pokemonMoves[number] || [];
-
         pokemonList.push({
             number, name, type_1, type_2, 
             H: numH, A: numA, B: numB, C: numC, D: numD, S: numS, total,
-            abName1, abName2, abName3,
-            moves // 技データを追加
+            abName1, abName2, abName3
         });
     }
 }
@@ -126,28 +108,32 @@ function renderList(data) {
             abilitiesHtml += `<span class="ability-item">${ab}</span>`;
         });
 
+        // 技リストのHTML生成（追加）
+        let movesHtml = '';
+        const moveIds = pokemonMovesMap[poke.number] || [];
+        if (moveIds.length > 0) {
+            moveIds.forEach(id => {
+                const move = moveMap[id];
+                if (move) {
+                    // タイプ情報があれば色付け、無ければデフォルト色
+                    const typeClass = move.type ? `type-${move.type}` : 'move-default';
+                    movesHtml += `<span class="move-badge ${typeClass}">${move.name}</span>`;
+                }
+            });
+            movesHtml = `
+                <div class="moves-section">
+                    <div class="moves-title">覚える技</div>
+                    <div class="moves-list">${movesHtml}</div>
+                </div>
+            `;
+        }
+
         const calcReal = (stat) => {
             return `特化: ${Math.floor((stat + 52) * 1.1)}<br>
                     32振: ${stat + 52}<br>
                     無振: ${stat + 20}<br>
                     下降: ${Math.floor((stat + 20) * 0.9)}`;
         };
-
-        // 【新規】覚える技のHTMLを生成（折りたたみ式）
-        let movesHtml = '';
-        if (poke.moves && poke.moves.length > 0) {
-            const uniqueMoves = [...new Set(poke.moves)]; // 重複を削除
-            let moveTags = '';
-            uniqueMoves.forEach(move => {
-                moveTags += `<span class="move-item">${move}</span>`;
-            });
-            movesHtml = `
-                <details class="moves-details">
-                    <summary>覚える技 (${uniqueMoves.length}個)</summary>
-                    <div class="moves-list">${moveTags}</div>
-                </details>
-            `;
-        }
 
         const div = document.createElement('div');
         div.className = 'card';
@@ -193,7 +179,7 @@ function renderList(data) {
                     種族値合計: ${poke.total}
                 </div>
             </div>
-            ${movesHtml} <!-- ここに技一覧を追加 -->
+            ${movesHtml} <!-- カードの一番下に技エリアを挿入 -->
         `;
         resultsContainer.appendChild(div);
     });
@@ -223,13 +209,15 @@ function setupFilters() {
             const matchAb = (poke.abName1 && poke.abName1.includes(keyword)) ||
                             (poke.abName2 && poke.abName2.includes(keyword)) ||
                             (poke.abName3 && poke.abName3.includes(keyword));
-                            
-            // 【新規】技の中にキーワードが含まれているかチェック
-            const matchMove = poke.moves && poke.moves.some(move => move.includes(keyword));
             
-            // 名前、特性、技のどれかに一致すればOK
-            const matchKeyword = matchName || matchAb || matchMove || keyword === "";
+            // 技の名前でも検索できるように追加
+            const moveIds = pokemonMovesMap[poke.number] || [];
+            const matchMove = moveIds.some(id => {
+                const move = moveMap[id];
+                return move && move.name.includes(keyword);
+            });
 
+            const matchKeyword = matchName || matchAb || matchMove || keyword === "";
             const matchType = selectedType === "" || poke.type_1 === selectedType || poke.type_2 === selectedType;
 
             const isMega = poke.name.includes('メガ');

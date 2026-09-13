@@ -210,39 +210,32 @@ body.mode-real .base-values { display: none; }
 .type-15 { background-color: #7038F8; } .type-16 { background-color: #705848; }
 .type-17 { background-color: #B8B8D0; } .type-18 { background-color: #EE99AC; }
 
-/* 折りたたみ式の技一覧エリア */
-.moves-details {
-    margin-top: 15px;
-    background-color: #f8f9fa;
-    border-radius: 8px;
-    border: 1px solid #ddd;
-    padding: 10px;
+/* 覚える技の表示エリア */
+.moves-section {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px dashed #ccc;
 }
-
-/* 「覚える技」のクリックできる見出し */
-.moves-details summary {
+.moves-title {
+    font-size: 0.85rem;
     font-weight: bold;
-    font-size: 0.95rem;
-    color: #444;
-    cursor: pointer;
-    outline: none;
-    user-select: none; /* スマホでタップした時の青いハイライト防止 */
+    color: #666;
+    margin-bottom: 6px;
 }
-
-/* 技が並ぶコンテナ */
 .moves-list {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
-    margin-top: 10px;
+    gap: 4px;
 }
-
-/* 個別の技の見た目 */
-.move-item {
-    background-color: #fff;
-    border: 1px solid #ccc;
+.move-badge {
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    border: 1px solid #ddd;
+}
+/* 技タイプが空欄の時のデフォルト色 */
+.move-default {
+    background-color: #f8f9fa;
     color: #333;
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-size: 0.85rem;
 }
+/* （技のタイプデータが入っている場合は、既存の type-XX の色が適用されます！） */
