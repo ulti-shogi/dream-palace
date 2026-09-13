@@ -63,7 +63,7 @@ id,move,type,category,power,accuracy,pp,contact
 1062,うらみつらみ,,Physical,75,100,12,1
 1063,エアカッター,,Special,60,95,20,1
 1064,エアスラッシュ,,Special,75,95,16,1
-1065,エナジーボール,,Special,90,100,12,1
+1065,エナジーボール,05,Special,90,100,12,1
 1066,エレキネット,,Special,55,95,16,1
 1067,エレキフィールド,,Status,xx,xx,12,1
 1068,エレキボール,,Special,xx,100,12,1
@@ -83,7 +83,7 @@ id,move,type,category,power,accuracy,pp,contact
 1082,オーロラベール,,Status,xx,xx,20,1
 1083,かいでんぱ,,Status,xx,100,16,1
 1084,カウンター,,Physical,xx,100,20,0
-1085,かえんほうしゃ,,Special,90,100,16,1
+1085,かえんほうしゃ,02,Special,90,100,16,1
 1086,かえんボール,,Special,120,90,8,1
 1087,かかとおとし,,Physical,120,90,12,0
 1088,かげうち,,Physical,40,100,20,0
@@ -310,7 +310,7 @@ id,move,type,category,power,accuracy,pp,contact
 1309,なげつける,,Physical,xx,100,12,1
 1310,なまける,,Status,xx,xx,8,1
 1311,なみだめ,,Status,xx,xx,20,1
-1312,なみのり,,Special,90,100,16,1
+1312,なみのり,03,Special,90,100,16,1
 1313,なやみのタネ,,Status,xx,100,12,1
 1314,ドラゴンアロー,,Physical,50,100,12,1
 1315,ドラゴンエール,,Status,xx,xx,16,1
