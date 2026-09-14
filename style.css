@@ -362,3 +362,51 @@ body.detail-page {
 .compact-total {
     color: #e3350d;          /* 合計だけ赤文字 */
 }
+
+/* タイプ相性の2カラムテーブルレイアウト */
+.eff-table {
+    display: flex;
+    border: 1px solid #ccc;
+    background-color: #fff;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-top: 10px;
+}
+.eff-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+.eff-weak {
+    border-right: 1px solid #ccc; /* 左右を区切る縦線 */
+}
+.eff-header {
+    text-align: center;
+    font-weight: bold;
+    border-bottom: 1px solid #ccc;
+    padding: 8px 0;
+    background-color: #f8f9fa;
+    color: #333;
+}
+.eff-list {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.eff-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+/* 相性のバッジは幅を固定して縦を綺麗に揃える */
+.eff-item .type-badge {
+    width: 75px; 
+    text-align: center;
+    margin: 0;
+}
+.eff-mult {
+    font-weight: bold;
+    font-size: 1.05rem;
+    color: #333;
+}

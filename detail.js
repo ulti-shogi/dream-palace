@@ -116,8 +116,9 @@ function renderDetail(poke) {
         else lowKickPower = 120;
     }
 
-    // --- 2. タイプ相性の計算（特性考慮） ---
-    const effResult = { "4倍": [], "2倍": [], "0.5倍": [], "0.25倍": [], "0倍": [] };
+    // --- 2. タイプ相性の計算（特性考慮・2カラム対応） ---
+    let weakList = [];
+    let resistList = [];
     
     Object.keys(typeEff).forEach(atkType => {
         let mult = typeEff[atkType][poke.t1];
@@ -128,20 +129,41 @@ function renderDetail(poke) {
         if (abs.includes("ふゆう") && atkType === "09") mult = 0; 
         if (abs.includes("もらいび") && atkType === "02") mult = 0; 
 
-        if (mult === 4) effResult["4倍"].push(atkType);
-        else if (mult === 2) effResult["2倍"].push(atkType);
-        else if (mult === 0.5) effResult["0.5倍"].push(atkType);
-        else if (mult === 0.25) effResult["0.25倍"].push(atkType);
-        else if (mult === 0) effResult["0倍"].push(atkType);
-    });
-
-    let effHtml = "";
-    Object.keys(effResult).forEach(key => {
-        if (effResult[key].length > 0) {
-            let badges = effResult[key].map(id => `<span class="type-badge type-${id}">${typeMap[id]}</span>`).join("");
-            effHtml += `<div class="eff-group"><div class="eff-label">${key}</div>${badges}</div>`;
+        // 弱点と耐性に振り分け
+        if (mult === 4 || mult === 2) {
+            weakList.push({ id: atkType, mult: mult });
+        } else if (mult === 0 || mult === 0.25 || mult === 0.5) {
+            resistList.push({ id: atkType, mult: mult });
         }
     });
+
+    // 並び替え（弱点は4倍が上、耐性は無効が上）
+    weakList.sort((a, b) => b.mult - a.mult);
+    resistList.sort((a, b) => a.mult - b.mult);
+
+    // HTMLの構築
+    const createEffHtml = (list) => {
+        if (list.length === 0) return `<div class="eff-item" style="color:#888; font-size:0.9rem;">なし</div>`;
+        return list.map(item => `
+            <div class="eff-item">
+                <span class="type-badge type-${item.id}">${typeMap[item.id]}</span>
+                <span class="eff-mult">×${item.mult}</span>
+            </div>
+        `).join("");
+    };
+
+    let effTableHtml = `
+        <div class="eff-table">
+            <div class="eff-col eff-weak">
+                <div class="eff-header">弱点</div>
+                <div class="eff-list">${createEffHtml(weakList)}</div>
+            </div>
+            <div class="eff-col eff-resist">
+                <div class="eff-header">耐性</div>
+                <div class="eff-list">${createEffHtml(resistList)}</div>
+            </div>
+        </div>
+    `;
 
     // --- 3. ステータス（種族値と実数値テーブル） ---
     const baseStatsHtml = `
@@ -210,9 +232,9 @@ function renderDetail(poke) {
         </div>
 
         <div class="detail-section">
-            <h2 class="section-title">タイプ相性（弱点・耐性）</h2>
-            ${effHtml || "すべて等倍です"}
-            <p style="font-size: 0.75rem; color: #888; margin-top: 5px;">※特性（ふゆう等）を考慮した結果です</p>
+            <h2 class="section-title">タイプ相性</h2>
+            ${effTableHtml}
+            <p style="font-size: 0.75rem; color: #888; margin-top: 8px;">※特性（ふゆう等）を考慮した結果です</p>
         </div>
 
         <!-- ▼▼ ステータスを削除し、種族値と実数値を独立したセクションに分割 ▼▼ -->
