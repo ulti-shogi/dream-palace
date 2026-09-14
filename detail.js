@@ -67,18 +67,23 @@ async function loadPokemonData(targetId) {
         // ※weightを14番目の要素として追加
         const [number, name, t1, t2, H, A, B, C, D, S, ab1, ab2, ab3, weight] = lines[i].split(',');
         if (number === targetId) {
+            // ▼▼ 修正箇所：数値を変換して合計（total）を計算する処理を追加 ▼▼
+            const numH = Number(H), numA = Number(A), numB = Number(B);
+            const numC = Number(C), numD = Number(D), numS = Number(S);
+            const total = numH + numA + numB + numC + numD + numS;
+
             targetPokemons.push({
                 number, name, t1, t2, 
-                H: Number(H), A: Number(A), B: Number(B), C: Number(C), D: Number(D), S: Number(S),
+                H: numH, A: numA, B: numB, C: numC, D: numD, S: numS,
+                total: total, // 計算した合計値を忘れずに追加
                 abName1: ab1 ? abilityMap[ab1] : "",
                 abName2: ab2 ? abilityMap[ab2] : "",
                 abName3: ab3 ? abilityMap[ab3] : "",
-                weight: weight ? Number(weight) : null // 重さ
+                weight: weight ? Number(weight) : null
             });
         }
     }
 }
-
 // タブの生成
 function renderTabs() {
     const container = document.getElementById('tabsContainer');
@@ -215,7 +220,7 @@ function renderDetail(poke) {
             <h3 class="sub-title">種族値</h3>
             ${baseStatsHtml}
             
-            <h3 class="sub-title" style="margin-top: 15px;">実数値 (Lv50)</h3>
+            <h3 class="sub-title" style="margin-top: 15px;">実数値</h3>
             ${realStatsTableHtml}
         </div>
 
