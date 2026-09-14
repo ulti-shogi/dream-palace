@@ -136,50 +136,26 @@ function renderList(data) {
         };
 
         const div = document.createElement('div');
-        div.className = 'card';
+div.className = 'card';
+        // 全体を <a> タグで囲み、URLに ?id=図鑑番号 を渡す
         div.innerHTML = `
-            <div class="card-header">
-                <span class="poke-name">${poke.name}</span>
-                <span class="poke-number">No.${poke.number}</span>
-            </div>
-            <div class="types">${typesHtml}</div>
-            <div class="abilities">${abilitiesHtml}</div>
-            <div class="stats-grid">
-                <div class="stat-item">
-                    <div class="stat-label">H</div>
-                    <div class="base-values">${poke.H}</div>
-                    <div class="real-values">ぶっぱ: ${poke.H + 107}<br>無振り: ${poke.H + 75}</div>
+            <a href="detail.html?id=${poke.number}" class="card-link">
+                <div class="card-header">
+                    <span class="poke-name">${poke.name}</span>
+                    <span class="poke-number">No.${poke.number}</span>
                 </div>
-                <div class="stat-item">
-                    <div class="stat-label">A</div>
-                    <div class="base-values">${poke.A}</div>
-                    <div class="real-values">${calcReal(poke.A)}</div>
+                <div class="types">${typesHtml}</div>
+                <div class="abilities">${abilitiesHtml}</div>
+                <div class="stats-grid">
+                    <div class="stat-item"><div class="stat-label">H</div><div class="base-values">${poke.H}</div></div>
+                    <div class="stat-item"><div class="stat-label">A</div><div class="base-values">${poke.A}</div></div>
+                    <div class="stat-item"><div class="stat-label">B</div><div class="base-values">${poke.B}</div></div>
+                    <div class="stat-item"><div class="stat-label">C</div><div class="base-values">${poke.C}</div></div>
+                    <div class="stat-item"><div class="stat-label">D</div><div class="base-values">${poke.D}</div></div>
+                    <div class="stat-item"><div class="stat-label">S</div><div class="base-values">${poke.S}</div></div>
+                    <div class="stat-item total">種族値合計: ${poke.total}</div>
                 </div>
-                <div class="stat-item">
-                    <div class="stat-label">B</div>
-                    <div class="base-values">${poke.B}</div>
-                    <div class="real-values">${calcReal(poke.B)}</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-label">C</div>
-                    <div class="base-values">${poke.C}</div>
-                    <div class="real-values">${calcReal(poke.C)}</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-label">D</div>
-                    <div class="base-values">${poke.D}</div>
-                    <div class="real-values">${calcReal(poke.D)}</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-label">S</div>
-                    <div class="base-values">${poke.S}</div>
-                    <div class="real-values">${calcReal(poke.S)}</div>
-                </div>
-                <div class="stat-item total">
-                    種族値合計: ${poke.total}
-                </div>
-            </div>
-            ${movesHtml} <!-- カードの一番下に技エリアを挿入 -->
+            </a>
         `;
         resultsContainer.appendChild(div);
     });
