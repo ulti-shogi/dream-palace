@@ -108,36 +108,9 @@ function renderList(data) {
             abilitiesHtml += `<span class="ability-item">${ab}</span>`;
         });
 
-        // 技リストのHTML生成（追加）
-        let movesHtml = '';
-        const moveIds = pokemonMovesMap[poke.number] || [];
-        if (moveIds.length > 0) {
-            moveIds.forEach(id => {
-                const move = moveMap[id];
-                if (move) {
-                    // タイプ情報があれば色付け、無ければデフォルト色
-                    const typeClass = move.type ? `type-${move.type}` : 'move-default';
-                    movesHtml += `<span class="move-badge ${typeClass}">${move.name}</span>`;
-                }
-            });
-            movesHtml = `
-                <div class="moves-section">
-                    <div class="moves-title">覚える技</div>
-                    <div class="moves-list">${movesHtml}</div>
-                </div>
-            `;
-        }
-
-        const calcReal = (stat) => {
-            return `特化: ${Math.floor((stat + 52) * 1.1)}<br>
-                    32振: ${stat + 52}<br>
-                    無振: ${stat + 20}<br>
-                    下降: ${Math.floor((stat + 20) * 0.9)}`;
-        };
-
         const div = document.createElement('div');
-div.className = 'card';
-        // 全体を <a> タグで囲み、URLに ?id=図鑑番号 を渡す
+        div.className = 'card';
+        // H-A-B-C-D-S-合計 の1行フォーマットに変更
         div.innerHTML = `
             <a href="detail.html?id=${poke.number}" class="card-link">
                 <div class="card-header">
@@ -146,14 +119,8 @@ div.className = 'card';
                 </div>
                 <div class="types">${typesHtml}</div>
                 <div class="abilities">${abilitiesHtml}</div>
-                <div class="stats-grid">
-                    <div class="stat-item"><div class="stat-label">H</div><div class="base-values">${poke.H}</div></div>
-                    <div class="stat-item"><div class="stat-label">A</div><div class="base-values">${poke.A}</div></div>
-                    <div class="stat-item"><div class="stat-label">B</div><div class="base-values">${poke.B}</div></div>
-                    <div class="stat-item"><div class="stat-label">C</div><div class="base-values">${poke.C}</div></div>
-                    <div class="stat-item"><div class="stat-label">D</div><div class="base-values">${poke.D}</div></div>
-                    <div class="stat-item"><div class="stat-label">S</div><div class="base-values">${poke.S}</div></div>
-                    <div class="stat-item total">種族値合計: ${poke.total}</div>
+                <div class="compact-stats">
+                    ${poke.H}-${poke.A}-${poke.B}-${poke.C}-${poke.D}-${poke.S}-<span class="compact-total">${poke.total}</span>
                 </div>
             </a>
         `;
@@ -166,13 +133,8 @@ function setupFilters() {
     const typeFilter = document.getElementById('typeFilter');
     const formFilter = document.getElementById('formFilter');
     const sortFilter = document.getElementById('sortFilter');
-    const modeRadios = document.querySelectorAll('input[name="dispMode"]');
-
-    modeRadios.forEach(radio => {
-        radio.addEventListener('change', (e) => {
-            document.body.className = `mode-${e.target.value}`;
-        });
-    });
+    
+    // ※実数値スイッチの切り替え処理（modeRadios）は不要になったので削除しました
 
     window.filterData = function() {
         const keyword = searchInput.value;
@@ -186,7 +148,6 @@ function setupFilters() {
                             (poke.abName2 && poke.abName2.includes(keyword)) ||
                             (poke.abName3 && poke.abName3.includes(keyword));
             
-            // 技の名前でも検索できるように追加
             const moveIds = pokemonMovesMap[poke.number] || [];
             const matchMove = moveIds.some(id => {
                 const move = moveMap[id];

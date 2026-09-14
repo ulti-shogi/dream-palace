@@ -344,3 +344,21 @@ body.detail-page {
     color: #333;
     width: 15%; /* 左端のHABCDSの幅 */
 }
+
+/* 一覧画面用のコンパクトな種族値表示 */
+.compact-stats {
+    font-weight: bold;       /* 全体太字 */
+    font-size: 1.05rem;      /* 少し見やすい大きさに */
+    color: #333;
+    text-align: center;
+    letter-spacing: 1px;     /* 数字の間隔を少し空ける */
+    margin-top: 8px;
+    background-color: #f8f9fa;
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid #eee;
+}
+
+.compact-total {
+    color: #e3350d;          /* 合計だけ赤文字 */
+}
