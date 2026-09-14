@@ -215,14 +215,17 @@ function renderDetail(poke) {
             <p style="font-size: 0.75rem; color: #888; margin-top: 5px;">※特性（ふゆう等）を考慮した結果です</p>
         </div>
 
+        <!-- ▼▼ ステータスを削除し、種族値と実数値を独立したセクションに分割 ▼▼ -->
         <div class="detail-section">
-            <h2 class="section-title">ステータス</h2>
-            <h3 class="sub-title">種族値</h3>
+            <h2 class="section-title">種族値</h2>
             ${baseStatsHtml}
-            
-            <h3 class="sub-title" style="margin-top: 15px;">実数値</h3>
+        </div>
+
+        <div class="detail-section">
+            <h2 class="section-title">実数値</h2>
             ${realStatsTableHtml}
         </div>
+        <!-- ▲▲ ここまで ▲▲ -->
 
         <div class="detail-section">
             <h2 class="section-title">覚える技</h2>
