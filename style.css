@@ -401,9 +401,11 @@ body.detail-page {
 }
 /* 相性のバッジは幅を固定して縦を綺麗に揃える */
 .eff-item .type-badge {
-    width: 75px; 
+    width: 90px; /* 75pxから広げて、5文字（フェアリー等）が入るようにする */
     text-align: center;
     margin: 0;
+    white-space: nowrap; /* 絶対に改行させない魔法のコード */
+    padding: 4px 8px; /* 左右の余白を少しだけ詰めてスッキリさせる */
 }
 .eff-mult {
     font-weight: bold;
