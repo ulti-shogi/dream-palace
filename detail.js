@@ -95,7 +95,6 @@ function renderTabs() {
     });
 }
 
-// 選択されたフォルムの詳細を描画
 function renderDetail(poke) {
     const content = document.getElementById('detailContent');
 
@@ -113,21 +112,17 @@ function renderDetail(poke) {
     }
 
     // --- 2. タイプ相性の計算（特性考慮） ---
-    // 結果をまとめるための入れ物
     const effResult = { "4倍": [], "2倍": [], "0.5倍": [], "0.25倍": [], "0倍": [] };
     
     Object.keys(typeEff).forEach(atkType => {
-        // ベースの倍率
         let mult = typeEff[atkType][poke.t1];
         if (poke.t2 !== "00") mult *= typeEff[atkType][poke.t2];
 
-        // ▼▼ ここに特性による上書きロジックを追加 ▼▼
+        // 特性による上書き
         const abs = [poke.abName1, poke.abName2, poke.abName3];
-        if (abs.includes("ふゆう") && atkType === "09") mult = 0; // 地面無効
-        if (abs.includes("もらいび") && atkType === "02") mult = 0; // 炎無効
-        // ▲▲ 今後特性が増えたらここに追記していく ▲▲
+        if (abs.includes("ふゆう") && atkType === "09") mult = 0; 
+        if (abs.includes("もらいび") && atkType === "02") mult = 0; 
 
-        // 倍率ごとに分類
         if (mult === 4) effResult["4倍"].push(atkType);
         else if (mult === 2) effResult["2倍"].push(atkType);
         else if (mult === 0.5) effResult["0.5倍"].push(atkType);
@@ -135,7 +130,6 @@ function renderDetail(poke) {
         else if (mult === 0) effResult["0倍"].push(atkType);
     });
 
-    // 相性のHTML構築
     let effHtml = "";
     Object.keys(effResult).forEach(key => {
         if (effResult[key].length > 0) {
@@ -144,8 +138,51 @@ function renderDetail(poke) {
         }
     });
 
-    // --- 3. 実数値計算など ---
-    const calcReal = (stat) => `特化:${Math.floor((stat+52)*1.1)} / 32振:${stat+52} / 無振:${stat+20} / 下降:${Math.floor((stat+20)*0.9)}`;
+    // --- 3. ステータス（種族値と実数値テーブル） ---
+    const baseStatsHtml = `
+        <div class="stats-grid">
+            <div class="stat-item"><div class="stat-label">H</div><div class="base-values">${poke.H}</div></div>
+            <div class="stat-item"><div class="stat-label">A</div><div class="base-values">${poke.A}</div></div>
+            <div class="stat-item"><div class="stat-label">B</div><div class="base-values">${poke.B}</div></div>
+            <div class="stat-item"><div class="stat-label">C</div><div class="base-values">${poke.C}</div></div>
+            <div class="stat-item"><div class="stat-label">D</div><div class="base-values">${poke.D}</div></div>
+            <div class="stat-item"><div class="stat-label">S</div><div class="base-values">${poke.S}</div></div>
+            <div class="stat-item total">種族値合計: ${poke.total}</div>
+        </div>
+    `;
+
+    // 実数値を計算する補助関数
+    const calc = (s) => ({
+        tokka: Math.floor((s + 52) * 1.1),
+        j32: s + 52,
+        mu: s + 20,
+        kako: Math.floor((s + 20) * 0.9)
+    });
+    const rA = calc(poke.A), rB = calc(poke.B), rC = calc(poke.C), rD = calc(poke.D), rS = calc(poke.S);
+    const rH_max = poke.H + 107; // HPぶっぱ
+    const rH_min = poke.H + 75;  // HP無振り
+
+    const realStatsTableHtml = `
+        <table class="real-stats-table">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>特化</th>
+                    <th>32振</th>
+                    <th>無振</th>
+                    <th>下降</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><th>H</th><td>${rH_max}</td><td>${rH_max}</td><td>${rH_min}</td><td>${rH_min}</td></tr>
+                <tr><th>A</th><td>${rA.tokka}</td><td>${rA.j32}</td><td>${rA.mu}</td><td>${rA.kako}</td></tr>
+                <tr><th>B</th><td>${rB.tokka}</td><td>${rB.j32}</td><td>${rB.mu}</td><td>${rB.kako}</td></tr>
+                <tr><th>C</th><td>${rC.tokka}</td><td>${rC.j32}</td><td>${rC.mu}</td><td>${rC.kako}</td></tr>
+                <tr><th>D</th><td>${rD.tokka}</td><td>${rD.j32}</td><td>${rD.mu}</td><td>${rD.kako}</td></tr>
+                <tr><th>S</th><td>${rS.tokka}</td><td>${rS.j32}</td><td>${rS.mu}</td><td>${rS.kako}</td></tr>
+            </tbody>
+        </table>
+    `;
 
     // --- 4. 覚える技 ---
     let movesHtml = "";
@@ -164,23 +201,22 @@ function renderDetail(poke) {
             <h2 class="section-title">基本データ</h2>
             <p><strong>タイプ:</strong> <span class="type-badge type-${poke.t1}">${typeMap[poke.t1]}</span> ${poke.t2 !== "00" ? `<span class="type-badge type-${poke.t2}">${typeMap[poke.t2]}</span>` : ""}</p>
             <p><strong>特性:</strong> ${[poke.abName1, poke.abName2, poke.abName3].filter(Boolean).filter((x, i, a) => a.indexOf(x) === i).join(" / ")}</p>
-            <p><strong>重さ:</strong> ${weightText} (けたぐり威力: ${lowKickPower})</p>
+            <p><strong>重さ:</strong> ${weightText} <span style="font-size: 0.85rem; color: #666;">(けたぐり威力: ${lowKickPower})</span></p>
         </div>
 
         <div class="detail-section">
             <h2 class="section-title">タイプ相性（弱点・耐性）</h2>
             ${effHtml || "すべて等倍です"}
-            <p style="font-size: 0.8rem; color: #888; margin-top: 5px;">※特性（ふゆう等）を考慮した結果が表示されます</p>
+            <p style="font-size: 0.75rem; color: #888; margin-top: 5px;">※特性（ふゆう等）を考慮した結果です</p>
         </div>
 
         <div class="detail-section">
             <h2 class="section-title">ステータス</h2>
-            <p><strong>H:</strong> 種族値 ${poke.H} (ぶっぱ: ${poke.H + 107} / 無振り: ${poke.H + 75})</p>
-            <p><strong>A:</strong> 種族値 ${poke.A} (${calcReal(poke.A)})</p>
-            <p><strong>B:</strong> 種族値 ${poke.B} (${calcReal(poke.B)})</p>
-            <p><strong>C:</strong> 種族値 ${poke.C} (${calcReal(poke.C)})</p>
-            <p><strong>D:</strong> 種族値 ${poke.D} (${calcReal(poke.D)})</p>
-            <p><strong>S:</strong> 種族値 ${poke.S} (${calcReal(poke.S)})</p>
+            <h3 class="sub-title">種族値</h3>
+            ${baseStatsHtml}
+            
+            <h3 class="sub-title" style="margin-top: 15px;">実数値 (Lv50)</h3>
+            ${realStatsTableHtml}
         </div>
 
         <div class="detail-section">
@@ -189,5 +225,4 @@ function renderDetail(poke) {
         </div>
     `;
 }
-
 initDetail();

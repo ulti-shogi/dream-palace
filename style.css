@@ -311,3 +311,36 @@ body.detail-page {
     font-weight: bold;
     min-width: 50px;
 }
+
+/* 詳細ページの小見出し */
+.sub-title {
+    font-size: 0.95rem;
+    color: #666;
+    margin-bottom: 8px;
+    border-left: 4px solid #e3350d;
+    padding-left: 8px;
+}
+
+/* 実数値テーブル */
+.real-stats-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    font-size: 0.9rem;
+    text-align: center;
+    background-color: #fff;
+}
+.real-stats-table th, .real-stats-table td {
+    border: 1px solid #ddd;
+    padding: 8px 4px;
+}
+.real-stats-table thead th {
+    background-color: #f8f9fa;
+    color: #555;
+    font-size: 0.85rem;
+}
+.real-stats-table tbody th {
+    background-color: #e2e8f0;
+    color: #333;
+    width: 15%; /* 左端のHABCDSの幅 */
+}
