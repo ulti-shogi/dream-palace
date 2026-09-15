@@ -19,23 +19,23 @@ async function initDetail() {
     }
 }
 
-// 各種テキストデータの読み込み（app.jsとほぼ同じ＋相性表）
+// 各種テキストデータの読み込み
 async function loadData() {
-    // 1. タイプ
     let res = await fetch('type.txt'); let text = await res.text();
     let lines = text.trim().split('\n');
     let typeIds = lines[0].split(','); let typeNames = lines[1].split(',');
     typeIds.forEach((id, i) => typeMap[id] = typeNames[i]);
 
-    // 2. 特性
+    // ▼▼ 変更箇所：特性の効果（3番目のデータ）もオブジェクトとして保存 ▼▼
     res = await fetch('ability.txt'); text = await res.text();
-    text.trim().split('\n').slice(1).forEach(l => { const p = l.split(','); abilityMap[p[0]] = p[1]; });
+    text.trim().split('\n').slice(1).forEach(l => { 
+        const p = l.split(','); 
+        abilityMap[p[0]] = { name: p[1], effect: p[2] || "効果が設定されていません" }; 
+    });
 
-    // 3. 技
     res = await fetch('move.txt'); text = await res.text();
     text.trim().split('\n').slice(1).forEach(l => { const p = l.split(','); if(p.length>=2) moveMap[p[0]] = { name: p[1], type: p[2] }; });
 
-    // 4. 覚える技（pokemon_moves.txt）
     res = await fetch('pokemon_moves.txt'); text = await res.text();
     text.trim().split('\n').slice(1).forEach(l => { 
         const [num, mid] = l.split(',');
@@ -43,10 +43,9 @@ async function loadData() {
         pokemonMovesMap[num].push(mid);
     });
 
-    // 5. タイプ相性表 (type-effectiveness.txt)
     res = await fetch('type-effectiveness.txt'); text = await res.text();
     lines = text.trim().split('\n');
-    const header = lines[0].split(',').slice(1); // 01, 02, 03...
+    const header = lines[0].split(',').slice(1);
     for(let i = 1; i < lines.length; i++) {
         const parts = lines[i].split(',');
         const atkType = parts[0];
@@ -57,28 +56,27 @@ async function loadData() {
     }
 }
 
-// 該当するIDのポケモンのみを抽出（重さ weight も取得）
+// 該当するIDのポケモンのみを抽出
 async function loadPokemonData(targetId) {
     const res = await fetch('pokemon.txt');
     const text = await res.text();
     const lines = text.trim().split('\n');
     
     for (let i = 1; i < lines.length; i++) {
-        // ※weightを14番目の要素として追加
         const [number, name, t1, t2, H, A, B, C, D, S, ab1, ab2, ab3, weight] = lines[i].split(',');
         if (number === targetId) {
-            // ▼▼ 修正箇所：数値を変換して合計（total）を計算する処理を追加 ▼▼
             const numH = Number(H), numA = Number(A), numB = Number(B);
             const numC = Number(C), numD = Number(D), numS = Number(S);
-            const total = numH + numA + numB + numC + numD + numS;
-
+            
             targetPokemons.push({
                 number, name, t1, t2, 
                 H: numH, A: numA, B: numB, C: numC, D: numD, S: numS,
-                total: total, // 計算した合計値を忘れずに追加
-                abName1: ab1 ? abilityMap[ab1] : "",
-                abName2: ab2 ? abilityMap[ab2] : "",
-                abName3: ab3 ? abilityMap[ab3] : "",
+                total: numH + numA + numB + numC + numD + numS,
+                // ▼▼ 変更箇所：IDも保持しておき、名前はabilityMapから抽出 ▼▼
+                ab1: ab1, ab2: ab2, ab3: ab3,
+                abName1: ab1 && abilityMap[ab1] ? abilityMap[ab1].name : "",
+                abName2: ab2 && abilityMap[ab2] ? abilityMap[ab2].name : "",
+                abName3: ab3 && abilityMap[ab3] ? abilityMap[ab3].name : "",
                 weight: weight ? Number(weight) : null
             });
         }
@@ -218,8 +216,25 @@ function renderDetail(poke) {
         }
     });
 
+    // ▼▼ 追加箇所：特性カードのHTMLを構築（重複を排除して縦に並べる） ▼▼
+    const abIds = [poke.ab1, poke.ab2, poke.ab3].filter(Boolean);
+    const uniqueAbIds = [...new Set(abIds)]; // 同じ特性があればまとめる
+    
+    let abilitiesHtml = `<div class="ability-list">`;
+    uniqueAbIds.forEach(id => {
+        const ab = abilityMap[id];
+        if(ab) {
+            abilitiesHtml += `
+                <div class="ability-card">
+                    <div class="ability-name-badge">${ab.name}</div>
+                    <p class="ability-effect">${ab.effect}</p>
+                </div>
+            `;
+        }
+    });
+    abilitiesHtml += `</div>`;
+
     // --- HTMLを合体 ---
-    // ▼▼ 修正箇所：タイプ、特性、重さを独立した <h2> セクションに分割 ▼▼
     content.innerHTML = `
         <div class="detail-section">
             <h2 class="section-title">タイプ</h2>
@@ -231,7 +246,7 @@ function renderDetail(poke) {
 
         <div class="detail-section">
             <h2 class="section-title">特性</h2>
-            <p style="font-weight: bold; color: #333;">${[poke.abName1, poke.abName2, poke.abName3].filter(Boolean).filter((x, i, a) => a.indexOf(x) === i).join(" / ")}</p>
+            ${abilitiesHtml} <!-- ▼▼ 構築した特性HTMLをここに埋め込む ▼▼ -->
         </div>
 
         <div class="detail-section">
@@ -241,6 +256,7 @@ function renderDetail(poke) {
             </p>
         </div>
 
+        <!-- 以下のセクション（相性、種族値など）は変更なし -->
         <div class="detail-section">
             <h2 class="section-title">タイプ相性（弱点・耐性）</h2>
             ${effTableHtml}
@@ -262,5 +278,4 @@ function renderDetail(poke) {
             <div class="moves-list">${movesHtml || "技データがありません"}</div>
         </div>
     `;
-}
 initDetail();
