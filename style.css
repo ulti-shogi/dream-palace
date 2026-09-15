@@ -443,9 +443,9 @@ body.detail-page {
     margin: 0;
 }
 
-/* 詳細ページのトップにあるタイプバッジを少し大きくする */
-.types .type-badge {
-    padding: 6px 18px;
-    font-size: 1rem;
+/* 詳細ページのトップにあるタイプバッジだけを確実に大きくする */
+.detail-page .types .type-badge {
+    padding: 8px 20px !important; /* !importantで優先順位を最強にする */
+    font-size: 1.1rem !important; /* 以前よりさらに少し大きめに設定 */
     border-radius: 20px;
 }
