@@ -442,3 +442,10 @@ body.detail-page {
     line-height: 1.5;
     margin: 0;
 }
+
+/* 詳細ページのトップにあるタイプバッジを少し大きくする */
+.types .type-badge {
+    padding: 6px 18px;
+    font-size: 1rem;
+    border-radius: 20px;
+}

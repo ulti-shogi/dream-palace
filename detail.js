@@ -245,18 +245,10 @@ function renderDetail(poke) {
         </div>
 
         <div class="detail-section">
-            <h2 class="section-title">特性</h2>
-            ${abilitiesHtml} <!-- ▼▼ 構築した特性HTMLをここに埋め込む ▼▼ -->
+            <h2 class="section-title">とくせい</h2>
+            ${abilitiesHtml}
         </div>
 
-        <div class="detail-section">
-            <h2 class="section-title">重さ</h2>
-            <p style="font-size: 1.05rem; font-weight: bold; color: #333;">
-                ${weightText} <span style="font-size: 0.9rem; color: #666; font-weight: normal;">(けたぐり威力: ${lowKickPower})</span>
-            </p>
-        </div>
-
-        <!-- 以下のセクション（相性、種族値など）は変更なし -->
         <div class="detail-section">
             <h2 class="section-title">タイプ相性（弱点・耐性）</h2>
             ${effTableHtml}
@@ -269,8 +261,15 @@ function renderDetail(poke) {
         </div>
 
         <div class="detail-section">
-            <h2 class="section-title">実数値 (Lv50)</h2>
+            <h2 class="section-title">実数値</h2>
             ${realStatsTableHtml}
+        </div>
+
+        <div class="detail-section">
+            <h2 class="section-title">おもさ</h2>
+            <p style="font-size: 1.05rem; font-weight: bold; color: #333;">
+                ${weightText} <span style="font-size: 0.9rem; color: #666; font-weight: normal;">(けたぐり威力: ${lowKickPower})</span>
+            </p>
         </div>
 
         <div class="detail-section">
@@ -278,7 +277,6 @@ function renderDetail(poke) {
             <div class="moves-list">${movesHtml || "技データがありません"}</div>
         </div>
     `;
-
-} // ← ★★★ ココに「 } 」を追加してください！ ★★★
+}
     
 initDetail();
