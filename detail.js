@@ -278,4 +278,7 @@ function renderDetail(poke) {
             <div class="moves-list">${movesHtml || "技データがありません"}</div>
         </div>
     `;
+
+} // ← ★★★ ココに「 } 」を追加してください！ ★★★
+    
 initDetail();
