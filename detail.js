@@ -124,12 +124,10 @@ function renderDetail(poke) {
         let mult = typeEff[atkType][poke.t1];
         if (poke.t2 !== "00") mult *= typeEff[atkType][poke.t2];
 
-        // 特性による上書き
         const abs = [poke.abName1, poke.abName2, poke.abName3];
         if (abs.includes("ふゆう") && atkType === "09") mult = 0; 
         if (abs.includes("もらいび") && atkType === "02") mult = 0; 
 
-        // 弱点と耐性に振り分け
         if (mult === 4 || mult === 2) {
             weakList.push({ id: atkType, mult: mult });
         } else if (mult === 0 || mult === 0.25 || mult === 0.5) {
@@ -137,19 +135,24 @@ function renderDetail(poke) {
         }
     });
 
-    // 並び替え（弱点は4倍が上、耐性は無効が上）
     weakList.sort((a, b) => b.mult - a.mult);
     resistList.sort((a, b) => a.mult - b.mult);
 
-    // HTMLの構築
+    // ▼▼ 修正箇所：0.5を「1/2」、0.25を「1/4」に変換して表示 ▼▼
     const createEffHtml = (list) => {
         if (list.length === 0) return `<div class="eff-item" style="color:#888; font-size:0.9rem;">なし</div>`;
-        return list.map(item => `
-            <div class="eff-item">
-                <span class="type-badge type-${item.id}">${typeMap[item.id]}</span>
-                <span class="eff-mult">×${item.mult}</span>
-            </div>
-        `).join("");
+        return list.map(item => {
+            let displayMult = item.mult;
+            if (item.mult === 0.5) displayMult = "1/2";
+            if (item.mult === 0.25) displayMult = "1/4";
+            
+            return `
+                <div class="eff-item">
+                    <span class="type-badge type-${item.id}">${typeMap[item.id]}</span>
+                    <span class="eff-mult">×${displayMult}</span>
+                </div>
+            `;
+        }).join("");
     };
 
     let effTableHtml = `
@@ -178,7 +181,6 @@ function renderDetail(poke) {
         </div>
     `;
 
-    // 実数値を計算する補助関数
     const calc = (s) => ({
         tokka: Math.floor((s + 52) * 1.1),
         j32: s + 52,
@@ -186,19 +188,13 @@ function renderDetail(poke) {
         kako: Math.floor((s + 20) * 0.9)
     });
     const rA = calc(poke.A), rB = calc(poke.B), rC = calc(poke.C), rD = calc(poke.D), rS = calc(poke.S);
-    const rH_max = poke.H + 107; // HPぶっぱ
-    const rH_min = poke.H + 75;  // HP無振り
+    const rH_max = poke.H + 107; 
+    const rH_min = poke.H + 75;  
 
     const realStatsTableHtml = `
         <table class="real-stats-table">
             <thead>
-                <tr>
-                    <th></th>
-                    <th>特化</th>
-                    <th>32振</th>
-                    <th>無振</th>
-                    <th>下降</th>
-                </tr>
+                <tr><th></th><th>特化</th><th>32振</th><th>無振</th><th>下降</th></tr>
             </thead>
             <tbody>
                 <tr><th>H</th><td>${rH_max}</td><td>${rH_max}</td><td>${rH_min}</td><td>${rH_min}</td></tr>
@@ -223,31 +219,43 @@ function renderDetail(poke) {
     });
 
     // --- HTMLを合体 ---
+    // ▼▼ 修正箇所：タイプ、特性、重さを独立した <h2> セクションに分割 ▼▼
     content.innerHTML = `
         <div class="detail-section">
-            <h2 class="section-title">基本データ</h2>
-            <p><strong>タイプ:</strong> <span class="type-badge type-${poke.t1}">${typeMap[poke.t1]}</span> ${poke.t2 !== "00" ? `<span class="type-badge type-${poke.t2}">${typeMap[poke.t2]}</span>` : ""}</p>
-            <p><strong>特性:</strong> ${[poke.abName1, poke.abName2, poke.abName3].filter(Boolean).filter((x, i, a) => a.indexOf(x) === i).join(" / ")}</p>
-            <p><strong>重さ:</strong> ${weightText} <span style="font-size: 0.85rem; color: #666;">(けたぐり威力: ${lowKickPower})</span></p>
+            <h2 class="section-title">タイプ</h2>
+            <div class="types">
+                <span class="type-badge type-${poke.t1}">${typeMap[poke.t1]}</span>
+                ${poke.t2 !== "00" ? `<span class="type-badge type-${poke.t2}">${typeMap[poke.t2]}</span>` : ""}
+            </div>
         </div>
 
         <div class="detail-section">
-            <h2 class="section-title">タイプ相性</h2>
+            <h2 class="section-title">特性</h2>
+            <p style="font-weight: bold; color: #333;">${[poke.abName1, poke.abName2, poke.abName3].filter(Boolean).filter((x, i, a) => a.indexOf(x) === i).join(" / ")}</p>
+        </div>
+
+        <div class="detail-section">
+            <h2 class="section-title">重さ</h2>
+            <p style="font-size: 1.05rem; font-weight: bold; color: #333;">
+                ${weightText} <span style="font-size: 0.9rem; color: #666; font-weight: normal;">(けたぐり威力: ${lowKickPower})</span>
+            </p>
+        </div>
+
+        <div class="detail-section">
+            <h2 class="section-title">タイプ相性（弱点・耐性）</h2>
             ${effTableHtml}
             <p style="font-size: 0.75rem; color: #888; margin-top: 8px;">※特性（ふゆう等）を考慮した結果です</p>
         </div>
 
-        <!-- ▼▼ ステータスを削除し、種族値と実数値を独立したセクションに分割 ▼▼ -->
         <div class="detail-section">
             <h2 class="section-title">種族値</h2>
             ${baseStatsHtml}
         </div>
 
         <div class="detail-section">
-            <h2 class="section-title">実数値</h2>
+            <h2 class="section-title">実数値 (Lv50)</h2>
             ${realStatsTableHtml}
         </div>
-        <!-- ▲▲ ここまで ▲▲ -->
 
         <div class="detail-section">
             <h2 class="section-title">覚える技</h2>
