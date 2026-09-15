@@ -93,7 +93,8 @@ async function loadPokemonData() {
     }
 }
 
-function renderList(data) {
+// ▼引数に sortType（何順で並び替えているか）を追加
+function renderList(data, sortType) {
     const resultsContainer = document.getElementById('results');
     resultsContainer.innerHTML = '';
 
@@ -108,19 +109,22 @@ function renderList(data) {
             abilitiesHtml += `<span class="ability-item">${ab}</span>`;
         });
 
+        // ▼選ばれている項目なら 'class="highlight-active"' を返す便利関数
+        const hl = (type) => sortType === type ? 'class="highlight-active"' : '';
+        const numClass = sortType === 'number' ? 'highlight-active' : '';
+
         const div = document.createElement('div');
         div.className = 'card';
-        // H-A-B-C-D-S-合計 の1行フォーマットに変更
         div.innerHTML = `
             <a href="detail.html?id=${poke.number}" class="card-link">
                 <div class="card-header">
                     <span class="poke-name">${poke.name}</span>
-                    <span class="poke-number">No.${poke.number}</span>
+                    <span class="poke-number ${numClass}">No.${poke.number}</span>
                 </div>
                 <div class="types">${typesHtml}</div>
                 <div class="abilities">${abilitiesHtml}</div>
                 <div class="compact-stats">
-                    ${poke.H}-${poke.A}-${poke.B}-${poke.C}-${poke.D}-${poke.S}-<span class="compact-total">${poke.total}</span>
+                    <span ${hl('H')}>${poke.H}</span>-<span ${hl('A')}>${poke.A}</span>-<span ${hl('B')}>${poke.B}</span>-<span ${hl('C')}>${poke.C}</span>-<span ${hl('D')}>${poke.D}</span>-<span ${hl('S')}>${poke.S}</span>-<span ${hl('total')}>${poke.total}</span>
                 </div>
             </a>
         `;
@@ -133,14 +137,12 @@ function setupFilters() {
     const typeFilter = document.getElementById('typeFilter');
     const formFilter = document.getElementById('formFilter');
     const sortFilter = document.getElementById('sortFilter');
-    
-    // ※実数値スイッチの切り替え処理（modeRadios）は不要になったので削除しました
 
     window.filterData = function() {
         const keyword = searchInput.value;
         const selectedType = typeFilter.value;
         const formValue = formFilter.value;
-        const sortType = sortFilter.value;
+        const sortType = sortFilter.value; // 今何順かを取得
 
         let filtered = pokemonList.filter(poke => {
             const matchName = poke.name.includes(keyword);
@@ -176,7 +178,8 @@ function setupFilters() {
             }
         });
 
-        renderList(filtered);
+        // ▼renderListに「いま何順で並び替えているか（sortType）」を渡す
+        renderList(filtered, sortType);
     };
 
     searchInput.addEventListener('input', window.filterData);

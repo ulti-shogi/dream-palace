@@ -359,8 +359,8 @@ body.detail-page {
     border: 1px solid #eee;
 }
 
-.compact-total {
-    color: #e3350d;          /* 合計だけ赤文字 */
+.highlight-active {
+    color: #e3350d;
 }
 
 /* タイプ相性の2カラムテーブルレイアウト */
