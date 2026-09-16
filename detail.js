@@ -1,94 +1,49 @@
 let typeMap = {}, abilityMap = {}, moveMap = {}, pokemonMovesMap = {}, typeEff = {};
 let targetPokemons = []; // URLのIDに一致する全フォルムのデータ
 
+// ▼▼ detail.js の initDetail 関数を差し替え ▼▼
 async function initDetail() {
-    // URLから "?id=0003" の部分を取得
+    // URLから "?id=0003&name=メガフシギバナ" の部分を取得
     const urlParams = new URLSearchParams(window.location.search);
     const targetId = urlParams.get('id');
-    if (!targetId) return; // IDが無ければ何もしない
+    const targetName = urlParams.get('name'); // 追加：名前も取得する
+
+    if (!targetId) return;
 
     await loadData();
     await loadPokemonData(targetId);
     
     if (targetPokemons.length > 0) {
         document.getElementById('pageTitle').textContent = `No.${targetId} の詳細`;
-        renderTabs();
-        renderDetail(targetPokemons[0]); // 最初は一番目のフォルムを表示
+        
+        // 追加：URLの名前と一致するポケモンを探す（見つからなければ0番目をセット）
+        let initialIndex = 0;
+        if (targetName) {
+            const foundIndex = targetPokemons.findIndex(p => p.name === targetName);
+            if (foundIndex !== -1) initialIndex = foundIndex;
+        }
+
+        // 決定したインデックス（何番目のポケモンか）を渡して描画
+        renderTabs(initialIndex);
+        renderDetail(targetPokemons[initialIndex]); 
     } else {
         document.getElementById('pageTitle').textContent = "ポケモンが見つかりません";
     }
 }
 
-// 各種テキストデータの読み込み
-async function loadData() {
-    let res = await fetch('type.txt'); let text = await res.text();
-    let lines = text.trim().split('\n');
-    let typeIds = lines[0].split(','); let typeNames = lines[1].split(',');
-    typeIds.forEach((id, i) => typeMap[id] = typeNames[i]);
 
-    // ▼▼ 変更箇所：特性の効果（3番目のデータ）もオブジェクトとして保存 ▼▼
-    res = await fetch('ability.txt'); text = await res.text();
-    text.trim().split('\n').slice(1).forEach(l => { 
-        const p = l.split(','); 
-        abilityMap[p[0]] = { name: p[1], effect: p[2] || "効果が設定されていません" }; 
-    });
-
-    res = await fetch('move.txt'); text = await res.text();
-    text.trim().split('\n').slice(1).forEach(l => { const p = l.split(','); if(p.length>=2) moveMap[p[0]] = { name: p[1], type: p[2] }; });
-
-    res = await fetch('pokemon_moves.txt'); text = await res.text();
-    text.trim().split('\n').slice(1).forEach(l => { 
-        const [num, mid] = l.split(',');
-        if(!pokemonMovesMap[num]) pokemonMovesMap[num] = [];
-        pokemonMovesMap[num].push(mid);
-    });
-
-    res = await fetch('type-effectiveness.txt'); text = await res.text();
-    lines = text.trim().split('\n');
-    const header = lines[0].split(',').slice(1);
-    for(let i = 1; i < lines.length; i++) {
-        const parts = lines[i].split(',');
-        const atkType = parts[0];
-        typeEff[atkType] = {};
-        for(let j = 1; j < parts.length; j++) {
-            typeEff[atkType][header[j-1]] = Number(parts[j]);
-        }
-    }
-}
-
-// 該当するIDのポケモンのみを抽出
-async function loadPokemonData(targetId) {
-    const res = await fetch('pokemon.txt');
-    const text = await res.text();
-    const lines = text.trim().split('\n');
-    
-    for (let i = 1; i < lines.length; i++) {
-        const [number, name, t1, t2, H, A, B, C, D, S, ab1, ab2, ab3, weight] = lines[i].split(',');
-        if (number === targetId) {
-            const numH = Number(H), numA = Number(A), numB = Number(B);
-            const numC = Number(C), numD = Number(D), numS = Number(S);
-            
-            targetPokemons.push({
-                number, name, t1, t2, 
-                H: numH, A: numA, B: numB, C: numC, D: numD, S: numS,
-                total: numH + numA + numB + numC + numD + numS,
-                // ▼▼ 変更箇所：IDも保持しておき、名前はabilityMapから抽出 ▼▼
-                ab1: ab1, ab2: ab2, ab3: ab3,
-                abName1: ab1 && abilityMap[ab1] ? abilityMap[ab1].name : "",
-                abName2: ab2 && abilityMap[ab2] ? abilityMap[ab2].name : "",
-                abName3: ab3 && abilityMap[ab3] ? abilityMap[ab3].name : "",
-                weight: weight ? Number(weight) : null
-            });
-        }
-    }
-}
-// タブの生成
-function renderTabs() {
+// ▼▼ detail.js の renderTabs 関数を差し替え ▼▼
+// 引数 activeIndex を受け取れるようにする
+function renderTabs(activeIndex = 0) {
     const container = document.getElementById('tabsContainer');
+    container.innerHTML = ''; // 一度中身をリセット
+
     targetPokemons.forEach((poke, index) => {
         const btn = document.createElement('button');
-        btn.className = `tab-button ${index === 0 ? 'active' : ''}`;
-        btn.textContent = poke.name; // 「フシギバナ」「メガフシギバナ」等
+        // URLの名前と一致したタブだけを最初から赤く（active）する
+        btn.className = `tab-button ${index === activeIndex ? 'active' : ''}`;
+        btn.textContent = poke.name; 
+        
         btn.onclick = () => {
             document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');

@@ -112,11 +112,12 @@ function renderList(data, sortType) {
         const hl = (type) => sortType === type ? 'class="highlight-active"' : '';
         const numClass = sortType === 'number' ? 'highlight-active' : '';
 
+       // ▼▼ app.js の renderList 内、aタグのhref部分を修正 ▼▼
         const div = document.createElement('div');
         div.className = 'card';
-        // ▼▼ 変更箇所：<div class="abilities"> を <div class="abilities-text"> に変更 ▼▼
+        // 変更箇所：URLの末尾に「&name=ポケモン名」を追加
         div.innerHTML = `
-            <a href="detail.html?id=${poke.number}" class="card-link">
+            <a href="detail.html?id=${poke.number}&name=${encodeURIComponent(poke.name)}" class="card-link">
                 <div class="card-header">
                     <span class="poke-name">${poke.name}</span>
                     <span class="poke-number ${numClass}">No.${poke.number}</span>
