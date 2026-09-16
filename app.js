@@ -94,6 +94,8 @@ async function loadPokemonData() {
 }
 
 // ▼引数に sortType（何順で並び替えているか）を追加
+// ▼▼ app.js の renderList 関数の中身を一部変更 ▼▼
+
 function renderList(data, sortType) {
     const resultsContainer = document.getElementById('results');
     resultsContainer.innerHTML = '';
@@ -102,19 +104,17 @@ function renderList(data, sortType) {
         let typesHtml = `<span class="type-badge type-${poke.type_1}">${typeMap[poke.type_1]}</span>`;
         if (poke.type_2 !== "00") typesHtml += `<span class="type-badge type-${poke.type_2}">${typeMap[poke.type_2]}</span>`;
 
-        let abilitiesHtml = '';
+        // ▼▼ 変更箇所：バッジを作る処理をやめて、スラッシュ区切りのテキストにする ▼▼
         const abs = [poke.abName1, poke.abName2, poke.abName3].filter(Boolean);
         const uniqueAbs = [...new Set(abs)]; 
-        uniqueAbs.forEach(ab => {
-            abilitiesHtml += `<span class="ability-item">${ab}</span>`;
-        });
+        const abilitiesHtml = uniqueAbs.join(' / '); // 例: "しんりょく / ようりょくそ"
 
-        // ▼選ばれている項目なら 'class="highlight-active"' を返す便利関数
         const hl = (type) => sortType === type ? 'class="highlight-active"' : '';
         const numClass = sortType === 'number' ? 'highlight-active' : '';
 
         const div = document.createElement('div');
         div.className = 'card';
+        // ▼▼ 変更箇所：<div class="abilities"> を <div class="abilities-text"> に変更 ▼▼
         div.innerHTML = `
             <a href="detail.html?id=${poke.number}" class="card-link">
                 <div class="card-header">
@@ -122,7 +122,7 @@ function renderList(data, sortType) {
                     <span class="poke-number ${numClass}">No.${poke.number}</span>
                 </div>
                 <div class="types">${typesHtml}</div>
-                <div class="abilities">${abilitiesHtml}</div>
+                <div class="abilities-text">${abilitiesHtml}</div>
                 <div class="compact-stats">
                     <span ${hl('H')}>${poke.H}</span>-<span ${hl('A')}>${poke.A}</span>-<span ${hl('B')}>${poke.B}</span>-<span ${hl('C')}>${poke.C}</span>-<span ${hl('D')}>${poke.D}</span>-<span ${hl('S')}>${poke.S}</span>-<span ${hl('total')}>${poke.total}</span>
                 </div>

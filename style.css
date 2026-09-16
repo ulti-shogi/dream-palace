@@ -449,3 +449,16 @@ body.detail-page {
     font-size: 1.1rem !important; /* 以前よりさらに少し大きめに設定 */
     border-radius: 20px;
 }
+
+/* 一覧画面の特性テキスト表示（バッジから変更） */
+.abilities-text {
+    font-size: 0.85rem;
+    color: #555;
+    margin-bottom: 8px;
+    font-weight: bold;
+    
+    /* 確実に1行に収めるための保険（はみ出たら...になる） */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
