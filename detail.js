@@ -1,14 +1,13 @@
 let typeMap = {}, abilityMap = {}, moveMap = {}, pokemonMovesMap = {}, typeEff = {};
 let targetPokemons = []; // URLのIDに一致する全フォルムのデータ
 
-// ▼▼ detail.js の initDetail 関数を差し替え ▼▼
 async function initDetail() {
     // URLから "?id=0003&name=メガフシギバナ" の部分を取得
     const urlParams = new URLSearchParams(window.location.search);
     const targetId = urlParams.get('id');
-    const targetName = urlParams.get('name'); // 追加：名前も取得する
+    const targetName = urlParams.get('name'); // 名前も取得する
 
-    if (!targetId) return;
+    if (!targetId) return; // IDが無ければ何もしない
 
     await loadData();
     await loadPokemonData(targetId);
@@ -16,7 +15,7 @@ async function initDetail() {
     if (targetPokemons.length > 0) {
         document.getElementById('pageTitle').textContent = `No.${targetId} の詳細`;
         
-        // 追加：URLの名前と一致するポケモンを探す（見つからなければ0番目をセット）
+        // URLの名前と一致するポケモンを探す（見つからなければ0番目をセット）
         let initialIndex = 0;
         if (targetName) {
             const foundIndex = targetPokemons.findIndex(p => p.name === targetName);
@@ -31,9 +30,70 @@ async function initDetail() {
     }
 }
 
+// 各種テキストデータの読み込み
+async function loadData() {
+    let res = await fetch('type.txt'); let text = await res.text();
+    let lines = text.trim().split('\n');
+    let typeIds = lines[0].split(','); let typeNames = lines[1].split(',');
+    typeIds.forEach((id, i) => typeMap[id] = typeNames[i]);
 
-// ▼▼ detail.js の renderTabs 関数を差し替え ▼▼
-// 引数 activeIndex を受け取れるようにする
+    // 特性の効果（3番目のデータ）もオブジェクトとして保存
+    res = await fetch('ability.txt'); text = await res.text();
+    text.trim().split('\n').slice(1).forEach(l => { 
+        const p = l.split(','); 
+        abilityMap[p[0]] = { name: p[1], effect: p[2] || "効果が設定されていません" }; 
+    });
+
+    res = await fetch('move.txt'); text = await res.text();
+    text.trim().split('\n').slice(1).forEach(l => { const p = l.split(','); if(p.length>=2) moveMap[p[0]] = { name: p[1], type: p[2] }; });
+
+    res = await fetch('pokemon_moves.txt'); text = await res.text();
+    text.trim().split('\n').slice(1).forEach(l => { 
+        const [num, mid] = l.split(',');
+        if(!pokemonMovesMap[num]) pokemonMovesMap[num] = [];
+        pokemonMovesMap[num].push(mid);
+    });
+
+    res = await fetch('type-effectiveness.txt'); text = await res.text();
+    lines = text.trim().split('\n');
+    const header = lines[0].split(',').slice(1);
+    for(let i = 1; i < lines.length; i++) {
+        const parts = lines[i].split(',');
+        const atkType = parts[0];
+        typeEff[atkType] = {};
+        for(let j = 1; j < parts.length; j++) {
+            typeEff[atkType][header[j-1]] = Number(parts[j]);
+        }
+    }
+}
+
+// 該当するIDのポケモンのみを抽出
+async function loadPokemonData(targetId) {
+    const res = await fetch('pokemon.txt');
+    const text = await res.text();
+    const lines = text.trim().split('\n');
+    
+    for (let i = 1; i < lines.length; i++) {
+        const [number, name, t1, t2, H, A, B, C, D, S, ab1, ab2, ab3, weight] = lines[i].split(',');
+        if (number === targetId) {
+            const numH = Number(H), numA = Number(A), numB = Number(B);
+            const numC = Number(C), numD = Number(D), numS = Number(S);
+            
+            targetPokemons.push({
+                number, name, t1, t2, 
+                H: numH, A: numA, B: numB, C: numC, D: numD, S: numS,
+                total: numH + numA + numB + numC + numD + numS,
+                ab1: ab1, ab2: ab2, ab3: ab3,
+                abName1: ab1 && abilityMap[ab1] ? abilityMap[ab1].name : "",
+                abName2: ab2 && abilityMap[ab2] ? abilityMap[ab2].name : "",
+                abName3: ab3 && abilityMap[ab3] ? abilityMap[ab3].name : "",
+                weight: weight ? Number(weight) : null
+            });
+        }
+    }
+}
+
+// タブの生成
 function renderTabs(activeIndex = 0) {
     const container = document.getElementById('tabsContainer');
     container.innerHTML = ''; // 一度中身をリセット
@@ -53,6 +113,7 @@ function renderTabs(activeIndex = 0) {
     });
 }
 
+// 選択されたフォルムの詳細を描画
 function renderDetail(poke) {
     const content = document.getElementById('detailContent');
 
@@ -91,7 +152,6 @@ function renderDetail(poke) {
     weakList.sort((a, b) => b.mult - a.mult);
     resistList.sort((a, b) => a.mult - b.mult);
 
-    // ▼▼ 修正箇所：0.5を「1/2」、0.25を「1/4」に変換して表示 ▼▼
     const createEffHtml = (list) => {
         if (list.length === 0) return `<div class="eff-item" style="color:#888; font-size:0.9rem;">なし</div>`;
         return list.map(item => {
@@ -171,9 +231,8 @@ function renderDetail(poke) {
         }
     });
 
-    // ▼▼ 追加箇所：特性カードのHTMLを構築（重複を排除して縦に並べる） ▼▼
     const abIds = [poke.ab1, poke.ab2, poke.ab3].filter(Boolean);
-    const uniqueAbIds = [...new Set(abIds)]; // 同じ特性があればまとめる
+    const uniqueAbIds = [...new Set(abIds)]; 
     
     let abilitiesHtml = `<div class="ability-list">`;
     uniqueAbIds.forEach(id => {
@@ -233,5 +292,5 @@ function renderDetail(poke) {
         </div>
     `;
 }
-    
+
 initDetail();
