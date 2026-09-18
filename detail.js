@@ -42,6 +42,16 @@ function loadImage(key) {
         req.onerror = (e) => reject(e);
     });
 }
+
+function deleteImage(key) {
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        const store = tx.objectStore(STORE_NAME);
+        store.delete(key);
+        tx.oncomplete = () => resolve();
+        tx.onerror = (e) => reject(e);
+    });
+}
 // ------------------------------------
 
 async function initDetail() {
@@ -289,6 +299,8 @@ function renderDetail(poke) {
                 <div class="upload-btn-wrapper">
                     <label for="imgUpload" class="upload-btn">📷 画像を選択</label>
                     <input type="file" id="imgUpload" accept="image/*" style="display: none;" />
+                    <!-- ▼▼ 削除ボタンを追加（最初は非表示） ▼▼ -->
+                    <button id="imgDeleteBtn" class="delete-btn" style="display: none;">🗑️ 削除</button>
                 </div>
             </div>
         </div>
@@ -337,35 +349,53 @@ function renderDetail(poke) {
 
     // ▼▼ 追加：画像処理のイベント（HTMLが作られた直後に実行する） ▼▼
     
+    // ▼▼ 差し替え：画像処理のイベント ▼▼
+    const imgEl = document.getElementById('customPokeImg');
+    const delBtn = document.getElementById('imgDeleteBtn');
+    const fileInput = document.getElementById('imgUpload');
+    
     // 1. 保存されている画像があれば読み込んで表示する
     loadImage(imageKey).then(dataUrl => {
         if (dataUrl) {
-            const imgEl = document.getElementById('customPokeImg');
             imgEl.src = dataUrl;
             imgEl.style.display = 'block';
+            delBtn.style.display = 'inline-block'; // 画像がある時だけ削除ボタンを表示
         }
     });
 
     // 2. アップロードボタン（📷 画像を選択）が押された時の処理
-    document.getElementById('imgUpload').addEventListener('change', function(e) {
+    fileInput.addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (!file) return;
         
         const reader = new FileReader();
         reader.onload = function(evt) {
             const dataUrl = evt.target.result;
-            const imgEl = document.getElementById('customPokeImg');
             
-            // 画面に画像を表示
+            // 画面に画像と削除ボタンを表示
             imgEl.src = dataUrl;
             imgEl.style.display = 'block';
+            delBtn.style.display = 'inline-block';
             
             // データベース（スマホ内）に画像を保存
             saveImage(imageKey, dataUrl);
         };
-        // 画像をデータに変換
         reader.readAsDataURL(file);
     });
-}
+
+    // 3. 削除ボタン（🗑️ 削除）が押された時の処理
+    delBtn.addEventListener('click', function() {
+        if (confirm('この画像を削除しますか？')) {
+            // 画面から画像を消して、ボタンも隠す
+            imgEl.src = "";
+            imgEl.style.display = 'none';
+            delBtn.style.display = 'none';
+            fileInput.value = ""; // 次に同じ画像を選べるようにリセット
+            
+            // データベースから画像を削除
+            deleteImage(imageKey);
+        }
+    });
+} // ← renderDetailの閉じカッコ
 
 initDetail();

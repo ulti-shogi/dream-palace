@@ -500,3 +500,22 @@ body.detail-page {
 .upload-btn:active {
     background-color: #2d3748;
 }
+
+/* 削除ボタンのデザイン（画像選択ボタンの右に配置） */
+.delete-btn {
+    display: inline-block;
+    background-color: #fff;
+    color: #e3350d; /* 赤文字にして注意喚起 */
+    border: 1px solid #e3350d;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 0.9rem;
+    cursor: pointer;
+    margin-left: 8px; /* 📷ボタンとの隙間 */
+    transition: background-color 0.2s;
+}
+
+.delete-btn:active {
+    background-color: #ffe8e8;
+}
