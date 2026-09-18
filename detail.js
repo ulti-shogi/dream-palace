@@ -1,28 +1,69 @@
 let typeMap = {}, abilityMap = {}, moveMap = {}, pokemonMovesMap = {}, typeEff = {};
-let targetPokemons = []; // URLのIDに一致する全フォルムのデータ
+let targetPokemons = []; 
+
+// --- データベース（IndexedDB）の準備 ---
+const DB_NAME = 'MyPokedexDB';
+const STORE_NAME = 'customImages';
+let db;
+
+function initDB() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, 1);
+        request.onupgradeneeded = (e) => {
+            db = e.target.result;
+            if (!db.objectStoreNames.contains(STORE_NAME)) {
+                db.createObjectStore(STORE_NAME);
+            }
+        };
+        request.onsuccess = (e) => {
+            db = e.target.result;
+            resolve();
+        };
+        request.onerror = (e) => reject(e);
+    });
+}
+
+function saveImage(key, dataUrl) {
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readwrite');
+        const store = tx.objectStore(STORE_NAME);
+        store.put(dataUrl, key);
+        tx.oncomplete = () => resolve();
+        tx.onerror = (e) => reject(e);
+    });
+}
+
+function loadImage(key) {
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readonly');
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.get(key);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = (e) => reject(e);
+    });
+}
+// ------------------------------------
 
 async function initDetail() {
-    // URLから "?id=0003&name=メガフシギバナ" の部分を取得
     const urlParams = new URLSearchParams(window.location.search);
     const targetId = urlParams.get('id');
-    const targetName = urlParams.get('name'); // 名前も取得する
+    const targetName = urlParams.get('name'); 
 
-    if (!targetId) return; // IDが無ければ何もしない
+    if (!targetId) return; 
 
+    await initDB(); // 画像保存用DBの起動
     await loadData();
     await loadPokemonData(targetId);
     
     if (targetPokemons.length > 0) {
         document.getElementById('pageTitle').textContent = `No.${targetId} の詳細`;
         
-        // URLの名前と一致するポケモンを探す（見つからなければ0番目をセット）
         let initialIndex = 0;
         if (targetName) {
             const foundIndex = targetPokemons.findIndex(p => p.name === targetName);
             if (foundIndex !== -1) initialIndex = foundIndex;
         }
 
-        // 決定したインデックス（何番目のポケモンか）を渡して描画
         renderTabs(initialIndex);
         renderDetail(targetPokemons[initialIndex]); 
     } else {
@@ -30,14 +71,12 @@ async function initDetail() {
     }
 }
 
-// 各種テキストデータの読み込み
 async function loadData() {
     let res = await fetch('type.txt'); let text = await res.text();
     let lines = text.trim().split('\n');
     let typeIds = lines[0].split(','); let typeNames = lines[1].split(',');
     typeIds.forEach((id, i) => typeMap[id] = typeNames[i]);
 
-    // 特性の効果（3番目のデータ）もオブジェクトとして保存
     res = await fetch('ability.txt'); text = await res.text();
     text.trim().split('\n').slice(1).forEach(l => { 
         const p = l.split(','); 
@@ -67,7 +106,6 @@ async function loadData() {
     }
 }
 
-// 該当するIDのポケモンのみを抽出
 async function loadPokemonData(targetId) {
     const res = await fetch('pokemon.txt');
     const text = await res.text();
@@ -93,14 +131,12 @@ async function loadPokemonData(targetId) {
     }
 }
 
-// タブの生成
 function renderTabs(activeIndex = 0) {
     const container = document.getElementById('tabsContainer');
-    container.innerHTML = ''; // 一度中身をリセット
+    container.innerHTML = ''; 
 
     targetPokemons.forEach((poke, index) => {
         const btn = document.createElement('button');
-        // URLの名前と一致したタブだけを最初から赤く（active）する
         btn.className = `tab-button ${index === activeIndex ? 'active' : ''}`;
         btn.textContent = poke.name; 
         
@@ -113,11 +149,10 @@ function renderTabs(activeIndex = 0) {
     });
 }
 
-// 選択されたフォルムの詳細を描画
 function renderDetail(poke) {
     const content = document.getElementById('detailContent');
+    const imageKey = `${poke.number}_${poke.name}`; // 保存する時のカギ（例: 0003_メガフシギバナ）
 
-    // --- 1. 基本情報・重さ計算 ---
     let weightText = "不明";
     let lowKickPower = "不明";
     if (poke.weight) {
@@ -130,7 +165,6 @@ function renderDetail(poke) {
         else lowKickPower = 120;
     }
 
-    // --- 2. タイプ相性の計算（特性考慮・2カラム対応） ---
     let weakList = [];
     let resistList = [];
     
@@ -181,7 +215,6 @@ function renderDetail(poke) {
         </div>
     `;
 
-    // --- 3. ステータス（種族値と実数値テーブル） ---
     const baseStatsHtml = `
         <div class="stats-grid">
             <div class="stat-item"><div class="stat-label">H</div><div class="base-values">${poke.H}</div></div>
@@ -220,7 +253,6 @@ function renderDetail(poke) {
         </table>
     `;
 
-    // --- 4. 覚える技 ---
     let movesHtml = "";
     const moveIds = pokemonMovesMap[poke.number] || [];
     moveIds.forEach(id => {
@@ -250,6 +282,17 @@ function renderDetail(poke) {
 
     // --- HTMLを合体 ---
     content.innerHTML = `
+        <div class="detail-section">
+            <h2 class="section-title">思い出のシーン</h2>
+            <div class="custom-image-container">
+                <img id="customPokeImg" style="display: none;" />
+                <div class="upload-btn-wrapper">
+                    <label for="imgUpload" class="upload-btn">📷 画像を選択</label>
+                    <input type="file" id="imgUpload" accept="image/*" style="display: none;" />
+                </div>
+            </div>
+        </div>
+
         <div class="detail-section">
             <h2 class="section-title">タイプ</h2>
             <div class="types">
@@ -291,6 +334,38 @@ function renderDetail(poke) {
             <div class="moves-list">${movesHtml || "技データがありません"}</div>
         </div>
     `;
+
+    // ▼▼ 追加：画像処理のイベント（HTMLが作られた直後に実行する） ▼▼
+    
+    // 1. 保存されている画像があれば読み込んで表示する
+    loadImage(imageKey).then(dataUrl => {
+        if (dataUrl) {
+            const imgEl = document.getElementById('customPokeImg');
+            imgEl.src = dataUrl;
+            imgEl.style.display = 'block';
+        }
+    });
+
+    // 2. アップロードボタン（📷 画像を選択）が押された時の処理
+    document.getElementById('imgUpload').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            const dataUrl = evt.target.result;
+            const imgEl = document.getElementById('customPokeImg');
+            
+            // 画面に画像を表示
+            imgEl.src = dataUrl;
+            imgEl.style.display = 'block';
+            
+            // データベース（スマホ内）に画像を保存
+            saveImage(imageKey, dataUrl);
+        };
+        // 画像をデータに変換
+        reader.readAsDataURL(file);
+    });
 }
 
 initDetail();
